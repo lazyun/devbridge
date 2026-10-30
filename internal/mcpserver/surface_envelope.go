@@ -79,6 +79,14 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		}
 	}
 	exactReviewReadback := reviewCancellation || params.Name == "review_worker_claim" || params.Name == "review_worker_get"
+	if params.Name == "file_worker_claim" || params.Name == "file_worker_get" {
+		// A historical delivery receipt must never inherit successor workflow actions.
+		for _, key := range []string{"workflowId", "protocolVersion", "runtimeEpoch", "grantGeneration"} {
+			if value, ok := input[key]; ok {
+				contextValue[key] = value
+			}
+		}
+	}
 	if params.Name == "task_create" {
 		scope.TaskID = stringValue(value, "id")
 		contextValue["taskId"] = scope.TaskID
@@ -116,7 +124,7 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 	// contracts. Their exact result needs no unrelated workflow readback.
 	needsWorkflow := session != "" && (scope.FeatureAreaID != "" || scope.TaskID != "" || scope.ReviewID != "" || scope.ExecutionID != "" || scope.OwnerID != "")
 	switch params.Name {
-	case "direct_file_enable", "direct_file_disable", "file_list", "file_read", "file_write", "document_create", "repository_search", "development_branch_create", "development_branch_select":
+	case "file_worker_claim", "file_worker_get", "direct_file_enable", "direct_file_disable", "file_list", "file_read", "file_write", "document_create", "repository_search", "development_branch_create", "development_branch_select":
 		needsWorkflow = false
 	}
 	if needsWorkflow {
@@ -224,6 +232,10 @@ func surfaceEnvelopeOutputSchema(original any) any {
 	for _, key := range []string{"aiSessionId", "projectId", "featureAreaId", "taskId", "reviewId", "executionId", "taskDefinitionRevisionId", "runId", "decisionId"} {
 		contextProperties[key] = map[string]any{"type": "string"}
 	}
+	contextProperties["workflowId"] = map[string]any{"type": "string"}
+	contextProperties["runtimeEpoch"] = map[string]any{"type": "string"}
+	contextProperties["protocolVersion"] = map[string]any{"type": "integer", "enum": []int{1, 2}}
+	contextProperties["grantGeneration"] = map[string]any{"type": "integer", "minimum": 1}
 	workflowProperties := map[string]any{"generation": map[string]any{"type": "string"}, "sourceSequence": map[string]any{"type": "integer"}, "currentState": map[string]any{"type": "string"}, "phase": map[string]any{"type": "string"}, "nextAction": json.RawMessage(wp.ActionJSONSchema), "refreshRequired": map[string]any{"type": "boolean"}, "stale": map[string]any{"type": "boolean"}, "readError": map[string]any{"type": "string"}, "runtimeApprovalId": map[string]any{"type": "string"}}
 	var originalWorkflow map[string]any
 	_ = json.Unmarshal([]byte(externalWorkflowOutputSchema), &originalWorkflow)

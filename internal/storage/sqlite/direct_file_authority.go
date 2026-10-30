@@ -350,7 +350,52 @@ func (a *DirectFileAuthority) Disable(ctx context.Context, s directfile.Scope) (
 	return directfile.State{State: "CLOSED", AllowedOperations: []string{}, FeatureAreaID: s.FeatureAreaID, WorkflowID: s.WorkflowID}, nil
 }
 
+// replayClaimedMutation reads only immutable completed proof. A stale Core
+// writer fence must not turn historical worker readback into redispatch or
+// require fresh file authority. Pending/UNKNOWN journal promotion is excluded:
+// it still requires the current writer transaction below.
+func (a *DirectFileAuthority) replayClaimedMutation(ctx context.Context, s directfile.Scope) (bool, error) {
+	op, ok := directfile.OperationFromContext(ctx)
+	if !ok || op.WorkerClaim == nil || op.RequestID == "" || op.Kind == "READ" || op.Kind == "LIST" {
+		return false, nil
+	}
+	tx, err := a.db.sql.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return true, err
+	}
+	defer tx.Rollback()
+	var savedHash, resultJSON string
+	err = tx.QueryRowContext(ctx, `SELECT r.payload_sha256,r.result_json FROM direct_file_operation_receipts r JOIN direct_file_task_authorizations g ON g.workflow_id=r.workflow_id WHERE r.workflow_id=? AND r.request_id=? AND r.repository_id=? AND r.member_id=? AND r.state='COMPLETED' AND g.protocol_version=2 AND g.ai_session_id=? AND g.feature_area_id=?`, s.WorkflowID, op.RequestID, op.RepositoryID, op.MemberID, s.AISessionID, s.FeatureAreaID).Scan(&savedHash, &resultJSON)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return true, err
+	}
+	payload, err := fileResultHash(op)
+	if err != nil {
+		return true, err
+	}
+	if savedHash != payload {
+		return true, directFileError(directfile.OperationFailed, "direct-file mutation receipt conflicts")
+	}
+	if err = requireDirectFileWorkerReplayTx(ctx, tx, s.WorkflowID, s.AISessionID, op.WorkerClaim); err != nil {
+		return true, err
+	}
+	var replay directfile.Result
+	if json.Unmarshal([]byte(resultJSON), &replay) != nil || replay.Path == "" {
+		return true, directFileError(directfile.OperationFailed, "completed mutation receipt has no result proof")
+	}
+	directfile.SetCapturedResult(ctx, replay)
+	return true, nil
+}
+
 func (a *DirectFileAuthority) WithCapability(ctx context.Context, s directfile.Scope, complete bool, fn func(*os.Root) error) error {
+	if !complete {
+		if replayed, err := a.replayClaimedMutation(ctx, s); replayed || err != nil {
+			return err
+		}
+	}
 	// v2 holds this writer fence through the filesystem effect so result/cancel
 	// cannot close the grant between authorization and publication.
 	a.db.directFileOperations.Lock()
@@ -368,10 +413,16 @@ func (a *DirectFileAuthority) WithCapability(ctx context.Context, s directfile.S
 			_ = tx.Rollback()
 			return a.withTaskCapabilityV2(ctx, s, approved, complete, fn)
 		}
+		if op, ok := directfile.OperationFromContext(ctx); ok && op.WorkerClaim != nil {
+			return directFileError(directfile.NotEnabled, "worker claims require an enrolled v2 Direct File workflow")
+		}
 		return taskFileWithCapabilityTx(ctx, tx, s, approved, complete, fn)
 	}
 	if !errors.Is(e, sql.ErrNoRows) {
 		return e
+	}
+	if op, ok := directfile.OperationFromContext(ctx); ok && op.WorkerClaim != nil {
+		return directFileError(directfile.NotEnabled, "worker claims require an enrolled v2 Direct File workflow")
 	}
 	grant := directFileGrants.byDB[a.db][s.FeatureAreaID]
 	if grant == nil {
@@ -449,6 +500,11 @@ func (a *DirectFileAuthority) withTaskCapabilityV2(ctx context.Context, s direct
 			if savedHash != payload {
 				return directFileError(directfile.OperationFailed, "direct-file mutation receipt conflicts")
 			}
+			// Historical proof replay does not regain write authority, but the
+			// original enrolled worker and authenticated Session still must match.
+			if err := requireDirectFileWorkerReplayTx(ctx, tx, v.WorkflowID, s.AISessionID, op.WorkerClaim); err != nil {
+				return err
+			}
 			var replay directfile.Result
 			if json.Unmarshal([]byte(resultJSON), &replay) != nil || replay.Path == "" {
 				return directFileError(directfile.OperationFailed, "completed mutation receipt has no result proof")
@@ -459,12 +515,53 @@ func (a *DirectFileAuthority) withTaskCapabilityV2(ctx context.Context, s direct
 		if !errors.Is(receiptErr, sql.ErrNoRows) {
 			return receiptErr
 		}
+		if op.WorkerClaim != nil {
+			// An enrolled worker cannot recover this workflow into a new
+			// generation. After restart, a matching durable post-effect journal
+			// may still prove the original effect. Reconcile only that receipt;
+			// never invoke the filesystem callback or refresh file authority.
+			var pendingHash string
+			pendingErr := tx.QueryRowContext(ctx, `SELECT payload_sha256 FROM direct_file_operation_receipts WHERE workflow_id=? AND request_id=? AND repository_id=? AND member_id=? AND state IN ('PENDING','UNKNOWN')`, v.WorkflowID, op.RequestID, op.RepositoryID, op.MemberID).Scan(&pendingHash)
+			if pendingErr == nil {
+				if pendingHash != payload {
+					return directFileError(directfile.OperationFailed, "direct-file mutation receipt conflicts")
+				}
+				if err := requireDirectFileWorkerReplayTx(ctx, tx, v.WorkflowID, s.AISessionID, op.WorkerClaim); err != nil {
+					return err
+				}
+				if replay, proved := a.readMutationJournal(v.WorkflowID, op.RequestID, payload); proved {
+					raw, marshalErr := json.Marshal(replay)
+					if marshalErr != nil {
+						return marshalErr
+					}
+					updated, updateErr := tx.ExecContext(ctx, `UPDATE direct_file_operation_receipts SET state='COMPLETED',result_json=?,error='',updated_at=? WHERE workflow_id=? AND request_id=? AND payload_sha256=? AND state IN ('PENDING','UNKNOWN')`, string(raw), formatTime(time.Now().UTC()), v.WorkflowID, op.RequestID, payload)
+					if updateErr != nil {
+						return updateErr
+					}
+					if count, rowsErr := updated.RowsAffected(); rowsErr != nil || count != 1 {
+						return directFileError(directfile.OperationFailed, "original mutation receipt changed during journal reconciliation")
+					}
+					if commitErr := tx.Commit(); commitErr != nil {
+						return commitErr
+					}
+					directfile.SetCapturedResult(ctx, replay)
+					return nil
+				}
+			} else if !errors.Is(pendingErr, sql.ErrNoRows) {
+				return pendingErr
+			}
+		}
 	}
 	if v.ProtocolVersion != 2 || v.State.State != "ACTIVE" || v.AISessionID != s.AISessionID || v.FeatureAreaID != s.FeatureAreaID || v.WorkflowID != s.WorkflowID {
 		return directFileError(directfile.NotEnabled, "exact v2 file workflow is not active")
 	}
 	if err = validateTaskFileAuthorization(ctx, tx, v); err != nil {
 		return err
+	}
+	if op.Kind != "READ" && op.Kind != "LIST" {
+		if err = requireDirectFileWorkerTx(ctx, tx, v, op.WorkerClaim); err != nil {
+			return err
+		}
 	}
 	if op.RepositoryID == "" || op.MemberID == "" || op.MemberVersion < 1 || op.RuntimeEpoch != v.RuntimeEpoch || op.GrantGeneration != v.GrantGeneration {
 		return directFileError(directfile.NotEnabled, "exact v2 repository member and runtime fence are required")

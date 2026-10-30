@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/lazyun/devbridge/internal/directfile"
 	"github.com/lazyun/devbridge/internal/featurearea"
 	"github.com/lazyun/devbridge/internal/task"
 )
@@ -276,6 +277,9 @@ func CurrentAction(p Projection) wp.Action {
 	if p.PendingDecision != nil {
 		return wp.Action{Code: "RESOLVE_DECISION", Required: true, Message: p.PendingDecision.Summary}
 	}
+	if action, ok := DirectFileWorkerAction(p); ok {
+		return action
+	}
 	if p.Recovery != nil && p.Recovery.Required {
 		if p.Recovery.Reason == "UPPER_WORKER_CONTINUATION_UNSUPPORTED" {
 			if p.CurrentOperation != nil && p.CurrentOperation.Kind == "REVIEW" {
@@ -318,6 +322,42 @@ func CurrentAction(p Projection) wp.Action {
 	}
 	return wp.Action{Code: "NONE", Message: "无待处理动作"}
 }
+
+// DirectFileWorkerAction preserves an exact enrolled workflow's unsupported
+// continuation boundary. Only authoritative, same-owner guidance may offer its
+// existing explicit cancellation. Missing or foreign observations require a
+// refresh; neither this projection nor a worker claim grants cancellation.
+func DirectFileWorkerAction(p Projection) (wp.Action, bool) {
+	state := p.DirectFile
+	if state == nil || state.FailureCode != directfile.WorkerContinuationUnsupported {
+		return wp.Action{}, false
+	}
+	message := state.FailureReason
+	if message == "" {
+		message = "Worker continuation is unsupported; inspect the exact workflow. No worker stop or rollback is proven."
+	}
+	fallback := wp.Action{Code: "REFRESH", Required: true, Message: message}
+	g := p.Guidance
+	if state.ProtocolVersion != 2 || state.WorkflowID == "" || state.RuntimeEpoch == "" || state.GrantGeneration <= 0 ||
+		state.TaskID == "" || state.TaskDefinitionRevisionID == "" || state.DecisionID == "" || state.AISessionID == "" ||
+		state.ProjectID == "" || state.FeatureAreaID == "" || state.Enabled ||
+		p.TaskView == nil || p.TaskView.ID != state.TaskID || p.TaskView.Terminal ||
+		p.TaskView.DirectFile == nil || p.TaskView.DirectFile.WorkflowID != state.WorkflowID ||
+		p.TaskView.DirectFile.RuntimeEpoch != state.RuntimeEpoch || p.TaskView.DirectFile.GrantGeneration != state.GrantGeneration ||
+		p.Details.TaskID != state.TaskID || p.Details.TaskDefinitionRevisionID != state.TaskDefinitionRevisionID ||
+		g == nil || g.ProjectID != state.ProjectID || g.FeatureAreaID != state.FeatureAreaID ||
+		g.TaskID != state.TaskID || g.TaskDefinitionRevisionID != state.TaskDefinitionRevisionID {
+		return fallback, true
+	}
+	if g.NextAction.Code == "CANCEL_DIRECT_FILE" {
+		return wp.Action{Code: "CANCEL_DIRECT_FILE", Required: true, Message: message}, true
+	}
+	if g.NextAction.Code == "WAIT_FOR_DIRECT_FILE" {
+		return wp.Action{Code: "WAIT_FOR_DIRECT_FILE", Required: true, Message: message}, true
+	}
+	return fallback, true
+}
+
 func SelectWorkspace(out *WorkspaceProjection, areaID, taskID string) {
 	sort.SliceStable(out.FeatureAreas, func(i, j int) bool {
 		a, b := out.FeatureAreas[i], out.FeatureAreas[j]

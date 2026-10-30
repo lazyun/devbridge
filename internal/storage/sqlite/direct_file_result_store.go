@@ -100,6 +100,11 @@ func (s *WorkflowProgressionStore) SubmitFileImplementationResult(ctx context.Co
 	if err != nil {
 		return out, err
 	}
+	if in.WorkerClaim != nil {
+		if prior, found, readErr := s.replayFileWorkerResult(ctx, in, hash); readErr != nil || found {
+			return prior, readErr
+		}
+	}
 	tx, err := s.db.beginWrite(ctx)
 	if err != nil {
 		return out, err
@@ -114,6 +119,9 @@ func (s *WorkflowProgressionStore) SubmitFileImplementationResult(ctx context.Co
 	if err == nil {
 		if stored != hash {
 			return out, fileResultConflict()
+		}
+		if err = requireDirectFileWorkerReplayTx(ctx, tx, in.WorkflowID, in.AISessionID, in.WorkerClaim); err != nil {
+			return out, err
 		}
 		if err = json.Unmarshal([]byte(body), &out); err != nil {
 			return out, err
@@ -136,6 +144,9 @@ func (s *WorkflowProgressionStore) SubmitFileImplementationResult(ctx context.Co
 	}
 	if grant.ProtocolVersion == 2 {
 		return s.submitMultiFileImplementationResult(ctx, tx, project, grant, in, hash)
+	}
+	if in.WorkerClaim != nil {
+		return out, fileWorkerConflict()
 	}
 	if err = validateTaskFileAuthorization(ctx, tx, grant); err != nil {
 		return out, err
@@ -207,6 +218,9 @@ func (s *WorkflowProgressionStore) submitMultiFileImplementationResult(ctx conte
 	if err = validateTaskFileAuthorization(ctx, tx, grant); err != nil {
 		return out, err
 	}
+	if err = requireDirectFileWorkerTx(ctx, tx, grant, in.WorkerClaim); err != nil {
+		return out, err
+	}
 	var unresolved bool
 	if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM direct_file_operation_receipts WHERE workflow_id=? AND state IN ('PENDING','UNKNOWN'))`, grant.WorkflowID).Scan(&unresolved); err != nil {
 		return out, err
@@ -234,6 +248,9 @@ func (s *WorkflowProgressionStore) submitMultiFileImplementationResult(ctx conte
 		return out, err
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT INTO direct_file_implementation_results(id,ai_session_id,project_id,task_id,revision_id,workflow_id,request_id,payload_sha256,result_json,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)`, out.ID, in.AISessionID, project, in.TaskID, in.TaskDefinitionRevisionID, in.WorkflowID, in.RequestID, hash, string(encoded), formatTime(now)); err != nil {
+		return out, err
+	}
+	if err = completeDirectFileWorkerTx(ctx, tx, grant, in.WorkerClaim, out.ID); err != nil {
 		return out, err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE direct_file_task_authorizations SET state='CLOSED',updated_at=? WHERE workflow_id=? AND protocol_version=2 AND state='ACTIVE'`, formatTime(now), in.WorkflowID); err != nil {

@@ -169,9 +169,9 @@ func TestFinalCatalogAcceptance(t *testing.T) {
 
 func assertFinalDirectFileCatalog(t *testing.T, tools map[string]*sdkmcp.Tool, adapter string) {
 	t.Helper()
-	want := []string{"direct_file_enable", "direct_file_disable", "direct_file_reconcile_task_authorization", "file_implementation_accept", "file_implementation_result_get", "file_implementation_result_submit", "file_list", "file_read", "file_write"}
+	want := []string{"direct_file_enable", "direct_file_disable", "direct_file_reconcile_task_authorization", "file_implementation_accept", "file_implementation_result_get", "file_implementation_result_submit", "file_list", "file_read", "file_worker_claim", "file_worker_get", "file_write"}
 	if adapter == "gpt" {
-		want = []string{"direct_file_disable", "direct_file_reconcile_task_authorization", "file_implementation_accept", "file_implementation_result_get", "file_implementation_result_submit", "file_list", "file_read", "file_write"}
+		want = []string{"direct_file_disable", "direct_file_reconcile_task_authorization", "file_implementation_accept", "file_implementation_result_get", "file_implementation_result_submit", "file_list", "file_read", "file_worker_claim", "file_worker_get", "file_write"}
 	}
 	for _, name := range want {
 		if tools[name] == nil {
@@ -187,7 +187,7 @@ func assertFinalDirectFileCatalog(t *testing.T, tools map[string]*sdkmcp.Tool, a
 	sort.Strings(got)
 	sort.Strings(want)
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Direct File catalog = %v, want exactly five tools %v", got, want)
+		t.Fatalf("Direct File catalog = %v, want exact published tools %v", got, want)
 	}
 }
 

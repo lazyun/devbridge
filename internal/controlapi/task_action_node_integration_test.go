@@ -296,6 +296,16 @@ func rewindAgentPolicyV136(t *testing.T, f *upperLifecycleFixture) {
 	defer tx.Rollback()
 	// A historical fixture has no worker delivery. Rewind the complete later
 	// additive table together with its marker, never drop a live dispatch fact.
+	var fileWorkers int
+	if err = tx.QueryRow(`SELECT count(*) FROM direct_file_worker_claims`).Scan(&fileWorkers); err != nil || fileWorkers != 0 {
+		t.Fatalf("cannot rewind file worker dispatch authority: %d %v", fileWorkers, err)
+	}
+	if _, err = tx.Exec(`DROP TABLE direct_file_worker_claims`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(`DELETE FROM schema_migrations WHERE version=138`); err != nil {
+		t.Fatal(err)
+	}
 	var workers int
 	if err = tx.QueryRow(`SELECT count(*) FROM upper_review_worker_claims`).Scan(&workers); err != nil || workers != 0 {
 		t.Fatalf("cannot rewind worker dispatch authority: %d %v", workers, err)

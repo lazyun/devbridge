@@ -396,6 +396,15 @@ func (f *Facade) featureAreaPresentationForCurrent(ctx context.Context, sessionI
 			}
 			out.NextAction = wp.Action{Code: code, Message: message}
 		}
+		// A stale enrolled file worker cannot regain delivery authority through
+		// generic recovery copy. Keep its actual grant state and use only exact
+		// authoritative cancellation guidance (or refresh when unavailable).
+		if action, worker := presentation.DirectFileWorkerAction(out); worker {
+			out.NextAction = action
+			if out.TaskView != nil && out.TaskView.ID == state.TaskID {
+				out.TaskView.Activity = presentation.TaskActivity{Status: state.State, Summary: action.Message}
+			}
+		}
 		if areaFileActive || state.Enabled {
 			for i := range out.Capabilities {
 				switch out.Capabilities[i].Action {

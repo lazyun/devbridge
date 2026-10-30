@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/lazyun/devbridge/internal/review"
 	"os"
@@ -25,150 +26,184 @@ import (
 )
 
 func TestDirectFileCodexVerification(t *testing.T) {
-	for _, missing := range []bool{false, true} {
-		name := "observed"
-		if missing {
-			name = "missing-member-command"
-		}
-		t.Run(name, func(t *testing.T) {
-			f, current := approveDirectFixture(t, false, false)
-			installProtocolFixturePlatform(t, f)
-			root := t.TempDir()
-			launcher := filepath.Join(root, "codex-fixture")
-			wire := filepath.Join(root, "wire.jsonl")
-			t.Setenv("DEVBRIDGE_CODING_V1_HELPER", "1")
-			t.Setenv("DEVBRIDGE_CODING_V1_WIRE_LOG", wire)
-			t.Setenv("DEVBRIDGE_TEST_FILE_VERIFICATION", "1")
+	for _, enrolled := range []bool{false, true} {
+		for _, missing := range []bool{false, true} {
+			name := "observed"
 			if missing {
-				t.Setenv("DEVBRIDGE_CODING_DUPLICATE_VERIFICATION_ROOT", "1")
+				name = "missing-member-command"
 			}
-			executable := "'" + strings.ReplaceAll(os.Args[0], "'", "'\"'\"'") + "'"
-			if err := os.WriteFile(launcher, []byte("#!/bin/sh\nexec "+executable+" -test.run=^TestMultiRepositoryCodingV1AppServerHelper$\n"), 0700); err != nil {
-				t.Fatal(err)
+			if enrolled {
+				name = "worker-" + name
 			}
-			f.plane.Coordinator.Codex = execution.DefaultCodexFactory{Config: codex.Config{CodexPath: launcher, AgentRuntime: f.plane.Runs.AgentRuntime}, DynamicToolHandler: func(context.Context, codex.DynamicToolCallParams) (codex.DynamicToolCallResponse, error) {
-				return codex.DynamicToolCallResponse{Success: false}, nil
-			}}
-			p, err := f.facade.PrepareConfirmation(f.ctx, c.PrepareInput{AISessionID: f.session, RequestID: "file-verify-start", Purpose: c.Execution, Action: "START_DIRECT_FILE", Execution: &c.ExecutionBody{Action: "START_DIRECT_FILE", TaskID: f.task, FeatureAreaID: f.area, ReviewID: f.review, DecisionID: wp.DecisionID(f.review), TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID}, Variants: []c.Variant{{ID: "files", Summary: "GPT implementation with Codex verification", ImplementationMode: task.ImplementationDirectFile, RepositoryTargets: current.RepositoryTargets, PrimaryMemberID: current.PrimaryMemberID, WorkSpec: &current.WorkSpec, VerificationSpec: &current.VerificationSpec}}})
-			if err != nil {
-				t.Fatal(err)
-			}
-			opts, err := f.facade.ConfirmationOptions(f.ctx, c.OptionsInput{ReadInput: c.ReadInput{AISessionID: f.session, IntentID: p.IntentID, Version: p.Version, Purpose: p.Purpose, ContentHash: p.ContentHash}})
-			if err != nil || len(opts.BackendCandidates) == 0 {
-				t.Fatalf("options %+v %v", opts, err)
-			}
-			if output := os.Getenv("DEVBRIDGE_FILE_VERIFICATION_PREVIEW"); output != "" && !missing {
-				data, e := json.Marshal(map[string]any{"intent": p, "options": opts})
-				if e != nil {
-					t.Fatal(e)
+			t.Run(name, func(t *testing.T) {
+				f, current := approveDirectFixture(t, false, false)
+				installProtocolFixturePlatform(t, f)
+				root := t.TempDir()
+				launcher := filepath.Join(root, "codex-fixture")
+				wire := filepath.Join(root, "wire.jsonl")
+				t.Setenv("DEVBRIDGE_CODING_V1_HELPER", "1")
+				t.Setenv("DEVBRIDGE_CODING_V1_WIRE_LOG", wire)
+				t.Setenv("DEVBRIDGE_TEST_FILE_VERIFICATION", "1")
+				if missing {
+					t.Setenv("DEVBRIDGE_CODING_DUPLICATE_VERIFICATION_ROOT", "1")
 				}
-				if e = os.WriteFile(output, data, 0600); e != nil {
-					t.Fatal(e)
+				executable := "'" + strings.ReplaceAll(os.Args[0], "'", "'\"'\"'") + "'"
+				if err := os.WriteFile(launcher, []byte("#!/bin/sh\nexec "+executable+" -test.run=^TestMultiRepositoryCodingV1AppServerHelper$\n"), 0700); err != nil {
+					t.Fatal(err)
 				}
-			}
-			backend := opts.BackendCandidates[0]
-			runtime := codexruntime.NextRunRuntimeConfig{Model: "gpt-5.6-terra", ReasoningEffort: "high"}
-			confirmed, err := f.facade.CommitConfirmation(f.ctx, c.CommitInput{AISessionID: f.session, IntentID: p.IntentID, Version: p.Version, Purpose: p.Purpose, Action: p.Action, RequestID: "file-verify-start-commit", ContentHash: p.ContentHash, VariantID: "files", Selection: c.Selection{RuntimeConfig: &runtime, Backend: &codexconfig.BackendSelectionInput{ConfigID: backend.ConfigID, ConfigFingerprint: backend.ConfigFingerprint}}})
-			if err != nil || confirmed.State != "COMPLETED" {
-				t.Fatalf("start %+v %v", confirmed, err)
-			}
-			state, err := f.facade.DirectFileTaskStatus(f.ctx, f.session, f.task)
-			if err != nil || state.State != "ACTIVE" {
-				t.Fatalf("file grant %+v %v", state, err)
-			}
-			for _, target := range current.RepositoryTargets {
-				in := directInput(f, state, target)
-				observed, err := f.facade.FileRead(f.ctx, in)
+				f.plane.Coordinator.Codex = execution.DefaultCodexFactory{Config: codex.Config{CodexPath: launcher, AgentRuntime: f.plane.Runs.AgentRuntime}, DynamicToolHandler: func(context.Context, codex.DynamicToolCallParams) (codex.DynamicToolCallResponse, error) {
+					return codex.DynamicToolCallResponse{Success: false}, nil
+				}}
+				p, err := f.facade.PrepareConfirmation(f.ctx, c.PrepareInput{AISessionID: f.session, RequestID: "file-verify-start", Purpose: c.Execution, Action: "START_DIRECT_FILE", Execution: &c.ExecutionBody{Action: "START_DIRECT_FILE", TaskID: f.task, FeatureAreaID: f.area, ReviewID: f.review, DecisionID: wp.DecisionID(f.review), TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID}, Variants: []c.Variant{{ID: "files", Summary: "GPT implementation with Codex verification", ImplementationMode: task.ImplementationDirectFile, RepositoryTargets: current.RepositoryTargets, PrimaryMemberID: current.PrimaryMemberID, WorkSpec: &current.WorkSpec, VerificationSpec: &current.VerificationSpec}}})
 				if err != nil {
 					t.Fatal(err)
 				}
-				in.RequestID = "file-verify-write-" + target.RepositoryID
-				in.ExpectedDigest = observed.Digest
-				name := "sdk"
-				if target.RepositoryID == f.repos["app"] {
-					name = "app"
+				opts, err := f.facade.ConfirmationOptions(f.ctx, c.OptionsInput{ReadInput: c.ReadInput{AISessionID: f.session, IntentID: p.IntentID, Version: p.Version, Purpose: p.Purpose, ContentHash: p.ContentHash}})
+				if err != nil || len(opts.BackendCandidates) == 0 {
+					t.Fatalf("options %+v %v", opts, err)
 				}
-				in.Content = "coded " + name + "\n"
-				if _, err = f.facade.FileReplace(f.ctx, in); err != nil {
-					t.Fatal(err)
+				if output := os.Getenv("DEVBRIDGE_FILE_VERIFICATION_PREVIEW"); output != "" && !missing {
+					data, e := json.Marshal(map[string]any{"intent": p, "options": opts})
+					if e != nil {
+						t.Fatal(e)
+					}
+					if e = os.WriteFile(output, data, 0600); e != nil {
+						t.Fatal(e)
+					}
 				}
-			}
-			input := directfile.ImplementationResultInput{AISessionID: f.session, TaskID: f.task, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID, RequestID: "file-verify-submit", Summary: "GPT changed both exact members", ProtocolVersion: 2, RuntimeEpoch: state.RuntimeEpoch, GrantGeneration: state.GrantGeneration}
-			result, err := f.facade.SubmitFileImplementationResult(f.ctx, input)
-			if err != nil || result.ExecutionID == "" || result.VerificationStartError != "" || result.VerificationRunID == "" {
-				t.Fatalf("submission %+v %v", result, err)
-			}
-			deadline := time.Now().Add(20 * time.Second)
-			var vr run.Run
-			for time.Now().Before(deadline) {
-				vr, err = f.facade.GetRunForSession(f.ctx, f.session, result.VerificationRunID)
-				if err != nil {
-					t.Fatal(err)
+				backend := opts.BackendCandidates[0]
+				runtime := codexruntime.NextRunRuntimeConfig{Model: "gpt-5.6-terra", ReasoningEffort: "high"}
+				confirmed, err := f.facade.CommitConfirmation(f.ctx, c.CommitInput{AISessionID: f.session, IntentID: p.IntentID, Version: p.Version, Purpose: p.Purpose, Action: p.Action, RequestID: "file-verify-start-commit", ContentHash: p.ContentHash, VariantID: "files", Selection: c.Selection{RuntimeConfig: &runtime, Backend: &codexconfig.BackendSelectionInput{ConfigID: backend.ConfigID, ConfigFingerprint: backend.ConfigFingerprint}}})
+				if err != nil || confirmed.State != "COMPLETED" {
+					t.Fatalf("start %+v %v", confirmed, err)
 				}
-				if vr.Status == run.StatusSucceeded || vr.Status == run.StatusFailed {
-					break
+				state, err := f.facade.DirectFileTaskStatus(f.ctx, f.session, f.task)
+				if err != nil || state.State != "ACTIVE" {
+					t.Fatalf("file grant %+v %v", state, err)
 				}
-				time.Sleep(30 * time.Millisecond)
-			}
-			if vr.Status == run.StatusSucceeded && vr.ResultProtocol == run.NaturalResultProtocol && vr.VerificationReport == nil {
-				submitNaturalFixtureAnalysis(t, f, vr.ID, nil)
-				vr, err = f.facade.GetRunForSession(f.ctx, f.session, vr.ID)
-				if err != nil {
-					t.Fatal(err)
+				var workerClaim *directfile.WorkerClaimIdentity
+				var workerInput *directfile.WorkerClaimInput
+				if enrolled {
+					in := directfile.WorkerClaimInput{WorkerTarget: directfile.WorkerTarget{AISessionID: f.session, FeatureAreaID: f.area, TaskID: f.task, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, DecisionID: state.DecisionID, WorkflowID: state.WorkflowID, ProtocolVersion: 2, RuntimeEpoch: state.RuntimeEpoch, GrantGeneration: state.GrantGeneration}, WorkerClaimIdentity: directfile.WorkerClaimIdentity{RequestID: "file-verify-delivery", WorkerID: "fixture-external-worker"}}
+					claimed, e := f.facade.ClaimFileImplementationWorker(f.ctx, in)
+					if e != nil || claimed.ExecutionPayload == nil || claimed.ExecutionPayload.Instruction != current.WorkSpec.CodexInstruction || claimed.ExecutionPayload.Verification.Mode != task.VerificationModeRun {
+						for cause := e; cause != nil; cause = errors.Unwrap(cause) {
+							t.Logf("worker claim cause %T: %v", cause, cause)
+						}
+						t.Fatalf("worker must preserve required separate verification: %+v %v", claimed, e)
+					}
+					workerClaim = &in.WorkerClaimIdentity
+					workerInput = &in
 				}
-			}
-			if vr.Status != run.StatusSucceeded || vr.Purpose != run.PurposeVerification || vr.VerificationReport == nil {
-				t.Fatalf("verification status=%s failure=%+v report=%+v", vr.Status, vr.Failure, vr.VerificationReport)
-			}
-			var implementations, verifications int
-			if err = f.plane.DB.SQL().QueryRow(`SELECT count(*) FILTER(WHERE purpose='IMPLEMENTATION'),count(*) FILTER(WHERE purpose='VERIFICATION') FROM runs WHERE execution_proposal_id=?`, result.ExecutionID).Scan(&implementations, &verifications); err != nil || implementations != 0 || verifications != 1 {
-				t.Fatalf("Run ownership implementation=%d verification=%d %v", implementations, verifications, err)
-			}
-			replay, err := f.facade.SubmitFileImplementationResult(f.ctx, input)
-			if err != nil || replay.ExecutionID != result.ExecutionID || replay.VerificationRunID != result.VerificationRunID {
-				t.Fatalf("submission replay %+v %v", replay, err)
-			}
-			state, err = f.facade.DirectFileTaskStatus(f.ctx, f.session, f.task)
-			if err != nil || state.State != "CLOSED" || state.Enabled {
-				t.Fatalf("closed file authority %+v %v", state, err)
-			}
-			_, err = f.facade.FileReplace(f.ctx, directInput(f, state, current.RepositoryTargets[0]))
-			if err == nil {
-				t.Fatal("file writes allowed during/after verification")
-			}
-			reopenDirectDeliveryFixture(t, f)
-			acceptInput := wp.TaskAcceptanceInput{AISessionID: f.session, TaskID: f.task, FeatureAreaID: f.area, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, ExecutionID: result.ExecutionID, DecisionID: wp.TaskAcceptanceDecisionID(result.ExecutionID), Option: "ACCEPT", RequestID: "file-verify-accept"}
-			if !missing {
-				plan, e := f.plane.WorkflowProgression.PrepareTaskCompletionPlan(f.ctx, current.ProjectID, f.task, result.ExecutionID, current.CurrentDefinitionRevisionID)
-				if e != nil {
-					t.Fatal(e)
+				for _, target := range current.RepositoryTargets {
+					in := directInput(f, state, target)
+					observed, err := f.facade.FileRead(f.ctx, in)
+					if err != nil {
+						t.Fatal(err)
+					}
+					in.WorkerClaim = workerClaim
+					in.RequestID = "file-verify-write-" + target.RepositoryID
+					in.ExpectedDigest = observed.Digest
+					name := "sdk"
+					if target.RepositoryID == f.repos["app"] {
+						name = "app"
+					}
+					in.Content = "coded " + name + "\n"
+					if _, err = f.facade.FileReplace(f.ctx, in); err != nil {
+						t.Fatal(err)
+					}
 				}
-				acceptInput.CompletionPlan = &plan
-			}
-			_, err = f.facade.ResolveTaskAcceptance(f.ctx, acceptInput)
-			if missing {
+				input := directfile.ImplementationResultInput{WorkerClaim: workerClaim, AISessionID: f.session, TaskID: f.task, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID, RequestID: "file-verify-submit", Summary: "GPT changed both exact members", ProtocolVersion: 2, RuntimeEpoch: state.RuntimeEpoch, GrantGeneration: state.GrantGeneration}
+				result, err := f.facade.SubmitFileImplementationResult(f.ctx, input)
+				if err != nil || result.ExecutionID == "" || result.VerificationStartError != "" || result.VerificationRunID == "" {
+					t.Fatalf("submission %+v %v", result, err)
+				}
+				deadline := time.Now().Add(20 * time.Second)
+				var vr run.Run
+				for time.Now().Before(deadline) {
+					vr, err = f.facade.GetRunForSession(f.ctx, f.session, result.VerificationRunID)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if vr.Status == run.StatusSucceeded || vr.Status == run.StatusFailed {
+						break
+					}
+					time.Sleep(30 * time.Millisecond)
+				}
+				if vr.Status == run.StatusSucceeded && vr.ResultProtocol == run.NaturalResultProtocol && vr.VerificationReport == nil {
+					submitNaturalFixtureAnalysis(t, f, vr.ID, nil)
+					vr, err = f.facade.GetRunForSession(f.ctx, f.session, vr.ID)
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
+				if vr.Status != run.StatusSucceeded || vr.Purpose != run.PurposeVerification || vr.VerificationReport == nil {
+					t.Fatalf("verification status=%s failure=%+v report=%+v", vr.Status, vr.Failure, vr.VerificationReport)
+				}
+				if workerInput != nil {
+					worker, workerErr := f.facade.GetFileImplementationWorker(f.ctx, *workerInput)
+					exact, exactErr := f.facade.GetFileImplementationResult(f.ctx, directfile.ImplementationResultReadInput{AISessionID: f.session, TaskID: f.task, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID})
+					if workerErr != nil || exactErr != nil || worker.ResultReceipt == nil || worker.ResultReceipt.ExecutionID != exact.ExecutionID || worker.ResultReceipt.VerificationRunID != exact.VerificationRunID || worker.ResultReceipt.VerificationStatus != exact.VerificationStatus || worker.ResultReceipt.Accepted {
+						t.Fatalf("worker readback hides required verification: worker=%+v exact=%+v errors=%v/%v", worker, exact, workerErr, exactErr)
+					}
+				}
+				var implementations, verifications int
+				if err = f.plane.DB.SQL().QueryRow(`SELECT count(*) FILTER(WHERE purpose='IMPLEMENTATION'),count(*) FILTER(WHERE purpose='VERIFICATION') FROM runs WHERE execution_proposal_id=?`, result.ExecutionID).Scan(&implementations, &verifications); err != nil || implementations != 0 || verifications != 1 {
+					t.Fatalf("Run ownership implementation=%d verification=%d %v", implementations, verifications, err)
+				}
+				replay, err := f.facade.SubmitFileImplementationResult(f.ctx, input)
+				if err != nil || replay.ExecutionID != result.ExecutionID || replay.VerificationRunID != result.VerificationRunID {
+					t.Fatalf("submission replay %+v %v", replay, err)
+				}
+				state, err = f.facade.DirectFileTaskStatus(f.ctx, f.session, f.task)
+				if err != nil || state.State != "CLOSED" || state.Enabled {
+					t.Fatalf("closed file authority %+v %v", state, err)
+				}
+				_, err = f.facade.FileReplace(f.ctx, directInput(f, state, current.RepositoryTargets[0]))
 				if err == nil {
-					t.Fatal("agent claim replaced missing member command")
+					t.Fatal("file writes allowed during/after verification")
 				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			delivered, err := f.facade.GetTask(f.ctx, f.task)
-			completion, completionErr := f.plane.WorkflowProgression.ReadTaskCompletion(f.ctx, current.ProjectID, f.task)
-			if err != nil || delivered.Status != task.StatusSucceeded || completionErr != nil || completion == nil || completion.State != "COMPLETED" {
-				t.Fatalf("delivery %+v %v", delivered, err)
-			}
-			data, err := os.ReadFile(wire)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if strings.Contains(string(data), "turn-implementation") {
-				t.Fatal("GPT file work fabricated a Codex implementation turn")
-			}
-		})
+				reopenDirectDeliveryFixture(t, f)
+				acceptInput := wp.TaskAcceptanceInput{AISessionID: f.session, TaskID: f.task, FeatureAreaID: f.area, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, ExecutionID: result.ExecutionID, DecisionID: wp.TaskAcceptanceDecisionID(result.ExecutionID), Option: "ACCEPT", RequestID: "file-verify-accept"}
+				if !missing {
+					plan, e := f.plane.WorkflowProgression.PrepareTaskCompletionPlan(f.ctx, current.ProjectID, f.task, result.ExecutionID, current.CurrentDefinitionRevisionID)
+					if e != nil {
+						t.Fatal(e)
+					}
+					acceptInput.CompletionPlan = &plan
+				}
+				_, err = f.facade.ResolveTaskAcceptance(f.ctx, acceptInput)
+				if missing {
+					if err == nil {
+						t.Fatal("agent claim replaced missing member command")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				delivered, err := f.facade.GetTask(f.ctx, f.task)
+				completion, completionErr := f.plane.WorkflowProgression.ReadTaskCompletion(f.ctx, current.ProjectID, f.task)
+				if err != nil || delivered.Status != task.StatusSucceeded || completionErr != nil || completion == nil || completion.State != "COMPLETED" {
+					t.Fatalf("delivery %+v %v", delivered, err)
+				}
+				if workerInput != nil {
+					worker, workerErr := f.facade.GetFileImplementationWorker(f.ctx, *workerInput)
+					if workerErr != nil || worker.ResultReceipt == nil || !worker.ResultReceipt.Accepted {
+						t.Fatalf("worker readback lost separately recorded acceptance: %+v %v", worker, workerErr)
+					}
+				}
+				data, err := os.ReadFile(wire)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strings.Contains(string(data), "turn-implementation") {
+					t.Fatal("GPT file work fabricated a Codex implementation turn")
+				}
+			})
+		}
 	}
+
 }
 
 func TestDirectFileScalarCodexVerification(t *testing.T) {

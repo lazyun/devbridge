@@ -33,7 +33,7 @@ var SurfaceBusinessToolNames = []string{
 	"agent_context_reset", "agent_operation_recover", "feature_area_submit", "task_commit_retry", "task_commit_reprepare", "task_commit_retry_candidates", "feature_area_merge_reprepare", "feature_area_merge_retry_candidates",
 	"task_stop_and_revise",
 	"repository_unlink_prepare", "repository_unlink_read", "repository_unlink_commit",
-	"file_implementation_result_get", "file_implementation_result_submit", "file_implementation_accept", "direct_file_enable", "direct_file_disable", "direct_file_reconcile_task_authorization", "file_list", "file_read", "file_write", "document_create", "repository_search", "repository_file_read",
+	"file_worker_claim", "file_worker_get", "file_implementation_result_get", "file_implementation_result_submit", "file_implementation_accept", "direct_file_enable", "direct_file_disable", "direct_file_reconcile_task_authorization", "file_list", "file_read", "file_write", "document_create", "repository_search", "repository_file_read",
 }
 
 func RegisterSurfaceBusinessTools(server *sdkmcp.Server, service BridgeService) {
@@ -119,6 +119,7 @@ func RegisterSurfaceBusinessTools(server *sdkmcp.Server, service BridgeService) 
 	RegisterUpperReviewTools(server, service)
 	registerRunAnalysisTools(server, service)
 	registerFileImplementationResults(server, service)
+	registerDirectFileWorkerTools(server, service)
 }
 
 // Tagged objects remain typed here and are closed/disjoint in the wire schema.

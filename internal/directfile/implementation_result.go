@@ -16,16 +16,17 @@ type ImplementationResultReadInput struct {
 
 // ImplementationResultInput reports file work; it never asserts command execution.
 type ImplementationResultInput struct {
-	AISessionID              string `json:"aiSessionId"`
-	TaskID                   string `json:"taskId"`
-	TaskDefinitionRevisionID string `json:"taskDefinitionRevisionId"`
-	WorkflowID               string `json:"workflowId"`
-	RequestID                string `json:"requestId"`
-	Summary                  string `json:"summary"`
-	VerificationNotes        string `json:"verificationNotes"`
-	ProtocolVersion          int    `json:"protocolVersion,omitempty"`
-	RuntimeEpoch             string `json:"runtimeEpoch,omitempty"`
-	GrantGeneration          int64  `json:"grantGeneration,omitempty"`
+	WorkerClaim              *WorkerClaimIdentity `json:"workerClaim,omitempty"`
+	AISessionID              string               `json:"aiSessionId"`
+	TaskID                   string               `json:"taskId"`
+	TaskDefinitionRevisionID string               `json:"taskDefinitionRevisionId"`
+	WorkflowID               string               `json:"workflowId"`
+	RequestID                string               `json:"requestId"`
+	Summary                  string               `json:"summary"`
+	VerificationNotes        string               `json:"verificationNotes"`
+	ProtocolVersion          int                  `json:"protocolVersion,omitempty"`
+	RuntimeEpoch             string               `json:"runtimeEpoch,omitempty"`
+	GrantGeneration          int64                `json:"grantGeneration,omitempty"`
 	// Members are advisory completion statements. The result store obtains all
 	// snapshots, paths and identities itself from the frozen authorization.
 	Members []MemberResult `json:"members,omitempty"`

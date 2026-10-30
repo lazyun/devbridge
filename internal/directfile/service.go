@@ -327,7 +327,14 @@ func (s *Service) Move(ctx context.Context, in Input) (out Result, err error) {
 }
 
 func operationFromInput(kind string, in Input) Operation {
-	return Operation{Kind: kind, Path: in.Path, Destination: in.Destination,
+	// Snapshot the correlation token with the operation payload; an adapter's
+	// later mutation of its input must not alter the durable intent identity.
+	var worker *WorkerClaimIdentity
+	if in.WorkerClaim != nil {
+		copy := *in.WorkerClaim
+		worker = &copy
+	}
+	return Operation{WorkerClaim: worker, Kind: kind, Path: in.Path, Destination: in.Destination,
 		RepositoryID: in.RepositoryID, MemberID: in.MemberID, MemberVersion: in.MemberVersion,
 		DestinationRepositoryID: in.DestinationRepositoryID, DestinationMemberID: in.DestinationMemberID,
 		RequestID: in.RequestID, RuntimeEpoch: in.RuntimeEpoch, GrantGeneration: in.GrantGeneration, ExpectedDigest: in.ExpectedDigest,

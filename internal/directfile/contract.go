@@ -50,6 +50,7 @@ type Scope struct {
 	WorkflowID    string `json:"workflowId"`
 }
 type Input struct {
+	WorkerClaim *WorkerClaimIdentity `json:"workerClaim,omitempty"`
 	// RequestID, RuntimeEpoch and GrantGeneration fence a v2 task grant.  They
 	// are deliberately optional here: standalone and historical v1 callers use
 	// the same small file API, while the durable authority requires them for a
@@ -157,6 +158,8 @@ type operationKey struct{}
 type resultCaptureKey struct{}
 type resultCapture struct{ value Result }
 type Operation struct {
+	// Omission preserves historical mutation payload hashes exactly.
+	WorkerClaim                                  *WorkerClaimIdentity `json:"workerClaim,omitempty"`
 	RepositoryID, MemberID                       string
 	MemberVersion                                int
 	DestinationRepositoryID, DestinationMemberID string

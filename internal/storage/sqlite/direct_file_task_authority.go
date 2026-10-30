@@ -288,6 +288,23 @@ func currentTaskFileState(ctx context.Context, q definitionQuerier, v taskFileAu
 		v.FailureReason = failure.Message
 		return v.State, nil
 	}
+	if v.ProtocolVersion == 2 {
+		var epoch string
+		if err := q.QueryRowContext(ctx, `SELECT epoch_id FROM runtime_authority WHERE singleton=1`).Scan(&epoch); err != nil {
+			return directfile.State{}, err
+		}
+		if v.State.State == "RECOVERY_REQUIRED" || v.RuntimeEpoch != epoch {
+			enrolled, err := directFileWorkerEnrolled(ctx, q, v.WorkflowID)
+			if err != nil {
+				return directfile.State{}, err
+			}
+			if enrolled {
+				v.Enabled, v.State.State, v.AllowedOperations = false, "RECOVERY_REQUIRED", []string{}
+				v.FailureCode, v.FailureReason = directfile.WorkerContinuationUnsupported, fileWorkerRecoveryReason
+				return v.State, nil
+			}
+		}
+	}
 	if v.State.State == "ACTIVE" {
 		if v.ProtocolVersion == 2 {
 			members, memberErr := readTaskFileMembers(ctx, q, v.WorkflowID)
@@ -495,6 +512,15 @@ func (a *DirectFileAuthority) StartTaskAuthorization(ctx context.Context, in dir
 		}
 		if v.ProtocolVersion != 2 || v.AISessionID != in.AISessionID || v.TaskID != t.ID || v.TaskDefinitionRevisionID != revision.ID || v.DecisionID != t.ReviewApprovalID || (in.GrantGeneration != 0 && in.GrantGeneration != v.GrantGeneration) {
 			return directfile.State{}, fileResultConflict()
+		}
+		if in.Action == "RECOVER_DIRECT_FILE" {
+			enrolled, e := directFileWorkerEnrolled(ctx, tx, v.WorkflowID)
+			if e != nil {
+				return directfile.State{}, e
+			}
+			if enrolled {
+				return directfile.State{}, directfile.Failure(directfile.WorkerContinuationUnsupported, fileWorkerRecoveryReason)
+			}
 		}
 		now := time.Now().UTC()
 		if in.Action == "CANCEL_DIRECT_FILE" {

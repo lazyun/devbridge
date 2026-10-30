@@ -33,7 +33,9 @@ const directFileDestinationMemberSchema = `,"destinationRepositoryId":{"type":"s
 // v2 task mutations are independently replayable operations.  The authority
 // validates these values against its durable grant; the schema ensures a v2
 // caller cannot accidentally omit one and fall back to legacy semantics.
-const directFileMutationMetaSchema = `,"protocolVersion":{"type":"integer","enum":[1,2]},"requestId":{"type":"string","minLength":1,"maxLength":128},"runtimeEpoch":{"type":"string","minLength":1,"maxLength":128},"grantGeneration":{"type":"integer","minimum":1},"expectedDigest":{"type":"string","pattern":"^[a-f0-9]{64}$"}`
+const directFileWorkerIdentityJSONSchema = `{"type":"object","properties":{"requestId":{"type":"string","minLength":1,"maxLength":128},"workerId":{"type":"string","minLength":1,"maxLength":128}},"required":["requestId","workerId"],"additionalProperties":false}`
+
+const directFileMutationMetaSchema = `,"workerClaim":` + directFileWorkerIdentityJSONSchema + `,"protocolVersion":{"type":"integer","enum":[1,2]},"requestId":{"type":"string","minLength":1,"maxLength":128},"runtimeEpoch":{"type":"string","minLength":1,"maxLength":128},"grantGeneration":{"type":"integer","minimum":1},"expectedDigest":{"type":"string","pattern":"^[a-f0-9]{64}$"}`
 const directFileV2MutationRequiredSchema = `,{"if":{"properties":{"protocolVersion":{"const":2}},"required":["protocolVersion"]},"then":{"required":["requestId","runtimeEpoch","grantGeneration","repositoryId","memberId","memberVersion"]}}`
 const directFileV2ExistingMutationRequiredSchema = `,{"if":{"properties":{"protocolVersion":{"const":2}},"required":["protocolVersion"]},"then":{"required":["requestId","runtimeEpoch","grantGeneration","expectedDigest","repositoryId","memberId","memberVersion"]}}`
 
@@ -111,7 +113,7 @@ func RegisterDirectFileTools(server *sdkmcp.Server, service BridgeService) {
 
 	add("file_list", "List files", "List immediate entries in a worktree-relative directory. Use either a Direct File workflowId or the exact reviewTarget from review_access_get. UPPER_LLM access is read-only; workflowComplete only closes reading and still requires review_result_submit.", reviewFileReadSchema(), df.DirectFileFileList)
 	add("file_read", "Read file", "Read one bounded regular file without interpretation. Use either a Direct File workflowId or the exact reviewTarget from review_access_get. UPPER_LLM access is read-only; workflowComplete only closes reading and still requires review_result_submit.", reviewFileReadSchema(), df.DirectFileFileRead)
-	sdkmcp.AddTool(server, &sdkmcp.Tool{Name: "file_write", Title: "Write whole file", Description: "Apply exactly CREATE, REPLACE, DELETE or MOVE under an existing ACTIVE workflowId from explicit standalone authorization or a separately confirmed START_DIRECT_FILE Task step. A v2 mutation carries its exact requestId, runtimeEpoch, grantGeneration and member identity; REPLACE, DELETE and MOVE also carry the observed source digest. CREATE never overwrites; REPLACE requires an existing regular file; DELETE is nonrecursive; MOVE does not overwrite or fall back across filesystems. Existing Core containment, symlink and size checks remain authoritative. No implicit enable, upsert, patch, append or shell. Set workflowComplete on the final call to revoke authorization.", InputSchema: json.RawMessage(SurfaceFileWriteInputSchema), OutputSchema: json.RawMessage(directFileOutputSchema), Annotations: stateChangingAnnotations("Write whole file", true)}, func(ctx context.Context, _ *sdkmcp.CallToolRequest, in SurfaceFileWriteInput) (*sdkmcp.CallToolResult, directFileToolOutput, error) {
+	sdkmcp.AddTool(server, &sdkmcp.Tool{Name: "file_write", Title: "Write whole file", Description: "Apply exactly CREATE, REPLACE, DELETE or MOVE under an existing ACTIVE workflowId from explicit standalone authorization or a separately confirmed START_DIRECT_FILE Task step. An enrolled file_worker_claim workflow also requires its exact workerClaim on every mutation. A v2 mutation carries its exact requestId, runtimeEpoch, grantGeneration and member identity; REPLACE, DELETE and MOVE also carry the observed source digest. CREATE never overwrites; REPLACE requires an existing regular file; DELETE is nonrecursive; MOVE does not overwrite or fall back across filesystems. Existing Core containment, symlink and size checks remain authoritative. No implicit enable, upsert, patch, append or shell. Set workflowComplete on the final call to revoke authorization.", InputSchema: json.RawMessage(SurfaceFileWriteInputSchema), OutputSchema: json.RawMessage(directFileOutputSchema), Annotations: stateChangingAnnotations("Write whole file", true)}, func(ctx context.Context, _ *sdkmcp.CallToolRequest, in SurfaceFileWriteInput) (*sdkmcp.CallToolResult, directFileToolOutput, error) {
 		out, err := SurfaceFileWriteCore(ctx, service, in)
 		if err != nil {
 			return directFileStructuredError(err)
@@ -167,16 +169,17 @@ func (s optionalDirectFileService) DirectFileFileRead(ctx context.Context, in di
 }
 
 type SurfaceFileWriteInput struct {
-	ProtocolVersion         int    `json:"protocolVersion,omitempty"`
-	RequestID               string `json:"requestId,omitempty"`
-	RuntimeEpoch            string `json:"runtimeEpoch,omitempty"`
-	GrantGeneration         int64  `json:"grantGeneration,omitempty"`
-	ExpectedDigest          string `json:"expectedDigest,omitempty"`
-	RepositoryID            string `json:"repositoryId,omitempty"`
-	MemberID                string `json:"memberId,omitempty"`
-	MemberVersion           int    `json:"memberVersion,omitempty"`
-	DestinationRepositoryID string `json:"destinationRepositoryId,omitempty"`
-	DestinationMemberID     string `json:"destinationMemberId,omitempty"`
+	WorkerClaim             *directfile.WorkerClaimIdentity `json:"workerClaim,omitempty"`
+	ProtocolVersion         int                             `json:"protocolVersion,omitempty"`
+	RequestID               string                          `json:"requestId,omitempty"`
+	RuntimeEpoch            string                          `json:"runtimeEpoch,omitempty"`
+	GrantGeneration         int64                           `json:"grantGeneration,omitempty"`
+	ExpectedDigest          string                          `json:"expectedDigest,omitempty"`
+	RepositoryID            string                          `json:"repositoryId,omitempty"`
+	MemberID                string                          `json:"memberId,omitempty"`
+	MemberVersion           int                             `json:"memberVersion,omitempty"`
+	DestinationRepositoryID string                          `json:"destinationRepositoryId,omitempty"`
+	DestinationMemberID     string                          `json:"destinationMemberId,omitempty"`
 
 	directfile.Scope
 	Action           string  `json:"action"`
@@ -205,7 +208,7 @@ func SurfaceFileWriteCore(ctx context.Context, service BridgeService, in Surface
 	if !ok {
 		return directfile.Result{}, directfile.Failure(directfile.NotEnabled, "Direct File capability unavailable")
 	}
-	value := directfile.Input{Scope: in.Scope, Path: in.Path, WorkflowComplete: in.WorkflowComplete, RequestID: in.RequestID, RuntimeEpoch: in.RuntimeEpoch, GrantGeneration: in.GrantGeneration, ExpectedDigest: in.ExpectedDigest, RepositoryID: in.RepositoryID, MemberID: in.MemberID, MemberVersion: in.MemberVersion, DestinationRepositoryID: in.DestinationRepositoryID, DestinationMemberID: in.DestinationMemberID}
+	value := directfile.Input{WorkerClaim: in.WorkerClaim, Scope: in.Scope, Path: in.Path, WorkflowComplete: in.WorkflowComplete, RequestID: in.RequestID, RuntimeEpoch: in.RuntimeEpoch, GrantGeneration: in.GrantGeneration, ExpectedDigest: in.ExpectedDigest, RepositoryID: in.RepositoryID, MemberID: in.MemberID, MemberVersion: in.MemberVersion, DestinationRepositoryID: in.DestinationRepositoryID, DestinationMemberID: in.DestinationMemberID}
 	if in.Action != "MOVE" && (in.DestinationRepositoryID != "" || in.DestinationMemberID != "") {
 		return directfile.Result{}, directfile.Failure(directfile.InvalidTarget, "destination identity is valid only for MOVE")
 	}

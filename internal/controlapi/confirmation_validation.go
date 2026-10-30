@@ -12,6 +12,7 @@ import (
 
 	c "github.com/lazyun/devbridge/internal/confirmation"
 	"github.com/lazyun/devbridge/internal/delivery"
+	"github.com/lazyun/devbridge/internal/directfile"
 	"github.com/lazyun/devbridge/internal/featurearea"
 	"github.com/lazyun/devbridge/internal/run"
 	"github.com/lazyun/devbridge/internal/task"
@@ -470,6 +471,12 @@ func (f *Facade) validatePreparedConfirmation(ctx context.Context, in *c.Prepare
 				}
 				if b.WorkflowID == "" || b.WorkflowID != state.WorkflowID || b.RuntimeEpoch != state.RuntimeEpoch || b.GrantGeneration != state.GrantGeneration {
 					return invalid("exact observed Direct File generation required")
+				}
+				if in.Action == "RECOVER_DIRECT_FILE" && state.FailureCode == directfile.WorkerContinuationUnsupported {
+					return directfile.Failure(directfile.WorkerContinuationUnsupported, state.FailureReason)
+				}
+				if in.Action == "RECOVER_DIRECT_FILE" && state.State != "RECOVERY_REQUIRED" && state.State != "PREPARING" {
+					return directfile.Failure(directfile.NotEnabled, "Direct File workflow does not require recovery")
 				}
 			}
 		case "START_APPROVED":

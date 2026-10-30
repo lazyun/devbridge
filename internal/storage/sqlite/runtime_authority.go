@@ -33,6 +33,25 @@ func blockProgressionGuidance(g *wp.Guidance, state, action, message string) {
 }
 
 func (s *WorkflowProgressionStore) applyDirectFileGuidance(ctx context.Context, q definitionQuerier, g *wp.Guidance) error {
+	// An enrolled file worker may already have advanced the Task to IMPLEMENTING.
+	// Its exact stale authority must not fall through to generic runtime recovery.
+	if g.TaskID != "" && g.TaskDefinitionRevisionID != "" {
+		var blocked, unresolved bool
+		if err := q.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM direct_file_task_authorizations f JOIN direct_file_worker_claims w ON w.workflow_id=f.workflow_id WHERE f.task_id=? AND f.task_definition_revision_id=? AND f.project_id=? AND f.feature_area_id=? AND f.protocol_version=2 AND f.state<>'CLOSED' AND (f.state='RECOVERY_REQUIRED' OR f.runtime_epoch<>(SELECT epoch_id FROM runtime_authority WHERE singleton=1))), EXISTS(SELECT 1 FROM direct_file_operation_receipts r JOIN direct_file_task_authorizations f ON f.workflow_id=r.workflow_id WHERE f.task_id=? AND f.task_definition_revision_id=? AND r.state IN ('PENDING','UNKNOWN'))`, g.TaskID, g.TaskDefinitionRevisionID, g.ProjectID, g.FeatureAreaID, g.TaskID, g.TaskDefinitionRevisionID).Scan(&blocked, &unresolved); err != nil {
+			return err
+		}
+		if blocked {
+			action := "CANCEL_DIRECT_FILE"
+			if unresolved {
+				action = "READ_DIRECT_FILE_AUTHORIZATION"
+			}
+			blockProgressionGuidance(g, string(g.TaskPhase), action, fileWorkerRecoveryReason)
+			g.Generation = ""
+			encoded, _ := json.Marshal(g)
+			g.Generation = workflowHash(string(encoded))
+			return nil
+		}
+	}
 	if g.TaskID != "" && g.NextAction.Code == "START_EXECUTION" {
 		var mode string
 		err := q.QueryRowContext(ctx, `SELECT CASE WHEN json_extract(d.payload_json,'$.workSpec.implementationMode')='DIRECT_FILE' OR EXISTS(SELECT 1 FROM direct_file_task_authorizations f WHERE f.task_id=t.id AND f.task_definition_revision_id=d.id) THEN 'DIRECT_FILE' WHEN json_extract(d.payload_json,'$.workSpec.implementationMode')='CODING_AGENT' THEN 'CODING_AGENT' WHEN COALESCE(json_extract(d.payload_json,'$.workSpec.implementationMode'),'')='' AND EXISTS(SELECT 1 FROM execution_proposals e WHERE e.id=t.current_execution_id AND e.task_id=t.id AND e.project_id=t.project_id AND e.task_definition_revision_id=d.id AND e.status IN ('CONFIRMED','CONSUMED')) THEN 'CODING_AGENT' ELSE 'UNKNOWN' END FROM tasks t JOIN task_definition_revisions d ON d.id=t.current_definition_revision_id AND d.task_id=t.id WHERE t.id=? AND t.project_id=? AND t.feature_area_id=? AND d.id=?`, g.TaskID, g.ProjectID, g.FeatureAreaID, g.TaskDefinitionRevisionID).Scan(&mode)
@@ -52,6 +71,17 @@ func (s *WorkflowProgressionStore) applyDirectFileGuidance(ctx context.Context, 
 					g.Set(string(g.TaskPhase), "START_DIRECT_FILE", "Confirm START_DIRECT_FILE for this exact approved revision before file access.")
 				case "RECOVERY_REQUIRED", "PREPARING":
 					g.Set(string(g.TaskPhase), "RECOVER_DIRECT_FILE", "Read the original workflow and confirm recovery of its exact epoch and generation.")
+					var enrolled, unresolved bool
+					if err := q.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM direct_file_worker_claims w JOIN direct_file_task_authorizations f ON f.workflow_id=w.workflow_id WHERE f.task_id=? AND f.task_definition_revision_id=?), EXISTS(SELECT 1 FROM direct_file_operation_receipts r JOIN direct_file_task_authorizations f ON f.workflow_id=r.workflow_id WHERE f.task_id=? AND f.task_definition_revision_id=? AND r.state IN ('PENDING','UNKNOWN'))`, g.TaskID, g.TaskDefinitionRevisionID, g.TaskID, g.TaskDefinitionRevisionID).Scan(&enrolled, &unresolved); err != nil {
+						return err
+					}
+					if enrolled {
+						action := "CANCEL_DIRECT_FILE"
+						if unresolved {
+							action = "READ_DIRECT_FILE_AUTHORIZATION"
+						}
+						g.Set(string(g.TaskPhase), action, fileWorkerRecoveryReason)
+					}
 				case "CLOSED":
 					g.Set(string(g.TaskPhase), "READ_DIRECT_FILE_AUTHORIZATION", "This file authorization is closed; historical confirmation replay cannot reopen it.")
 				}

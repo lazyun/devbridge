@@ -100,3 +100,8 @@ These are protocol and Core integration tests, not a live dot/model acceptance
 test. General implementation/verification Agent execution, durable cloud task
 continuation, host cancellation and result acquisition outside this UPPER_LLM
 MCP path remain unsupported.
+
+Actual file implementation is available separately through the already-approved
+DIRECT_FILE authority and its [pull worker](direct-file-pull-worker.md). That
+channel uses Core file operations and does not turn this Review protocol into
+a generic Agent runtime or grant command execution.
