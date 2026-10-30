@@ -56,7 +56,7 @@ type Report struct {
 	Scenarios     []ScenarioResult  `json:"scenarios"`
 }
 
-var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "execution-runtime-gate", "direct-start-gates", "file-mutation-gates", "mutation-cancel-race", "file-result-gates", "file-result-no-change", "file-result-after-cancel", "file-acceptance-gates", "file-acceptance-no-change", "feature-delivery-gates", "task-action-gates", "review-successor-gates", "happy", "claim-race", "file-crash", "review-cancel"}
+var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "execution-runtime-gate", "direct-start-gates", "file-mutation-gates", "mutation-cancel-race", "file-result-gates", "file-result-no-change", "file-result-after-cancel", "file-acceptance-gates", "file-acceptance-no-change", "feature-delivery-gates", "task-action-gates", "review-successor-gates", "canceled-review-successor", "canceled-file-supplemental-review", "happy", "claim-race", "file-crash", "review-cancel"}
 
 func Scenarios() []string { return append([]string(nil), scenarioNames...) }
 
@@ -281,6 +281,10 @@ func runScenario(ctx context.Context, c Config, root, name string) (result Scena
 		s.taskActionGates()
 	case "review-successor-gates":
 		s.reviewSuccessorGates()
+	case "canceled-review-successor":
+		s.canceledReviewSuccessor()
+	case "canceled-file-supplemental-review":
+		s.canceledFileSupplementalReview()
 	case "happy":
 		s.happy()
 	case "claim-race":

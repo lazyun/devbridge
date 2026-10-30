@@ -63,6 +63,8 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `feature-delivery-gates` | 独立双成员 fixture 已验收并完成 Task commit 后，单独准备/确认 FeatureArea 合入；冻结每个 repository/member/worktree/源提交/目标分支/预期 HEAD，错误确认和 pending 冷重启不合入；显式确认后精确快进到已验收提交，重复/冷回执不再合入，backend 不变 |
 | `task-action-gates` | 观察正数顶层 Task action generation；旧 generation 明确拒绝，nested/零/小数/字符串仅作为 advertised schema 校验；两个真实 GPT Session 竞争只有一个 pending owner，外会话不获私有 intent；显式丢弃推进 generation，旧卡晚到/冷启动不能消费或抢走新卡，始终无业务后继 |
 | `review-successor-gates` | 在独立 Review 审批等待点，用独立用户 REVISE 创建同一 Task 的唯一新 UPPER Review/Run；冻结旧 workspace/只读成员与原指令加精确反馈；旧报告/worker 回执仍归旧 Review，外层 context 不借用新身份；新报告独立记录，确认重放/冷启动/丢弃已消费卡均不多建，不批准或启动实现 |
+| `canceled-review-successor` | 未记录报告的 UPPER worker 经显式取消后，Task 仍 REVIEW_REQUIRED；另行准备/确认 START_REVIEW 才创建同 Task 的第二个 Review/Run；旧取消与 worker 回执始终 OUTCOME_UNKNOWN、无结果/新 payload，外层上下文仍归旧 Review；新报告单独记录，冷重放不复活旧 worker 或多建后继 |
+| `canceled-file-supplemental-review` | 一个真实成员已发生部分文件效果，活动 grant 必须先显式取消；从当前 capability 复制完整五字段目标并保留 DEEP，下调深度/旧目标/错误选择均无效果；单独确认 REQUEST_REVIEW+START_REVIEW 保留旧定义、NONE 豁免与全部部分文件字节，新 Review 报告不替代原文件结果或验收 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -73,7 +75,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景、三个验收/交付阶段场景、两个 Task action/Review 后继阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景、三个验收/交付阶段场景、两个 Task action/Review 后继阶段场景、两个取消后再审查阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -285,5 +287,37 @@ prepare 仅冻结旧 Review/decision、观察到的 generation 与反馈；commi
 DEFER_TASK、REQUEST_REVERIFICATION、RETRY_IMPLEMENTATION 或 no-Run 原生
 Coding successor。中性文件路径不能伪造这些资格。历史 UNKNOWN/migration
 冲突测试使用受控 store fixture，不作为这里的纯公开二进制证据；单纯读取或
-忽略成功响应也不称为真实响应丢失注入。取消后重新 Review 与补充 Review
-属于后续独立增量，本场景停在第二个 Review 的审批等待点。
+忽略成功响应也不称为真实响应丢失注入。本场景停在第二个 Review 的审批等待点；取消后重新 Review 与补充 Review
+使用下面另两个独立 fixture，不从此场景暗中接续。
+
+
+### 显式取消后的重新审查与补充审查
+
+`canceled-review-successor` 首先真实读取文件并构造有效但尚未提交的旧报告，
+然后由 fixture 用户取消该 Review。取消既不把旧报告记录成功，也不证明外部
+worker 已终止；旧 worker 的 OUTCOME_UNKNOWN 必须保留。新的 START_REVIEW
+有独立准备/用户确认/claim/报告。旧取消重放、worker get/claim 和晚到旧报告
+分别验证：回执不改写，新 Review 不继承旧派发身份，旧响应 envelope 不带
+后继的动作。两个 Run 明确分别 CANCELED 与 RUNNING/报告后 SUCCEEDED。
+
+`canceled-file-supplemental-review` 先在已明确豁免的独立 fixture 中完成一个
+真实 REPLACE。当前 v2 grant 活动时，补充 Review 不可借机关闭它；必须单独
+消费 CANCEL_DIRECT_FILE。取消后从可用 REQUEST_TASK_REVIEW capability 读取
+完整 `expectedReviewRequest` 五个显式字符串，空 execution/decision 是精确
+事实而非通配符。旧 phase 和 FAST 深度分别拒绝，pending/错误选择/cold read
+不创建后继；单独确认只执行 REQUEST_REVIEW 与 START_REVIEW 两步。
+
+新 Review 保留同一 Task、原 approved definition、原只读 workspace/成员。
+公开 currentReviewRequest 必须保留旧 revision/Review、原 IMPLEMENTING 目标
+和原始 purpose；回执 phase=REVIEW_REQUIRED 是请求效果，不是原始 phase。
+源分支、全部 managed 文件字节与已确认的部分效果保持不变；旧文件 grant
+仍 CLOSED，旧文件 worker get/claim 仍 OUTCOME_UNKNOWN，精确旧文件 scope
+不借用新 Review/Run/Execution 或动作（文件回执的 workflow 为空，并非 Review
+回执的 stale 标记契约），无正式文件结果、无提交、
+无原生 Execution。新 Review 报告也不自动批准替换旧定义。原 NONE 豁免保留，
+但此时并无可冒称验证成功的文件结果。
+
+此阶段没有新增 Core 修改或缺陷结论。开发时遗漏 schema 要求的显式空
+repositoryId，以及把结果对象的 verificationStatus 错放到 Task view，均作为
+模拟器协议/投影假设纠正；严格校验拒绝或断言失败保留在开发证据中。最终对
+Task view 检查真实 currentVerificationSpec 与 UNCOMMITTED，而非检查不存在的字段。
