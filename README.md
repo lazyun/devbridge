@@ -90,13 +90,14 @@ go mod download
 go build -trimpath -o ./build/bin/ ./cmd/...
 ```
 
-构建得到三个程序：
+构建得到以下程序：
 
 | 程序 | 职责 |
 | --- | --- |
 | `devbridge` | Core 服务、Web Console 和诊断入口 |
 | `devbridge-mcp` | 面向 ChatGPT 的 MCP adapter |
 | `devbridge-local-mcp` | 面向本地 MCP 客户端的 adapter |
+| `devbridge-sim` | 使用模拟 GPT/用户/pull worker 测试真实 Core（可选开发工具） |
 
 以下终端命令以 macOS / Linux shell 为例，在仓库根目录执行。
 
@@ -286,6 +287,18 @@ DEVBRIDGE_PLATFORM_NATIVE_BINARY=/absolute/path/to/native/codex \
 ```
 
 该脚本使用本地 Responses provider，保留证据到打印的目录；它验证本地协议和工作流，不代表真实在线模型质量或服务可用性。详细范围见[工作流验收说明](docs/testing/real-e2e-gates.md)，运行前置条件以当前脚本为准。
+
+### 无模型 Core 状态流转模拟
+
+不配置 Codex 或模型，也可以让模拟 GPT/用户/pull Agent 通过公开接口驱动真实 Core：
+
+```sh
+./scripts/verify-core-simulation.sh
+```
+
+覆盖独立审批、文件实施、明确豁免后的验收/交付、并发派发、越权/重复请求、
+Core 崩溃恢复与取消。它不模拟原生 Codex 命令验证；所有状态和限制都保留在报告中。
+详见[模拟器运行与覆盖说明](docs/testing/core-simulation.md)。
 
 ## 仓库结构
 
