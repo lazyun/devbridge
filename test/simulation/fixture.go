@@ -229,6 +229,9 @@ func (f *fixture) directPreparation(action, request string) c.PrepareInput {
 }
 func (f *fixture) startFile() {
 	f.complete(f.directPreparation("START_DIRECT_FILE", "start-file"), c.Selection{})
+	f.adoptFile()
+}
+func (f *fixture) adoptFile() {
 	ws := f.workspace()
 	decode(ws["taskView"].(map[string]any)["directFile"], &f.state)
 	f.s.check("explicit file start grants v2 authority", f.state.Enabled && f.state.ProtocolVersion == 2, f.state)

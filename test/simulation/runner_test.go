@@ -32,7 +32,7 @@ func TestConfigFailsClosed(t *testing.T) {
 }
 func TestOrderedScenariosHaveIndependentNamesAndValidConfiguration(t *testing.T) {
 	names := Scenarios()
-	if len(names) != 8 || names[0] != "task-admission" || names[1] != "review-gates" || names[2] != "review-blocked" || names[3] != "review-further" {
+	if len(names) != 10 || names[0] != "task-admission" || names[1] != "review-gates" || names[2] != "review-blocked" || names[3] != "review-further" || names[4] != "execution-runtime-gate" || names[5] != "direct-start-gates" {
 		t.Fatalf("initial Task admission must precede existing regressions: %v", names)
 	}
 	bin := fixtureBin(t)

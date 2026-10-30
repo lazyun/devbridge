@@ -51,6 +51,8 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `review-gates` | 冻结 Review 指令/只读成员与 claim 哈希；错 epoch、变更 worker/request、越界读取、错误成员/证据 digest/原始提交、缺少或错误 worker 的报告均拒绝且无业务副作用；正式报告关闭权限，精确回执与完整报告冷启动可读；单独批准停在 `IMPLEMENTATION_READY`，保留 `RUN` 验证要求，**不豁免、不启动实现** |
 | `review-blocked` | 独立 fixture 提交真实读文件证据支持的模拟 `BLOCKED` 报告；Review Run `SUCCEEDED` 仅代表报告记录完成，Task 仍 `ACTIVE/REVIEW_REQUIRED` 并要求 DEEP；无可用批准/启动动作，无实现权限，拒绝晚到写报告，冷启动回执稳定 |
 | `review-further` | 同一阶段的独立 `FURTHER_REVIEW_REQUIRED` 分支；不自动发起后继 Review、不创建新 Task，不把已有报告完成当成 Task 完成 |
+| `execution-runtime-gate` | 保留批准的 `RUN` 验证要求；公开 runtime/backend 目录只是可选元数据，不是选择或执行资格；缺少 backend、选择实际目录 backend 但缺少 runtime 两次明确拒绝，保留可读未消费回执，冷启动不创建文件权限或悄悄豁免 |
+| `direct-start-gates` | 独立 fixture 用户明确豁免后，旧 revision/篡改指令或范围、错误确认均无效果；pending 冷启动不消费；单独 START_DIRECT_FILE 只建立精确权限，claim 绑定冻结定义与真实成员；旧 epoch/generation/member、错误 worker 与范围外 CREATE 均不修改文件，停在首个成功写入之前 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -61,7 +63,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -73,6 +75,13 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 此阶段不派发 worker、不批准实现、不启动继续任务，也不触及原生模型资格。
 三个后续 Review 场景只使用中性 pull worker。`workerId` 是交付关联标签，不是
 模型/进程身份证明，也不让文件读取变成某个 worker 的独占权限。
+
+启动阶段不把 `RUN` 静默改成 `NONE`：正向中性文件准入使用另一个明确豁免的
+fixture。`execution-runtime-gate` 只选择公开目录返回的真实 backend 身份而不提供
+runtime，验证明确拒绝，不伪造平台 qualification 或尝试运行模型。
+`direct-start-gates` 在成功 claim 后才检查缺少 worker 身份的写入拒绝；Core 本来
+允许未 enrollment 的非 worker 文件使用，模拟器不把 claim 错当成所有文件操作
+的强制前提。此阶段不提交实现结果、不验收、不取消或恢复已启动权限。
 
 ## 安全隔离与证据
 
@@ -152,3 +161,13 @@ DEVBRIDGE_SIM_BIN=/absolute/path/to/compiled/bin \
 Review 交付/报告回执使用原始类型化 JSON 字节哈希，Confirmation 回执使用
 规范化 JSON 哈希；模拟器分别验证，不能混用。开发时混用哈希导致的断言失败
 属于模拟器自身问题，与上述实际报告读取缺陷分开记录。
+
+### 启动阶段的契约边界
+
+新检查使用已批准定义上的真实公开操作。开发时发现两处模拟器假设与公开契约
+不符：私有 Core 仍可列出默认 backend 元数据（不等于真实执行资格）；workspace
+的成员投影不包含完整 readiness，普通文件读取也不暴露所有内部成员字段。
+检查改为冻结目标身份、实际读得的文件字节，以及 worker payload 内的完整成员
+readiness 分别核对。这些是测试假设修正，不登记为 Core 缺陷。任何启动步骤前后
+均核对已存在 managed 文件、源分支 HEAD/字节和公开 Run 历史，拒绝不能误算为
+验证成功或 Task 完成。

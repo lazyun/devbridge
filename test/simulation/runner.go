@@ -56,7 +56,7 @@ type Report struct {
 	Scenarios     []ScenarioResult  `json:"scenarios"`
 }
 
-var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "happy", "claim-race", "file-crash", "review-cancel"}
+var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "execution-runtime-gate", "direct-start-gates", "happy", "claim-race", "file-crash", "review-cancel"}
 
 func Scenarios() []string { return append([]string(nil), scenarioNames...) }
 
@@ -257,6 +257,10 @@ func runScenario(ctx context.Context, c Config, root, name string) (result Scena
 		s.reviewNotReady(review.DispositionBlocked)
 	case "review-further":
 		s.reviewNotReady(review.DispositionFurtherReviewRequired)
+	case "execution-runtime-gate":
+		s.executionRuntimeGate()
+	case "direct-start-gates":
+		s.directStartGates()
 	case "happy":
 		s.happy()
 	case "claim-race":
