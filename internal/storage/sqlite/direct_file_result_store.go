@@ -437,6 +437,9 @@ func (s *WorkflowProgressionStore) AcceptFileImplementationResult(ctx context.Co
 	}
 	var body string
 	err = tx.QueryRowContext(ctx, `SELECT result_json FROM direct_file_implementation_results WHERE id=? AND ai_session_id=? AND project_id=? AND task_id=? AND revision_id=? AND workflow_id=?`, in.ResultID, in.AISessionID, project, in.TaskID, in.TaskDefinitionRevisionID, in.WorkflowID).Scan(&body)
+	if errors.Is(err, sql.ErrNoRows) {
+		return out, ErrNotFound
+	}
 	if err != nil {
 		return out, err
 	}

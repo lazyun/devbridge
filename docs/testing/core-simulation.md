@@ -58,6 +58,9 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `file-result-gates` | 实际修改一个成员、另一个不变；拒绝身份/版本/worker/空摘要错误，已知 FAILED digest 操作不制造结果也不阻止合法报告；Core 忽略虚假的 advisory Members，自行冻结全部精确成员、Git tree 字节与变更路径，关闭权限但不验收；精确结果/worker 回执冷启动只读，晚到写入和第二份新结果拒绝 |
 | `file-result-no-change` | 零成功文件效果也可以如实报告；每个成员必须 NO_CHANGE、起止 tree 相同、changedPaths 为空，不虚构实现工作；仍 NOT_RUN、未验收、无 Execution/额外 Run/commit |
 | `file-result-after-cancel` | 合法未 enrollment 文件权限经显式确认取消后，新 v2 结果必须拒绝；不依赖 worker 身份补充保护，冷启动保持 CLOSED/IMPLEMENTATION_READY、结果 NOT_FOUND，无业务或文件副作用 |
+| `file-acceptance-gates` | 一个真实变化成员与一个未变成员的正式结果，必须等独立 fixture 用户验收；提前 task_commit_retry、错会话/revision/workflow/result/epoch/generation/protocol 均拒绝且不提交；真正验收后核对完整成员回执、精确 Git tree/唯一父提交，冷重放不多提交，停在 FeatureArea 合入之前 |
+| `file-acceptance-no-change` | 零变化结果仍可独立验收，Task 可完成交付，但所有成员 NO_CHANGE、commit 字段为空、真实 managed branch HEAD 不变，不生成假提交、不声称命令验证通过 |
+| `feature-delivery-gates` | 独立双成员 fixture 已验收并完成 Task commit 后，单独准备/确认 FeatureArea 合入；冻结每个 repository/member/worktree/源提交/目标分支/预期 HEAD，错误确认和 pending 冷重启不合入；显式确认后精确快进到已验收提交，重复/冷回执不再合入，backend 不变 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -68,7 +71,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景、三个验收/交付阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -220,3 +223,34 @@ v2 `workflowComplete=true` 不是正式结果提交，必须在效果前拒绝�
 自动 START_VERIFICATION 与失败交接不在此无模型公共二进制覆盖内；启动阶段的
 缺少选择拒绝也不能替代它们。真实 journal PENDING/UNKNOWN 和外部篡改故障仍由
 专门测试覆盖，不通过写数据库或伪造 runtime 来制造本模拟器通过证据。
+
+### 独立用户验收与 Git 交付阶段
+
+结果提交、用户 `file_implementation_accept`、Task Git commit、FeatureArea merge
+不是同一个事实。新场景在验收前读取并核对未验收结果、原 managed branch HEAD
+与 `UNCOMMITTED`；`task_commit_retry` 不能代替初次验收。验收后通过公开
+`taskView.details.commitReceipt` 与实际 Git 对象交叉证明：变化成员只产生一个
+以原 StartHead 为父、tree 精确等于冻结 EndSnapshot 的提交；NO_CHANGE 成员
+不产生提交。结果仍然 NOT_RUN，无原生 Execution/额外 Run。
+
+这个公开文件验收路径在 Task commit 全部完成后可显示 `SUCCEEDED/DELIVERING`，
+不代表已经合入 development branches。独立 FeatureArea 确认的 plan 才冻结并
+允许后者。此处无目标分支分歧，实际合入应是快进到精确已验收提交，不制造 merge
+commit；后端仓库与 source 分支在明确合入之前始终不变。完整 NO_CHANGE 场景
+在 Task 无变更交付完成处停止，不为了“看起来完成”制造提交或无意义合入。
+全部 NO_CHANGE 时投影可为 MERGED（无待合入内容），不是发生了 Git merge；
+有变化成员在独立合入前必须 UNMERGED。worker get/claim 的只读结果会投影独立
+验收为 accepted=true，原 result_submit 回放仍返回报告时的 false；两者都不得
+重新派发或改变冻结文件事实。开发中将两种读取语义混同的断言失败属于模拟器
+假设修正，不登记为 Core 缺陷。
+
+验收错误身份检查另发现并修复一处错误分类问题：不存在于精确
+session/project/task/revision/workflow/result 组合的结果原先返回 INTERNAL_ERROR。
+实际没有发生越权验收或提交；问题是正常身份拒绝被包装成内部故障。修复只把
+该查询的 `sql.ErrNoRows` 映射为普通 NOT_FOUND；六项身份条件、已消费请求冲突
+优先级、真正数据库错误处理和事务回滚均保留。真实 Core 回归与公共接口场景
+分别验证不存在、跨会话与错误身份不泄漏结果，正确独立验收仍可继续。
+
+未覆盖的边界包括验收后 Git 部分失败的精确日志/效果间故障注入、原生 RUN
+验证验收以及 `COMPLETE_TASK` 的另一条合并前终态保持流程。这里的通过结果
+不能替代这些专门测试，也不引入 successor/continuation 权限。
