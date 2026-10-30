@@ -215,6 +215,11 @@ func (s *WorkflowProgressionStore) submitMultiFileImplementationResult(ctx conte
 	if in.ProtocolVersion != 2 || in.RuntimeEpoch != grant.RuntimeEpoch || in.GrantGeneration != grant.GrantGeneration {
 		return out, fileResultConflict()
 	}
+	// Exact recorded replay was handled before entering this fresh-result path.
+	// Only v2 requires live authority here; v1 retains close-before-submit semantics.
+	if grant.State.State != "ACTIVE" {
+		return out, directfile.Failure(directfile.NotEnabled, "new v2 file result requires active authorization")
+	}
 	if err = validateTaskFileAuthorization(ctx, tx, grant); err != nil {
 		return out, err
 	}

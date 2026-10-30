@@ -68,9 +68,12 @@ func TestMultiRepositoryDirectG8V1FileResultCommitMergeCompatibility(t *testing.
 	if err != nil || state.State != "ACTIVE" {
 		t.Fatalf("v1 grant %+v %v", state, err)
 	}
-	in := directfile.Input{Scope: directfile.Scope{AISessionID: f.session, FeatureAreaID: areaID, WorkflowID: state.WorkflowID}, Path: "same.txt", Content: "single-repo compatibility update\n"}
+	in := directfile.Input{Scope: directfile.Scope{AISessionID: f.session, FeatureAreaID: areaID, WorkflowID: state.WorkflowID}, Path: "same.txt", Content: "single-repo compatibility update\n", WorkflowComplete: true}
 	if _, err = f.facade.FileReplace(f.ctx, in); err != nil {
 		t.Fatal(err)
+	}
+	if closed, err := f.facade.DirectFileTaskStatus(f.ctx, f.session, taskID); err != nil || closed.State != "CLOSED" || closed.Enabled {
+		t.Fatalf("legacy completion must close before first result %+v %v", closed, err)
 	}
 	resultInput := directfile.ImplementationResultInput{AISessionID: f.session, TaskID: taskID, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID, RequestID: "v1-file-result", Summary: "v1 file result", VerificationNotes: "explicit user waiver"}
 	result, err := f.facade.SubmitFileImplementationResult(f.ctx, resultInput)

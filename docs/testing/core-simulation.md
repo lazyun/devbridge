@@ -55,6 +55,9 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `direct-start-gates` | 独立 fixture 用户明确豁免后，旧 revision/篡改指令或范围、错误确认均无效果；pending 冷启动不消费；单独 START_DIRECT_FILE 只建立精确权限，claim 绑定冻结定义与真实成员；旧 epoch/generation/member、错误 worker 与范围外 CREATE 均不修改文件，停在首个成功写入之前 |
 | `file-mutation-gates` | 在报告/批准前明确两个成员的三个可写路径；实际 CREATE/REPLACE/MOVE/DELETE 才进入 `IMPLEMENTING`，按全部 managed 文件增删改和公开成员读取交叉检查；旧回执不得重放旧效果，失败 digest 请求不能原地改写，显式取消不回滚部分效果、不生成结果 |
 | `mutation-cancel-race` | 稳定 `IMPLEMENTING` 上并发一个真实文件请求与显式取消；只接受先写后关或先关拒写两种可观察顺序，记录实际顺序；已确认效果回执在 CLOSED/冷启动仍可读，不重新执行，不调用恢复 |
+| `file-result-gates` | 实际修改一个成员、另一个不变；拒绝身份/版本/worker/空摘要错误，已知 FAILED digest 操作不制造结果也不阻止合法报告；Core 忽略虚假的 advisory Members，自行冻结全部精确成员、Git tree 字节与变更路径，关闭权限但不验收；精确结果/worker 回执冷启动只读，晚到写入和第二份新结果拒绝 |
+| `file-result-no-change` | 零成功文件效果也可以如实报告；每个成员必须 NO_CHANGE、起止 tree 相同、changedPaths 为空，不虚构实现工作；仍 NOT_RUN、未验收、无 Execution/额外 Run/commit |
+| `file-result-after-cancel` | 合法未 enrollment 文件权限经显式确认取消后，新 v2 结果必须拒绝；不依赖 worker 身份补充保护，冷启动保持 CLOSED/IMPLEMENTATION_READY、结果 NOT_FOUND，无业务或文件副作用 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -65,7 +68,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -115,7 +118,8 @@ DEVBRIDGE_SIM_BIN=/absolute/path/to/compiled/bin \
 
 ## 不覆盖什么
 
-- Codex/Pi 真实模型质量、原生沙箱、命令执行、`VERIFYING`/GPT run analysis、
+- Codex/Pi 真实模型质量、原生沙箱、命令执行、`RUN` 文件结果的原生 verification handoff、
+  `VERIFYING`/GPT run analysis、
   原生请求权限/中断继续以及原生 runtime qualification。
 - 真实 ChatGPT/dot 的执行环境、实时 connector、Tunnel、远程部署或持续运行保障。
 - 任意恶意可执行程序的 OS 安全边界（所选 Core/proxy 二进制必须可信）。
@@ -193,3 +197,26 @@ v2 `workflowComplete=true` 不是正式结果提交，必须在效果前拒绝�
 合法顺序；单次通过不代表强制触发了两种内部时序，更不是效果/日志之间的
 精确故障注入。后者继续由既有受控 hook 测试覆盖。开发中一次模拟器把仅 MOVE
 才有的 destination 当成必有字段，已修正；该失败不是 Core 缺陷。
+
+### 正式文件结果阶段与取消权限修复
+
+正式结果阶段停在 `ACTIVE/ACCEPTANCE_PENDING`，不调用用户验收。结果的 Members
+是 advisory 输入，不能用它来决定实际成员或证据；模拟器故意提供 schema 合法但
+错误且不完整的声明，随后用冻结 claim 身份、完整成员集合和实际 Git tree/blob
+交叉验证 Core 自己生成的结果。一个成员改变、另一个不变，以及全部 NO_CHANGE
+分别验收；零变更不是错误，也不能写成成功完成了修改。v2 没有伪造的聚合 Snapshot。
+
+本阶段复现并修复真实 Core 缺陷：未 enrollment 的合法 v2 文件工作流在显式
+`CANCEL_DIRECT_FILE` 已消费、权限 CLOSED 后，仍能提交一份全新的正式结果，
+错误进入 ACCEPTANCE_PENDING。带 worker 的路径原有检查会拒绝，但无 worker
+路径漏掉 fresh result 的 ACTIVE 门槛。修复仅在新 v2 结果路径检查当前 ACTIVE，
+放在精确历史回执查询之后：已记录结果的重放不受影响，也不强制所有文件使用
+必须 enrollment。回归分别覆盖无变更/已有部分效果、重启，以及 v1 合法的
+先关闭再首次提交结果兼容路径。另行探测的未 enrollment 冷重启旧 epoch 提交
+原本就被 RECOVERY_REQUIRED 拒绝，未据此虚构或修改 epoch 缺陷。
+
+这些正向文件结果使用之前明确的 fixture-only NONE 豁免，因此只证明 NOT_RUN
+结果等待用户验收。`RUN` 结果的原生验证选择、verification-only Execution 创建、
+自动 START_VERIFICATION 与失败交接不在此无模型公共二进制覆盖内；启动阶段的
+缺少选择拒绝也不能替代它们。真实 journal PENDING/UNKNOWN 和外部篡改故障仍由
+专门测试覆盖，不通过写数据库或伪造 runtime 来制造本模拟器通过证据。
