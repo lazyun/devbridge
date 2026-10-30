@@ -12,17 +12,32 @@ import (
 )
 
 // Approval remains a separate fixture-user choice. The runtime-gate fixture
-// preserves RUN; only the independent neutral start fixture explicitly waives it.
+// preserves RUN; only the independent neutral file fixtures explicitly waive it.
 func (f *fixture) approveStartFixture(waive bool) string {
+	return f.approveFileFixture(waive, nil)
+}
+func (f *fixture) approveFileFixture(waive bool, paths []string) string {
 	f.startReview()
 	f.claimReview()
 	f.buildReviewReport()
 	f.report.Report.RecommendedNextSteps = []string{"Separate explicit fixture-user approval and start; stop before any implementation effect"}
+	if len(paths) > 0 {
+		for i := range f.targets {
+			f.targets[i].Write.Paths = append([]string(nil), paths...)
+		}
+		f.report.Report.RepositoryTargets = f.targets
+		f.report.Report.WorkSpec.Goal = "SIMULATED bounded file mutation contract checks"
+		f.report.Report.WorkSpec.CodexInstruction = "SIMULATED: exercise whole-file CREATE, REPLACE, MOVE and DELETE only within the exact approved paths; preserve backend; do not submit a result or claim command verification."
+		f.report.Report.RecommendedNextSteps = []string{"Explicit fixture-user approval and start, bounded file effects, then separate cancellation; no result or acceptance"}
+	}
 	f.recordReviewReport()
 	prior := f.revision
 	selection := c.Selection{}
 	if waive {
 		selection.VerificationWaiver = &task.VerificationWaiver{Source: task.VerificationWaiverUser, Reason: "SIMULATOR FIXTURE ONLY: explicit user waiver for pre-effect neutral-worker admission; no verification performed"}
+	}
+	if len(paths) > 0 && selection.VerificationWaiver != nil {
+		selection.VerificationWaiver.Reason = "SIMULATOR FIXTURE ONLY: explicit user waiver for bounded neutral file mutation checks; no verification performed"
 	}
 	f.complete(f.approvalPreparation("APPROVE", "approve-start-fixture"), selection)
 	ws := f.checkPhase("approved definition is not start authority", "ACTIVE", "IMPLEMENTATION_READY")

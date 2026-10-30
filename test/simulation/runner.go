@@ -56,7 +56,7 @@ type Report struct {
 	Scenarios     []ScenarioResult  `json:"scenarios"`
 }
 
-var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "execution-runtime-gate", "direct-start-gates", "happy", "claim-race", "file-crash", "review-cancel"}
+var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "execution-runtime-gate", "direct-start-gates", "file-mutation-gates", "mutation-cancel-race", "happy", "claim-race", "file-crash", "review-cancel"}
 
 func Scenarios() []string { return append([]string(nil), scenarioNames...) }
 
@@ -261,6 +261,10 @@ func runScenario(ctx context.Context, c Config, root, name string) (result Scena
 		s.executionRuntimeGate()
 	case "direct-start-gates":
 		s.directStartGates()
+	case "file-mutation-gates":
+		s.fileMutationGates()
+	case "mutation-cancel-race":
+		s.mutationCancelRace()
 	case "happy":
 		s.happy()
 	case "claim-race":

@@ -53,6 +53,8 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `review-further` | 同一阶段的独立 `FURTHER_REVIEW_REQUIRED` 分支；不自动发起后继 Review、不创建新 Task，不把已有报告完成当成 Task 完成 |
 | `execution-runtime-gate` | 保留批准的 `RUN` 验证要求；公开 runtime/backend 目录只是可选元数据，不是选择或执行资格；缺少 backend、选择实际目录 backend 但缺少 runtime 两次明确拒绝，保留可读未消费回执，冷启动不创建文件权限或悄悄豁免 |
 | `direct-start-gates` | 独立 fixture 用户明确豁免后，旧 revision/篡改指令或范围、错误确认均无效果；pending 冷启动不消费；单独 START_DIRECT_FILE 只建立精确权限，claim 绑定冻结定义与真实成员；旧 epoch/generation/member、错误 worker 与范围外 CREATE 均不修改文件，停在首个成功写入之前 |
+| `file-mutation-gates` | 在报告/批准前明确两个成员的三个可写路径；实际 CREATE/REPLACE/MOVE/DELETE 才进入 `IMPLEMENTING`，按全部 managed 文件增删改和公开成员读取交叉检查；旧回执不得重放旧效果，失败 digest 请求不能原地改写，显式取消不回滚部分效果、不生成结果 |
+| `mutation-cancel-race` | 稳定 `IMPLEMENTING` 上并发一个真实文件请求与显式取消；只接受先写后关或先关拒写两种可观察顺序，记录实际顺序；已确认效果回执在 CLOSED/冷启动仍可读，不重新执行，不调用恢复 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -63,7 +65,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -171,3 +173,23 @@ Review 交付/报告回执使用原始类型化 JSON 字节哈希，Confirmation
 readiness 分别核对。这些是测试假设修正，不登记为 Core 缺陷。任何启动步骤前后
 均核对已存在 managed 文件、源分支 HEAD/字节和公开 Run 历史，拒绝不能误算为
 验证成功或 Task 完成。
+
+### 文件效果阶段
+
+`file-mutation-gates` 的额外 PATHS 和指令在正式报告/用户批准之前写入，不修改
+已经冻结的授权。首个 CREATE 与后续 REPLACE/MOVE/DELETE 都核对实际全文件
+变化集；同路径另一成员、未授权新文件和 backend 源分支不能被顺带修改。
+旧 CREATE/REPLACE/MOVE 回执在路径后来已移动/删除后仍只读，旧 DELETE 回执
+在同路径创建新对象后不能再删新文件。失败 digest 操作的 requestId 是不可改写
+的历史事实，重新读取后的新授权操作使用新 ID，不冒充相同请求重试。
+
+v2 `workflowComplete=true` 不是正式结果提交，必须在效果前拒绝；旧式
+`direct_file_disable` 也不能绕过独立确认取消。取消 prepare 本身仍不撤销当前权限，
+之后已确认的合法效果在取消消费后保留，Task 仍 ACTIVE/IMPLEMENTING、worker
+仍 OUTCOME_UNKNOWN，精确结果读取仍 NOT_FOUND。这里不提交报告、不验收或
+合并，也不声称 worker 外部进程已停止。
+
+`mutation-cancel-race` 是正常公开请求的并发样本，每次报告保存实际观察到的
+合法顺序；单次通过不代表强制触发了两种内部时序，更不是效果/日志之间的
+精确故障注入。后者继续由既有受控 hook 测试覆盖。开发中一次模拟器把仅 MOVE
+才有的 destination 当成必有字段，已修正；该失败不是 Core 缺陷。
