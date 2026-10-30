@@ -47,6 +47,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 
 | 场景 | 真实 Core 中检查的行为 |
 |---|---|
+| `task-admission` | 按生命周期从最早缺口开始：Task prepare/options 不创建业务对象；错误 hash/version 拒绝且不泄漏确认对象；无效 variant 形成可读的 `REJECTED_NOT_CONSUMED`，只有 Core 明确允许编辑选择才提交更正；显式仅创建一次 Task，重复/冷启动回执不多建或偷偷启动 Review；单独 Review prepare 仍无 Run，正确确认后只有一个精确只读 UPPER Review Run，停在 `REVIEWING` |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -56,6 +57,17 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 越界路径、旧 digest、改 payload 的重复请求、结果后晚到写入/新报告等拒绝。
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
+
+`all` 先运行 `task-admission`，然后回归原有四个场景。单独验收初始阶段：
+
+```sh
+./scripts/verify-core-simulation.sh -scenario task-admission
+```
+
+初始阶段通过公开的项目 Task/Run 分页与 Task Run 历史（明确检查无截断）、
+`workspace_get` 和精确 `confirmation_get` 交叉核对数量、状态、身份与回执。
+校验未通过、已记录但未消费、已消费是不同结果；不能把报错或无回执当成安全重试。
+此阶段不派发 worker、不批准实现、不启动继续任务，也不触及原生模型资格。
 
 ## 安全隔离与证据
 
@@ -99,7 +111,7 @@ DEVBRIDGE_SIM_BIN=/absolute/path/to/compiled/bin \
 
 ## 开发验证记录（2026-10-30）
 
-- 一键脚本完整运行与独立复跑均通过 **288 个断言**：happy 115、claim-race 72、
+- 第一轮（新增 `task-admission` 前）的一键脚本与独立复跑均通过 **288 个断言**：happy 115、claim-race 72、
   file-crash 62、review-cancel 39；独立复跑也使用了相对 evidence 路径。
 - 单元测试、单元 race 检查与 `go vet ./...` 通过；独立验证 SIGTERM 会停止三个
   自有服务进程并把中断报告记为失败，而不是遗留服务或误报完成。
@@ -111,3 +123,10 @@ DEVBRIDGE_SIM_BIN=/absolute/path/to/compiled/bin \
   仓库完整 `go test ./...` 中原有
   App Server 相关测试出现 `socket: operation not permitted`。本模拟器使用 TCP
   loopback，不能用其通过结果宣称整个仓库测试全绿或原生连续会话已验证。
+- 后续把完整测试上限延长至 30 分钟后，全量测试运行到结束，仍不是全绿：
+  App Server/controlapi 的原生 socket/recovery fixture 失败；另一次 continuation
+  聚合断言失败，单独重跑三次通过，原因未确认，不能称已修复。
+- 第二轮按顺序补 `task-admission`，没有抢先实现 continuation 场景。
+  初始开发中的拒绝回执指针和 GPT 工具目录两处假设按公开契约修正，属于
+  模拟器问题，不登记为 Core 缺陷。最终场景计数与通过情况以对应 `report.json`
+  为准；历史四场景结果不能替代新增阶段的验证。

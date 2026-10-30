@@ -30,6 +30,27 @@ func TestConfigFailsClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestOrderedScenariosHaveIndependentNamesAndValidConfiguration(t *testing.T) {
+	names := Scenarios()
+	if len(names) != 5 || names[0] != "task-admission" {
+		t.Fatalf("initial Task admission must precede existing regressions: %v", names)
+	}
+	bin := fixtureBin(t)
+	seen := map[string]bool{}
+	for _, name := range names {
+		if seen[name] {
+			t.Fatalf("duplicate scenario %q", name)
+		}
+		seen[name] = true
+		if _, err := validateConfig(Config{BinDir: bin, Scenario: name}); err != nil {
+			t.Fatalf("registered scenario %q cannot run: %v", name, err)
+		}
+	}
+	names[0] = "caller mutation"
+	if Scenarios()[0] != "task-admission" {
+		t.Fatal("caller changed registered scenario order")
+	}
+}
 func TestEnvironmentDoesNotInheritAuthority(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "must-not-leak")
 	t.Setenv("HTTPS_PROXY", "must-not-leak")

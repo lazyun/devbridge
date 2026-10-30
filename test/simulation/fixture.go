@@ -66,10 +66,15 @@ func (s *scenario) provision() *fixture {
 	f.complete(c.PrepareInput{RequestID: "bind-upstream", Purpose: c.ProjectSetup, Action: "SELECT_PROJECT", ProjectSetup: &c.ProjectBody{Summary: "Open only this disposable project"}, Variants: []c.Variant{variant("select", "Select simulation fixture")}}, c.Selection{ProjectID: f.project})
 	area, _ := f.complete(c.PrepareInput{RequestID: "create-area", Purpose: c.FeatureArea, Action: "CREATE_AREA", FeatureArea: &c.AreaBody{Title: "SIMULATED contract update", ProblemStatement: "Exercise real Core state transitions without models"}, Variants: []c.Variant{variant("create", "Create disposable area")}}, c.Selection{})
 	f.area = area.Steps[0].FeatureAreaID
-	taskResult, _ := f.complete(c.PrepareInput{RequestID: "create-task", Purpose: c.Task, Action: "CREATE_TASK", Task: &c.TaskBody{FeatureAreaID: f.area, Title: "SIMULATED app and sdk update", ProblemStatement: "Update only app and sdk same.txt", Constraints: []string{"Preserve backend; no models or arbitrary commands"}}, Variants: []c.Variant{variant("create", "Create disposable Task")}}, c.Selection{})
+	return f
+}
+func (f *fixture) taskPreparation(request string) c.PrepareInput {
+	return c.PrepareInput{RequestID: request, Purpose: c.Task, Action: "CREATE_TASK", Task: &c.TaskBody{FeatureAreaID: f.area, Title: "SIMULATED app and sdk update", ProblemStatement: "Update only app and sdk same.txt", Constraints: []string{"Preserve backend; no models or arbitrary commands"}}, Variants: []c.Variant{variant("create", "Create disposable Task")}}
+}
+func (f *fixture) createTask() {
+	taskResult, _ := f.complete(f.taskPreparation("create-task"), c.Selection{})
 	f.task = taskResult.Steps[0].TaskID
 	f.checkPhase("new task", "ACTIVE", "REVIEW_REQUIRED")
-	return f
 }
 func (f *fixture) prepare(in c.PrepareInput) c.Intent {
 	in.AISessionID = f.session
@@ -127,7 +132,7 @@ func (f *fixture) checkPhase(label, status, phase string) map[string]any {
 	f.s.check(label+" Task state", t["status"] == status && t["phase"] == phase, t)
 	return ws
 }
-func (f *fixture) startReview() {
+func (f *fixture) reviewPreparation(request string) c.PrepareInput {
 	targets := []workset.Target{}
 	for _, name := range []string{"app", "sdk"} {
 		targets = append(targets, workset.Target{RepositoryID: f.repos[name], OriginCommit: f.heads[name], OriginRef: "refs/heads/" + name + "-development", Read: true, Write: workset.WriteScope{Kind: "NONE"}})
@@ -135,7 +140,13 @@ func (f *fixture) startReview() {
 	v := variant("upper", "Admit deterministic simulated review worker")
 	v.ExecutorKind = "UPPER_LLM"
 	v.ReviewInstruction = "SIMULATED: Read both same.txt files and propose the exact fixture update."
-	result, _ := f.complete(c.PrepareInput{RequestID: "start-review", Purpose: c.Review, Action: "START_REVIEW", Review: &c.ReviewBody{TaskID: f.task, FeatureAreaID: f.area, RepositoryTargets: targets, ReviewDepth: task.ReviewDepthDeep, ReviewPlan: run.ReviewPlan{Mode: run.ReviewModeRepository}}, Variants: []c.Variant{v}}, c.Selection{})
+	return c.PrepareInput{RequestID: request, Purpose: c.Review, Action: "START_REVIEW", Review: &c.ReviewBody{TaskID: f.task, FeatureAreaID: f.area, RepositoryTargets: targets, ReviewDepth: task.ReviewDepthDeep, ReviewPlan: run.ReviewPlan{Mode: run.ReviewModeRepository}}, Variants: []c.Variant{v}}
+}
+func (f *fixture) startReview() {
+	result, _ := f.complete(f.reviewPreparation("start-review"), c.Selection{})
+	f.adoptReview(result)
+}
+func (f *fixture) adoptReview(result c.Intent) {
 	f.review = result.Steps[0].ReviewID
 	decode(f.s.gpt.call("review_access_get", map[string]any{"aiSessionId": f.session, "reviewId": f.review}), &f.access)
 	f.s.check("review is admitted by real Core", f.access.State == "ACTIVE" && f.access.ProtocolVersion == 2 && len(f.access.RepositoryTargets) == 2, f.access)

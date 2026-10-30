@@ -54,7 +54,7 @@ type Report struct {
 	Scenarios     []ScenarioResult  `json:"scenarios"`
 }
 
-var scenarioNames = []string{"happy", "claim-race", "file-crash", "review-cancel"}
+var scenarioNames = []string{"task-admission", "happy", "claim-race", "file-crash", "review-cancel"}
 
 func Scenarios() []string { return append([]string(nil), scenarioNames...) }
 
@@ -243,7 +243,12 @@ func runScenario(ctx context.Context, c Config, root, name string) (result Scena
 	s.prepareEnvironment()
 	s.launch()
 	s.fixture = s.provision()
+	if name != "task-admission" {
+		s.fixture.createTask()
+	}
 	switch name {
+	case "task-admission":
+		s.taskAdmission()
 	case "happy":
 		s.happy()
 	case "claim-race":

@@ -8,6 +8,7 @@ import (
 	"github.com/lazyun/devbridge/test/simulation"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -16,7 +17,7 @@ func main() {
 	var c simulation.Config
 	flag.StringVar(&c.BinDir, "bin-dir", "", "directory containing devbridge, devbridge-mcp and devbridge-local-mcp")
 	flag.StringVar(&c.EvidenceDir, "evidence-dir", "", "parent for a new private evidence directory (default system temp)")
-	flag.StringVar(&c.Scenario, "scenario", "all", "all, happy, claim-race, file-crash, or review-cancel")
+	flag.StringVar(&c.Scenario, "scenario", "all", "all or "+strings.Join(simulation.Scenarios(), ", "))
 	flag.DurationVar(&c.Timeout, "timeout", 5*time.Minute, "timeout per scenario")
 	flag.Parse()
 	if flag.NArg() != 0 {

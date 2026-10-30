@@ -51,7 +51,7 @@ func (a *actor) invoke(role, name string, args any) (out callOutcome) {
 		entry["response"] = result
 		out.Denied = result.IsError
 		out.ErrorText = encoded(result.Content)
-		if !result.IsError {
+		if result.StructuredContent != nil {
 			b, e := json.Marshal(result.StructuredContent)
 			if e == nil {
 				e = json.Unmarshal(b, &out.Value)
