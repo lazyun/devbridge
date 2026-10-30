@@ -32,7 +32,7 @@ func TestConfigFailsClosed(t *testing.T) {
 }
 func TestOrderedScenariosHaveIndependentNamesAndValidConfiguration(t *testing.T) {
 	names := Scenarios()
-	if len(names) != 18 || names[0] != "task-admission" || names[1] != "review-gates" || names[2] != "review-blocked" || names[3] != "review-further" || names[4] != "execution-runtime-gate" || names[5] != "direct-start-gates" || names[6] != "file-mutation-gates" || names[7] != "mutation-cancel-race" || names[8] != "file-result-gates" || names[9] != "file-result-no-change" || names[10] != "file-result-after-cancel" || names[11] != "file-acceptance-gates" || names[12] != "file-acceptance-no-change" || names[13] != "feature-delivery-gates" {
+	if len(names) != 20 || names[0] != "task-admission" || names[1] != "review-gates" || names[2] != "review-blocked" || names[3] != "review-further" || names[4] != "execution-runtime-gate" || names[5] != "direct-start-gates" || names[6] != "file-mutation-gates" || names[7] != "mutation-cancel-race" || names[8] != "file-result-gates" || names[9] != "file-result-no-change" || names[10] != "file-result-after-cancel" || names[11] != "file-acceptance-gates" || names[12] != "file-acceptance-no-change" || names[13] != "feature-delivery-gates" || names[14] != "task-action-gates" || names[15] != "review-successor-gates" {
 		t.Fatalf("initial Task admission must precede existing regressions: %v", names)
 	}
 	bin := fixtureBin(t)

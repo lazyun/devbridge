@@ -22,6 +22,8 @@ type actor struct {
 	resolved map[string]*jsonschema.Resolved
 }
 type callOutcome struct {
+	// Envelope retains public context/workflow metadata before unwrapping result.
+	Envelope  map[string]any
 	Value     map[string]any
 	Denied    bool
 	ErrorText string
@@ -59,6 +61,7 @@ func (a *actor) invoke(role, name string, args any) (out callOutcome) {
 			if e != nil {
 				out.Err = e
 			}
+			out.Envelope = out.Value
 			if nested, ok := out.Value["result"].(map[string]any); ok {
 				out.Value = nested
 			}

@@ -61,6 +61,8 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | `file-acceptance-gates` | 一个真实变化成员与一个未变成员的正式结果，必须等独立 fixture 用户验收；提前 task_commit_retry、错会话/revision/workflow/result/epoch/generation/protocol 均拒绝且不提交；真正验收后核对完整成员回执、精确 Git tree/唯一父提交，冷重放不多提交，停在 FeatureArea 合入之前 |
 | `file-acceptance-no-change` | 零变化结果仍可独立验收，Task 可完成交付，但所有成员 NO_CHANGE、commit 字段为空、真实 managed branch HEAD 不变，不生成假提交、不声称命令验证通过 |
 | `feature-delivery-gates` | 独立双成员 fixture 已验收并完成 Task commit 后，单独准备/确认 FeatureArea 合入；冻结每个 repository/member/worktree/源提交/目标分支/预期 HEAD，错误确认和 pending 冷重启不合入；显式确认后精确快进到已验收提交，重复/冷回执不再合入，backend 不变 |
+| `task-action-gates` | 观察正数顶层 Task action generation；旧 generation 明确拒绝，nested/零/小数/字符串仅作为 advertised schema 校验；两个真实 GPT Session 竞争只有一个 pending owner，外会话不获私有 intent；显式丢弃推进 generation，旧卡晚到/冷启动不能消费或抢走新卡，始终无业务后继 |
+| `review-successor-gates` | 在独立 Review 审批等待点，用独立用户 REVISE 创建同一 Task 的唯一新 UPPER Review/Run；冻结旧 workspace/只读成员与原指令加精确反馈；旧报告/worker 回执仍归旧 Review，外层 context 不借用新身份；新报告独立记录，确认重放/冷启动/丢弃已消费卡均不多建，不批准或启动实现 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -71,7 +73,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景、三个验收/交付阶段场景，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景、两个独立启动阶段场景、两个文件效果阶段场景、三个正式结果阶段场景、三个验收/交付阶段场景、两个 Task action/Review 后继阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -254,3 +256,34 @@ session/project/task/revision/workflow/result 组合的结果原先返回 INTERN
 未覆盖的边界包括验收后 Git 部分失败的精确日志/效果间故障注入、原生 RUN
 验证验收以及 `COMPLETE_TASK` 的另一条合并前终态保持流程。这里的通过结果
 不能替代这些专门测试，也不引入 successor/continuation 权限。
+
+
+### Task action 栅栏与首个正式 Review 后继
+
+本增量不把历史反馈直接登记为当前缺陷。顶层 `taskActionGeneration` 在当前
+公开 schema/真实 Core 路径可用；旧值得到 `TASK_ACTION_STALE`，嵌套字段等
+错误仅在模拟器按 `tools/list` 校验时拒绝，不冒称已测 Core 业务授权。
+竞争作者是实际初始化并由 fixture 用户绑定同一项目的第二个 GPT Session，
+不是把只有 worker 工具的 Local ingress 当作上游作者。pending/discard/消费
+回执与 Task/Run/源文件不变量分别检查；不会通过自动重试 UNKNOWN 制造成功。
+
+`REVISE` 是显式用户对当前正式 Review 的决策，不是原生 `CONTINUE_TASK`。
+prepare 仅冻结旧 Review/decision、观察到的 generation 与反馈；commit 才创建
+同一 Task 的一个新 UPPER Review/Run，再显式准备其精确只读权限。新 worker
+获得原始 authored instruction 加原样反馈，旧报告和 worker 回执仍以旧身份
+只读，外层公开 context/workflow 必须标记 stale/refreshRequired 且无 nextAction。
+两个 Review 的报告、Run owner、Task definition、源分支和 managed 文件字节
+独立核对；不会因为旧卡重复提交或 cold replay 创建第三个 Review。
+
+反馈边界按实际契约保留所有可接受的字节：非空空白是合法反馈，不擅自 trim。
+模拟器用 schema 合法但 domain 禁止的 NUL 检查无副作用拒绝。开发中曾错误
+预期空白被拒绝、把 Local 当作可准备 execution 的 ingress，以及把公开
+`agentExecutionId=review:<id>` 兼容投影误当作原生 Execution；这些是已纠正的
+模拟器假设，不是 Core 缺陷。真实 Task Execution 仍为空，无模型/thread/turn。
+
+本增量未覆盖需真实 currentExecution/终态原生 Run 的正向 CONTINUE_TASK、
+DEFER_TASK、REQUEST_REVERIFICATION、RETRY_IMPLEMENTATION 或 no-Run 原生
+Coding successor。中性文件路径不能伪造这些资格。历史 UNKNOWN/migration
+冲突测试使用受控 store fixture，不作为这里的纯公开二进制证据；单纯读取或
+忽略成功响应也不称为真实响应丢失注入。取消后重新 Review 与补充 Review
+属于后续独立增量，本场景停在第二个 Review 的审批等待点。
