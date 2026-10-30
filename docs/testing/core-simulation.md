@@ -10,6 +10,11 @@ Core、GPT MCP proxy 和 Local MCP proxy，使用确定性的上游 GPT、显式
 > `verificationStatus` 必须一直是 `NOT_RUN`。即使 fixture 用户随后验收并合并，
 > 也不能描述成原生命令验证通过或真实 AI 工作完成。
 
+另有独立的 [test-only continuation gate](simulated-continuation-gate.md)：
+通过明确的测试依赖注入，把受信任的确定性协议 Agent 接到真实 Core，建立真实
+Coding Execution/验证记录，再测试 `DEFER_TASK` / `CONTINUE_TASK`。它不是本页
+22 场景的生产二进制入口，也不证明原生资格或主机沙箱通过；两类证据不得混算。
+
 ## 一键运行
 
 要求 Go 1.25+、Git、macOS/Linux；不需要 Codex、账户凭据、模型服务或 Tunnel。

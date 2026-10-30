@@ -54,7 +54,24 @@ func TestMultiRepositoryCodingV1AppServerHelper(t *testing.T) {
 		if err != nil {
 			os.Exit(42)
 		}
-		fmt.Fprintln(os.Stdout, string(encoded))
+		written, writeErr := fmt.Fprintln(os.Stdout, string(encoded))
+		// Optional test-only observation after the exact write; no payload or
+		// ordering changes and no inference that Core received the notification.
+		if responseLog := os.Getenv("DEVBRIDGE_CODING_V1_RESPONSE_LOG"); responseLog != "" {
+			file, err := os.OpenFile(responseLog, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+			if err != nil {
+				os.Exit(58)
+			}
+			record := map[string]any{"at": time.Now().UTC(), "pid": os.Getpid(), "message": json.RawMessage(encoded), "writtenBytes": written}
+			if writeErr != nil {
+				record["writeError"] = writeErr.Error()
+			}
+			err = json.NewEncoder(file).Encode(record)
+			_ = file.Close()
+			if err != nil {
+				os.Exit(59)
+			}
+		}
 	}
 	type request struct {
 		ID     json.RawMessage `json:"id"`
