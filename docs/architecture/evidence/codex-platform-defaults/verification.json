@@ -1,0 +1,41 @@
+{
+  "python": {
+    "command": "python3 -m unittest discover -s scripts -p 'test_probe_codex*.py' -v",
+    "exitCode": 0,
+    "tests": 11,
+    "scope": "controller regressions only; simulated A/B/A not behavioral evidence",
+    "observedToolChunk": "dfb970"
+  },
+  "diffCheck": {
+    "command": "git diff --check",
+    "exitCode": 0,
+    "observedToolChunk": "dfb970"
+  },
+  "patchDryRun": {
+    "command": "patch --dry-run -p1 -d FIXED_SOURCE -i PATCH",
+    "observationExitCode": 0,
+    "candidateExitCode": 0,
+    "scope": "application only; no compiler/test execution"
+  },
+  "rustBuild": "NOT_RUN: rustc/cargo unavailable",
+  "goTestsVetCompile": "NOT_RUN: no Go change",
+  "executionSeven": "INHERITED_PASS; not rerun",
+  "unrelatedOldFailures": "INHERITED; unchanged",
+  "installedHelper": {
+    "invocations": 1,
+    "exitCode": 71,
+    "entered": false,
+    "actualOperations": 0,
+    "status": "HELPER_STARTUP_BLOCKED"
+  },
+  "patchSha256": {
+    "remove-implicit-temp-grants.patch": "bcf9ffe5789016e475cf5e4a96eeb05e2e5fc91bea619fb8c055fedcc0837262",
+    "observe-cli-policy.patch": "3ee12653953cfbfbf7c486db04924ba9c5240e438f3b1b8efd7464bfba922c8d"
+  },
+  "independentReview": {
+    "agent": "/root/direct_v2_authority",
+    "result": "PASS",
+    "mode": "read-only; no tests or helper",
+    "scope": "source/export categories, single-factor controller, startup-blocked actual record, unbuilt candidate, documentation limits"
+  }
+}

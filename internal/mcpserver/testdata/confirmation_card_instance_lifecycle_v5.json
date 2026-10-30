@@ -1,0 +1,399 @@
+{
+  "_meta": {
+    "capturedBy": "internal/controlapi/confirmation_card_instance_lifecycle_test.go",
+    "instanceIdentityRule": "presentationInstanceId = canonicalHash([aiSessionId, intentId, version, contentHash]); lineage (sourceIntentId) is never part of Card instance identity.",
+    "pair": "superseded is the prior Review-decision intent replaced by sourceIntentId; replacement is the new PENDING intent for the same Task/Review/Decision.",
+    "schema": "devbridge/confirmation-card-instance-lifecycle/v5",
+    "singleSourceOfTruth": "These envelopes are the exact production structuredContent and _meta of confirmation_show and confirmation_options_get, captured over the real Streamable HTTP MCP wire, the production middleware stack and the real SQLite store. The Go mount-gate guard and the Card JavaScript instance-lifecycle replay load this SAME file. Never hand-edit an envelope; re-capture with DEVBRIDGE_CARD_INSTANCE_FIXTURE_DIR.",
+    "staticResourceUri": "ui://devbridge/confirmation/v14"
+  },
+  "replacement": {
+    "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+    "entry": {
+      "display": {
+        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+        "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
+        "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+        "featureAreaName": "Lifecycle area",
+        "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+        "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "projectName": "Upper lifecycle",
+        "purpose": "REVIEW",
+        "related": {
+          "availability": "AVAILABLE",
+          "id": "review_119ed678c42ef3af11567e4332c78bcc",
+          "kind": "REVIEW",
+          "outcome": "SUCCEEDED",
+          "reviewRun": {
+            "id": "run_8bef1ef51af3f8a54b6fa9b29adf5822",
+            "status": "SUCCEEDED"
+          },
+          "state": "SUCCEEDED"
+        },
+        "repositoryCount": 4,
+        "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+        "reviewOrdinal": 1,
+        "status": "AVAILABLE",
+        "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05",
+        "taskName": "Lifecycle intent",
+        "topologyRevision": 5,
+        "version": 1
+      },
+      "intent": {
+        "action": "REVISE",
+        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "canResume": false,
+        "content": {
+          "action": "REVISE",
+          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "purpose": "REVIEW",
+          "requestId": "prepare-replacement-testconfirmationreplacementintentmountsitsowncardinstance-2",
+          "review": {
+            "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+            "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "preparedDevelopmentContextHash": "289702453f9dc2f288bbaeb13330b87c19cbc5456f6e62c932e04753906f04e7",
+            "preparedTopologyRevision": 5,
+            "reviewDepth": "",
+            "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
+            "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+            "reviewPlan": {
+              "initialScope": {
+                "kind": ""
+              },
+              "mode": "",
+              "selectedModules": null
+            },
+            "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05"
+          },
+          "sourceIntentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+          "variants": [
+            {
+              "id": "revise",
+              "label": "同一任务重新审查",
+              "summary": "Re-review the same Task after the revised decision"
+            }
+          ]
+        },
+        "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+        "createdAt": "2026-10-25T17:52:07.015589Z",
+        "currentUpperReadAvailable": false,
+        "expiresAt": "2026-10-26T17:52:07.015589Z",
+        "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "purpose": "REVIEW",
+        "state": "PENDING",
+        "steps": [],
+        "version": 1
+      }
+    },
+    "expectCommittableVariant": "revise",
+    "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+    "meta": {
+      "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+      "componentVersion": "PURPOSE_CONFIRMATION_V14",
+      "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+      "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "outputTemplate": "ui://devbridge/confirmation/v14",
+      "presentationInstanceId": "744077fd49a207bbfbee603624b0f79f25ce3cb81430b4434629e68663af746c",
+      "resourceUri": "ui://devbridge/confirmation/v14",
+      "version": 1
+    },
+    "options": {
+      "entry": {
+        "options": {
+          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "backendInventoryComplete": false,
+          "branches": [],
+          "conversationModelDefault": {
+            "state": "THREADLESS"
+          },
+          "developmentContexts": [],
+          "eligibility": {
+            "attemptState": "NOT_ATTEMPTED",
+            "available": true,
+            "currentDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "currentGeneration": "d36376d5dd017db8064f661b47297539a8935551ce35952e589476456c250d34",
+            "currentTopologyRevision": 5,
+            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "preparedGeneration": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+            "preparedTopologyRevision": 5,
+            "receiptState": "NOT_OBSERVED",
+            "reprepareAllowed": false
+          },
+          "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+          "projectId": "",
+          "projects": [],
+          "purpose": "REVIEW",
+          "repositories": [],
+          "repositoryId": "",
+          "repositoryInventoryComplete": false,
+          "runtimeInventoryRevision": 1,
+          "runtimeInventorySource": "CORE_CODEX_RUNTIME_AUTHORITY",
+          "runtimeOptions": [
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-luna",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-terra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-sol",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-6-astra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            }
+          ],
+          "variants": [
+            {
+              "available": true,
+              "id": "revise",
+              "label": "同一任务重新审查"
+            }
+          ],
+          "version": 1
+        }
+      }
+    },
+    "presentationInstanceId": "744077fd49a207bbfbee603624b0f79f25ce3cb81430b4434629e68663af746c",
+    "state": "PENDING",
+    "version": 1
+  },
+  "superseded": {
+    "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+    "entry": {
+      "display": {
+        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+        "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
+        "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+        "featureAreaName": "Lifecycle area",
+        "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+        "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "projectName": "Upper lifecycle",
+        "purpose": "REVIEW",
+        "related": {
+          "availability": "AVAILABLE",
+          "id": "review_119ed678c42ef3af11567e4332c78bcc",
+          "kind": "REVIEW",
+          "outcome": "SUCCEEDED",
+          "reviewRun": {
+            "id": "run_8bef1ef51af3f8a54b6fa9b29adf5822",
+            "status": "SUCCEEDED"
+          },
+          "state": "SUCCEEDED"
+        },
+        "repositoryCount": 4,
+        "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+        "reviewOrdinal": 1,
+        "status": "AVAILABLE",
+        "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05",
+        "taskName": "Lifecycle intent",
+        "topologyRevision": 5,
+        "version": 1
+      },
+      "intent": {
+        "action": "REVISE",
+        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "canResume": false,
+        "content": {
+          "action": "REVISE",
+          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "purpose": "REVIEW",
+          "requestId": "prepare-prior-testconfirmationreplacementintentmountsitsowncardinstance-1",
+          "review": {
+            "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+            "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "preparedDevelopmentContextHash": "c814bbd578c6c30681798bd06836c31ac06eb7ecb2273bc6d00183183e627e22",
+            "preparedTopologyRevision": 4,
+            "reviewDepth": "",
+            "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
+            "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+            "reviewPlan": {
+              "initialScope": {
+                "kind": ""
+              },
+              "mode": "",
+              "selectedModules": null
+            },
+            "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05"
+          },
+          "variants": [
+            {
+              "id": "revise",
+              "label": "同一任务重新审查",
+              "summary": "Re-review the same Task after the revised decision"
+            }
+          ]
+        },
+        "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+        "createdAt": "2026-10-25T17:52:06.760828Z",
+        "currentUpperReadAvailable": false,
+        "expiresAt": "2026-10-26T17:52:06.760828Z",
+        "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "purpose": "REVIEW",
+        "state": "SUPERSEDED",
+        "steps": [],
+        "version": 1
+      }
+    },
+    "expectCommittableVariant": "",
+    "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+    "meta": {
+      "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+      "componentVersion": "PURPOSE_CONFIRMATION_V14",
+      "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+      "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "outputTemplate": "ui://devbridge/confirmation/v14",
+      "presentationInstanceId": "1d695d15c67e6083627b9e2b54a140b15e1d7268b02c51f9b5a1a0b7010e7c63",
+      "resourceUri": "ui://devbridge/confirmation/v14",
+      "version": 1
+    },
+    "options": {
+      "entry": {
+        "options": {
+          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "backendInventoryComplete": false,
+          "branches": [],
+          "conversationModelDefault": {
+            "state": "THREADLESS"
+          },
+          "developmentContexts": [],
+          "eligibility": {
+            "attemptState": "NOT_ATTEMPTED",
+            "available": false,
+            "currentDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "currentGeneration": "84b50e85fc9c7144f427f03e96bec0c5ebe7d4758b35a1d5b0789f043ef46858",
+            "currentTopologyRevision": 5,
+            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
+            "preparedGeneration": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+            "preparedTopologyRevision": 4,
+            "reasonCode": "INTENT_ALREADY_CONSUMED",
+            "reasonMessage": "This confirmation is no longer available for a new commit.",
+            "receiptState": "NOT_OBSERVED",
+            "reprepareAllowed": true
+          },
+          "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+          "projectId": "",
+          "projects": [],
+          "purpose": "REVIEW",
+          "repositories": [],
+          "repositoryId": "",
+          "repositoryInventoryComplete": false,
+          "runtimeInventoryRevision": 1,
+          "runtimeInventorySource": "CORE_CODEX_RUNTIME_AUTHORITY",
+          "runtimeOptions": [
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-luna",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-terra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-sol",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-6-astra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            }
+          ],
+          "variants": [
+            {
+              "available": false,
+              "id": "revise",
+              "label": "同一任务重新审查"
+            }
+          ],
+          "version": 1
+        }
+      }
+    },
+    "presentationInstanceId": "1d695d15c67e6083627b9e2b54a140b15e1d7268b02c51f9b5a1a0b7010e7c63",
+    "state": "SUPERSEDED",
+    "version": 1
+  }
+}

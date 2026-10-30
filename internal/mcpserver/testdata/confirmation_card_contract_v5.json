@@ -1,0 +1,379 @@
+{
+  "_meta": {
+    "contract": "PURPOSE_CONFIRMATION_V5 host/card absolute-validator parity contract vectors",
+    "componentVersion": "PURPOSE_CONFIRMATION_V5",
+    "singleSourceOfTruth": "This file is loaded by BOTH the Go mount-gate test (ValidateConfirmationCardEntryProjection / ValidateConfirmationOptionsProjection) and the Card JavaScript test (real validateIntent / validateSubmission / validateOptions / decode). There must never be a second hand-written expectation table.",
+    "fieldSemantics": {
+      "kind": "INTENT_ENTRY | OPTIONS | SUBMISSION — which Card entrypoint the vector drives.",
+      "scope": "MOUNT_ABSOLUTE = decidable from a single canonical confirmation_show / confirmation_options_get envelope; BOUND_ENTRY_RELATIVE = only comparable after the Card already holds a prior entry/pendingCommit, so the single-read Go mount gate must NOT claim coverage of it.",
+      "fixture": "name under fixtures/* the mutation applies to",
+      "mutation": "ordered list of ops applied to the fixture before validation",
+      "ops": "set {path,value} | delete {path} | push {path,value} | pushAt {path,value} (alias of push). path is '.'-joined object keys with optional [i] array index relative to the fixture root.",
+      "expectedAccepted": "true = the Card first-binds the entry (entryBound) / accepts options; false = the Card throws",
+      "expectedDisposition": "the Card fail(...) stage for a rejection (asserted on the JS side; the Go side normalizes stage to RECEIPT_READBACK and only asserts expectedReasonCode parity)",
+      "expectedReasonCode": "the Card fail(...) code — the machine reason code. Both runtimes must agree on this for MOUNT_ABSOLUTE vectors."
+    },
+    "parityBoundary": "MOUNT_ABSOLUTE is enforced identically by the Go mount gate and the Card. BOUND_ENTRY_RELATIVE is enforced only by the Card against a previously bound entry/pendingCommit; the Go test asserts these are NOT single-read decidable and documents the boundary rather than faking coverage.",
+    "relativeReasonCodes": ["INTENT_IDENTITY_MISMATCH", "CONTENT_VERSION_MISMATCH", "PROJECT_IDENTITY_MISMATCH", "CONFIRMATION_SELECTION_CONFLICT", "SUBMISSION_REQUEST_CONFLICT"],
+    "retryDispositionContract": {
+      "producer": "Core's NormalizePublicIntent derives submission.retryDisposition from the durable receipt. No public surface accepts it as input, and the Card never infers it from transport failure, timeout, a missing button or a refresh.",
+      "values": {
+        "NONE": "no user retry route: a consumed choice, or a recorded rejection that carries no editable next action",
+        "EDIT_SELECTION_AND_RESUBMIT": "recorded REJECTED_NOT_CONSUMED, consumed=false, nextAction=EDIT_SELECTION on a still-PENDING intent with no frozen commit and expiresAt in the future — the only value that re-arms the Card confirmation control",
+        "REPREPARE_REQUIRED": "the old selection cannot be resubmitted on this intent (stale action, terminal or superseded state); a new prepare is the only route",
+        "READ_ORIGINAL_RECEIPT": "the request was not observed or its outcome is unknown; only a receipt readback is permitted"
+      },
+      "invariants": "EDIT_SELECTION_AND_RESUBMIT requires recorded=true, outcome=REJECTED_NOT_CONSUMED, businessOutcome=REJECTED_NOT_CONSUMED, consumptionDisposition=NOT_CONSUMED, consumed=false, nextAction=EDIT_SELECTION, state=PENDING, intent.commit absent and expiresAt in the future. An expired, terminal or committed intent re-derives to REPREPARE_REQUIRED. A consumed submission requires NONE. An unrecorded submission requires READ_ORIGINAL_RECEIPT. Any other pairing is RETRY_DISPOSITION_CONFLICT."
+    }
+  },
+  "fixtures": {
+    "intentEnvelope": {
+      "intent": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "REVIEW",
+        "projectId": "project",
+        "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "state": "PENDING",
+        "canResume": false,
+        "currentUpperReadAvailable": false,
+        "action": "REVISE",
+        "content": {
+          "aiSessionId": "session",
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "variants": [
+            { "id": "revise", "label": "Retry review", "summary": "Re-run the review with the requested changes." }
+          ],
+          "review": { "taskId": "task", "featureAreaId": "area", "reviewId": "review", "decisionId": "decision" }
+        },
+        "steps": []
+      }
+    },
+    "commitEnvelope": {
+      "intent": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "REVIEW",
+        "projectId": "project",
+        "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "state": "CONFIRMING",
+        "canResume": true,
+        "currentUpperReadAvailable": false,
+        "action": "REVISE",
+        "content": {
+          "aiSessionId": "session",
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "variants": [
+            { "id": "revise", "label": "Retry review", "summary": "Re-run the review." }
+          ],
+          "review": { "taskId": "task", "featureAreaId": "area", "reviewId": "review", "decisionId": "decision" }
+        },
+        "steps": [],
+        "commit": {
+          "aiSessionId": "session",
+          "intentId": "confirm_contract_fixture_v5",
+          "version": 1,
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "requestId": "commit-request-1",
+          "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "variantId": "revise",
+          "selection": { "projectId": "project" }
+        }
+      }
+    },
+    "directFileEnvelope": {
+      "intent": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "EXECUTION",
+        "projectId": "project",
+        "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "state": "PENDING",
+        "canResume": false,
+        "currentUpperReadAvailable": false,
+        "action": "START_IMPLEMENTATION",
+        "content": {
+          "aiSessionId": "session",
+          "purpose": "EXECUTION",
+          "action": "START_IMPLEMENTATION",
+          "variants": [
+            { "id": "codex", "label": "Codex", "summary": "Implement with Codex." }
+          ],
+          "execution": { "taskId": "task", "featureAreaId": "area", "executionId": "exec", "revisionId": "rev-1" }
+        },
+        "steps": [
+          { "kind": "IMPLEMENT", "requestId": "step-1", "state": "PENDING", "taskId": "task", "revisionId": "rev-1", "workflowId": "wf-1" }
+        ],
+        "currentDirectFile": {
+          "state": "ACTIVE",
+          "enabled": true,
+          "taskId": "task",
+          "taskDefinitionRevisionId": "rev-1",
+          "workflowId": "wf-1",
+          "aiSessionId": "session",
+          "projectId": "project"
+        }
+      }
+    },
+    "submissionEnvelope": {
+      "intent": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "REVIEW",
+        "projectId": "project",
+        "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "state": "COMPLETED",
+        "canResume": false,
+        "currentUpperReadAvailable": false,
+        "action": "REVISE",
+        "content": {
+          "aiSessionId": "session",
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "variants": [
+            { "id": "revise", "label": "Retry review", "summary": "Re-run the review." }
+          ],
+          "review": { "taskId": "task", "featureAreaId": "area", "reviewId": "review", "decisionId": "decision" }
+        },
+        "steps": [],
+        "commit": {
+          "aiSessionId": "session",
+          "intentId": "confirm_contract_fixture_v5",
+          "version": 1,
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "requestId": "commit-request-1",
+          "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "variantId": "revise",
+          "selection": { "projectId": "project" }
+        },
+        "submission": {
+          "request": {
+            "aiSessionId": "session",
+            "intentId": "confirm_contract_fixture_v5",
+            "version": 1,
+            "purpose": "REVIEW",
+            "action": "REVISE",
+            "requestId": "commit-request-1",
+            "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "variantId": "revise",
+            "selection": { "projectId": "project" }
+          },
+          "payloadSHA256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "outcome": "CONSUMED",
+          "businessOutcome": "COMMITTED",
+          "consumptionDisposition": "CONSUMED",
+          "consumed": true,
+          "recorded": true,
+          "redispatchSameIntent": false,
+          "reprepareAllowed": false,
+          "nextAction": "READ_CURRENT_TARGET",
+          "receiptRequestId": "commit-request-1",
+          "retryDisposition": "NONE"
+        }
+      }
+    },
+    "retryEnvelope": {
+      "intent": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "REVIEW",
+        "projectId": "project",
+        "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "state": "PENDING",
+        "canResume": false,
+        "currentUpperReadAvailable": false,
+        "action": "REVISE",
+        "content": {
+          "aiSessionId": "session",
+          "purpose": "REVIEW",
+          "action": "REVISE",
+          "variants": [
+            { "id": "revise", "label": "Retry review", "summary": "Re-run the review." }
+          ],
+          "review": { "taskId": "task", "featureAreaId": "area", "reviewId": "review", "decisionId": "decision" }
+        },
+        "steps": [],
+        "submission": {
+          "request": {
+            "aiSessionId": "session",
+            "intentId": "confirm_contract_fixture_v5",
+            "version": 1,
+            "purpose": "REVIEW",
+            "action": "REVISE",
+            "requestId": "commit-request-1",
+            "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "variantId": "revise",
+            "selection": { "projectId": "project" }
+          },
+          "payloadSHA256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "outcome": "REJECTED_NOT_CONSUMED",
+          "businessOutcome": "REJECTED_NOT_CONSUMED",
+          "consumptionDisposition": "NOT_CONSUMED",
+          "consumed": false,
+          "recorded": true,
+          "redispatchSameIntent": false,
+          "reprepareAllowed": true,
+          "nextAction": "EDIT_SELECTION",
+          "receiptRequestId": "",
+          "retryDisposition": "EDIT_SELECTION_AND_RESUBMIT",
+          "failure": {
+            "code": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "reasonCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "source": "CONFIRMATION",
+            "stage": "CONFIRMATION_PREFLIGHT",
+            "message": "The confirmation preflight rejected this selection before any business step ran.",
+            "nextAction": "EDIT_SELECTION"
+          }
+        }
+      }
+    },
+    "optionsEnvelope": {
+      "options": {
+        "aiSessionId": "session",
+        "intentId": "confirm_contract_fixture_v5",
+        "version": 1,
+        "purpose": "REVIEW",
+        "projectId": "project",
+        "repositoryId": "",
+        "developmentContexts": [],
+        "repositoryInventoryComplete": false,
+        "projects": [],
+        "repositories": [],
+        "branches": [],
+        "variants": [
+          { "id": "revise", "label": "Retry review", "available": true }
+        ],
+        "runtimeOptions": [],
+        "runtimeInventoryRevision": 0,
+        "runtimeInventorySource": "codex",
+        "backendInventoryComplete": false,
+        "eligibility": {
+          "available": true,
+          "reprepareAllowed": true,
+          "attemptState": "PENDING",
+          "receiptState": "NONE"
+        }
+      }
+    }
+  },
+  "vectors": [
+    { "id": "intent_canonical", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_steps_empty_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.steps", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_steps_null", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.steps", "value": null }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "STEPS_MISSING" },
+    { "id": "intent_steps_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.steps" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "STEPS_MISSING" },
+    { "id": "intent_variants_empty_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.variants", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_variants_null", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.variants", "value": null }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "VARIANTS_MISSING" },
+    { "id": "intent_variants_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.content.variants" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "VARIANTS_MISSING" },
+    { "id": "intent_duplicate_variant_id", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.content.variants", "value": { "id": "revise", "label": "Second", "summary": "dup" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "VARIANT_SHAPE_INVALID" },
+    { "id": "intent_variant_id_empty", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.variants[0].id", "value": "" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "VARIANT_SHAPE_INVALID" },
+    { "id": "intent_variant_id_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.content.variants[0].id" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "VARIANT_SHAPE_INVALID" },
+    { "id": "intent_variant_label_wrong_type", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.variants[0].label", "value": 42 }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "VARIANT_SHAPE_INVALID" },
+    { "id": "intent_variant_summary_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.content.variants[0].summary" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "VARIANT_SHAPE_INVALID" },
+    { "id": "intent_project_id_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.projectId" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "PROJECT_ID_MISSING" },
+    { "id": "intent_version_zero", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.version", "value": 0 }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "ENTRY_IDENTITY_INVALID" },
+    { "id": "intent_version_non_integer", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.version", "value": 2.5 }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "ENTRY_IDENTITY_INVALID" },
+    { "id": "intent_id_empty", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.intentId", "value": "" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "ENTRY_IDENTITY_INVALID" },
+    { "id": "intent_purpose_unknown", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.purpose", "value": "REPORT" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "ENTRY_IDENTITY_INVALID" },
+    { "id": "intent_content_hash_malformed", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.contentHash", "value": "nope" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "CONTENT_HASH_INVALID" },
+    { "id": "intent_content_hash_uppercase_valid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.contentHash", "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF" }, { "op": "set", "path": "intent.contentHash", "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_purpose_body_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.review", "value": null }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "PURPOSE_CONTENT_MISSING" },
+    { "id": "intent_action_content_mismatch", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.action", "value": "REJECT" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "CONTENT_IDENTITY_MISMATCH" },
+    { "id": "intent_content_action_wrong_type", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content.action", "value": 7 }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "CONTENT_IDENTITY_MISMATCH" },
+    { "id": "intent_state_invalid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.state", "value": "WEIRD" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "STATE_INVALID" },
+    { "id": "intent_can_resume_wrong_type", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.canResume", "value": "yes" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "CAN_RESUME_TYPE" },
+    { "id": "intent_upper_read_wrong_type", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.currentUpperReadAvailable", "value": "true" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "UPPER_READ_QUALIFICATION_INVALID" },
+    { "id": "intent_upper_read_absent_ok", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.currentUpperReadAvailable" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_project_scope_no_repository_id", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.repositoryId" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_content_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "delete", "path": "intent.content" }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "CONTENT_MISSING" },
+    { "id": "intent_content_not_object", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.content", "value": null }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "CONTENT_MISSING" },
+    { "id": "intent_step_valid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "requestId": "step-1", "state": "COMPLETED", "effect": "COMMAND_COMPLETED" } }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_step_kind_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "requestId": "step-1", "state": "PENDING" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "STEP_SHAPE_INVALID" },
+    { "id": "intent_step_request_id_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "state": "PENDING" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "STEP_SHAPE_INVALID" },
+    { "id": "intent_step_state_invalid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "requestId": "step-1", "state": "RUNNING" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "STEP_SHAPE_INVALID" },
+    { "id": "intent_step_effect_invalid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "requestId": "step-1", "state": "PENDING", "effect": "PARTIAL" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "STEP_SHAPE_INVALID" },
+    { "id": "intent_step_failure_bad_shape", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "requestId": "step-1", "state": "REJECTED", "failure": { "code": "X", "source": "CONFIRMATION", "stage": "BUSINESS_STEP", "message": "m", "nextAction": "BOGUS" } } }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "FAILURE_SHAPE_INVALID" },
+    { "id": "intent_step_failure_valid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "push", "path": "intent.steps", "value": { "kind": "REVIEW_PLAN", "requestId": "step-1", "state": "REJECTED", "failure": { "code": "X", "reasonCode": "X_R", "source": "CONFIRMATION", "stage": "BUSINESS_STEP", "message": "m", "nextAction": "READ_CURRENT_TARGET" } } }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_can_resume_without_commit", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.canResume", "value": true }], "expectedAccepted": false, "expectedDisposition": "INTENT_FACTS_UNAVAILABLE", "expectedReasonCode": "RESUME_RECEIPT_MISSING" },
+    { "id": "intent_commit_valid_can_resume", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_commit_identity_mismatch", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.intentId", "value": "other" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "RECEIPT_IDENTITY_MISMATCH" },
+    { "id": "intent_commit_variant_unknown", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.variantId", "value": "ghost" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "RECEIPT_IDENTITY_MISMATCH" },
+    { "id": "intent_commit_request_id_wrong_type", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.requestId", "value": 0 }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "RECEIPT_IDENTITY_MISMATCH" },
+    { "id": "intent_commit_request_id_empty_string", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.requestId", "value": "" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_commit_content_hash_mismatch", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.contentHash", "value": "1111111111111111111111111111111111111111111111111111111111111111" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "RECEIPT_IDENTITY_MISMATCH" },
+    { "id": "intent_commit_frozen_backend_valid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.backendSelection", "value": { "configId": "cfg-1", "configFingerprint": "1111111111111111111111111111111111111111111111111111111111111111", "configName": "Codex", "source": "codexconfig" } }, { "op": "set", "path": "intent.commit.selection.backend", "value": { "configId": "cfg-1", "configFingerprint": "1111111111111111111111111111111111111111111111111111111111111111" } }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_commit_frozen_backend_fingerprint_bad", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.backendSelection", "value": { "configId": "cfg-1", "configFingerprint": "short", "configName": "Codex", "source": "codexconfig" } }, { "op": "set", "path": "intent.commit.selection.backend", "value": { "configId": "cfg-1", "configFingerprint": "short" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "FROZEN_BACKEND_SHAPE" },
+    { "id": "intent_commit_frozen_backend_missing_narrow", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.backendSelection", "value": { "configId": "cfg-1", "configFingerprint": "1111111111111111111111111111111111111111111111111111111111111111", "configName": "Codex", "source": "codexconfig" } }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "FROZEN_BACKEND_SHAPE" },
+    { "id": "intent_direct_file_valid", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "directFileEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_direct_file_task_not_owned", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "directFileEnvelope", "mutation": [{ "op": "set", "path": "intent.currentDirectFile.taskId", "value": "not-a-step-owner" }], "expectedAccepted": false, "expectedDisposition": "CURRENT_FILE_IDENTITY_MISMATCH", "expectedReasonCode": "CURRENT_FILE_IDENTITY_MISMATCH" },
+    { "id": "intent_direct_file_state_missing", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "directFileEnvelope", "mutation": [{ "op": "delete", "path": "intent.currentDirectFile.state" }], "expectedAccepted": false, "expectedDisposition": "CURRENT_FILE_IDENTITY_MISMATCH", "expectedReasonCode": "CURRENT_FILE_IDENTITY_MISMATCH" },
+    { "id": "intent_direct_file_workflow_mismatch", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "directFileEnvelope", "mutation": [{ "op": "set", "path": "intent.currentDirectFile.workflowId", "value": "wf-elsewhere" }], "expectedAccepted": false, "expectedDisposition": "CURRENT_FILE_WORKFLOW_MISMATCH", "expectedReasonCode": "CURRENT_FILE_WORKFLOW_MISMATCH" },
+    { "id": "submission_valid_consumed", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "submission_shape_missing_field", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "delete", "path": "intent.submission.payloadSHA256" }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_SHAPE_INVALID" },
+    { "id": "submission_request_identity_mismatch", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.request.variantId", "value": "ghost" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "SUBMISSION_IDENTITY_MISMATCH" },
+    { "id": "submission_request_shape_unknown_key", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.request.extraKey", "value": 1 }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_REQUEST_SHAPE" },
+    { "id": "submission_consumption_receipt_mismatch", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.receiptRequestId", "value": "different-request" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "CONSUMPTION_RECEIPT_MISMATCH" },
+
+    { "id": "retry_editable_valid", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "retry_reprepare_allowed_on_rejection", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": "REPREPARE_REQUIRED" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "retry_none_on_rejection_fails_closed", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": "NONE" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "submission_retry_missing", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "delete", "path": "intent.submission.retryDisposition" }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_SHAPE_INVALID" },
+    { "id": "submission_retry_unknown_value", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": "RETRY_ANYWAY" }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_SHAPE_INVALID" },
+    { "id": "submission_retry_wrong_type", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": null }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_SHAPE_INVALID" },
+    { "id": "submission_retry_editable_on_consumed", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": "EDIT_SELECTION_AND_RESUBMIT" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "retry_editable_on_non_pending", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [{ "op": "set", "path": "intent.state", "value": "CONFIRMING" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "retry_editable_with_non_edit_next_action", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.nextAction", "value": "READ_CURRENT_TARGET" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "retry_editable_with_frozen_commit", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "retryEnvelope", "mutation": [{ "op": "set", "path": "intent.commit", "value": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "action": "REVISE", "requestId": "commit-request-1", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "variantId": "revise", "selection": { "projectId": "project" } } }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "submission_retry_editable_injected_on_unrecorded", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.recorded", "value": false }, { "op": "set", "path": "intent.submission.outcome", "value": "UNKNOWN" }, { "op": "set", "path": "intent.submission.businessOutcome", "value": "OUTCOME_UNKNOWN" }, { "op": "set", "path": "intent.submission.consumptionDisposition", "value": "UNKNOWN" }, { "op": "delete", "path": "intent.submission.consumed" }, { "op": "set", "path": "intent.submission.retryDisposition", "value": "EDIT_SELECTION_AND_RESUBMIT" }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "submission_retry_read_receipt_on_unrecorded_valid", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.recorded", "value": false }, { "op": "set", "path": "intent.submission.outcome", "value": "UNKNOWN" }, { "op": "set", "path": "intent.submission.businessOutcome", "value": "OUTCOME_UNKNOWN" }, { "op": "set", "path": "intent.submission.consumptionDisposition", "value": "UNKNOWN" }, { "op": "delete", "path": "intent.submission.consumed" }, { "op": "set", "path": "intent.submission.retryDisposition", "value": "READ_ORIGINAL_RECEIPT" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "submission_retry_read_receipt_on_consumed_rejected", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.retryDisposition", "value": "READ_ORIGINAL_RECEIPT" }], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "RETRY_DISPOSITION_CONFLICT" },
+    { "id": "retry_editable_submission_request_conflict", "kind": "SUBMISSION", "scope": "BOUND_ENTRY_RELATIVE", "fixture": "retryEnvelope", "boundEntry": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "projectId": "project", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" }, "pendingCommit": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "action": "REVISE", "requestId": "commit-request-2", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "variantId": "revise", "selection": { "projectId": "different" } }, "mutation": [], "expectedAccepted": false, "expectedDisposition": "INTENT_VALIDATE", "expectedReasonCode": "SUBMISSION_REQUEST_CONFLICT" },
+    { "id": "options_canonical", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "options_projects_empty_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.projects", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "options_projects_null", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.projects", "value": null }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_INVENTORY_UNAVAILABLE", "expectedReasonCode": "OPTIONS_INVENTORY_UNAVAILABLE" },
+    { "id": "options_repositories_missing", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "delete", "path": "options.repositories" }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_INVENTORY_UNAVAILABLE", "expectedReasonCode": "OPTIONS_INVENTORY_UNAVAILABLE" },
+    { "id": "options_branches_null", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.branches", "value": null }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_INVENTORY_UNAVAILABLE", "expectedReasonCode": "OPTIONS_INVENTORY_UNAVAILABLE" },
+    { "id": "options_variants_null", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.variants", "value": null }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_INVENTORY_UNAVAILABLE", "expectedReasonCode": "OPTIONS_INVENTORY_UNAVAILABLE" },
+    { "id": "options_runtime_options_null", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.runtimeOptions", "value": null }], "expectedAccepted": false, "expectedDisposition": "RUNTIME_OPTIONS_UNAVAILABLE", "expectedReasonCode": "RUNTIME_OPTIONS_UNAVAILABLE" },
+    { "id": "options_runtime_options_empty_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.runtimeOptions", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "options_runtime_option_invalid", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "push", "path": "options.runtimeOptions", "value": { "modelId": "", "enabled": true, "codexFastModeSupported": false, "supportedReasoningEfforts": [] } }], "expectedAccepted": false, "expectedDisposition": "RUNTIME_OPTIONS_UNAVAILABLE", "expectedReasonCode": "RUNTIME_OPTIONS_UNAVAILABLE" },
+    { "id": "options_runtime_option_valid", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "push", "path": "options.runtimeOptions", "value": { "modelId": "gpt-5-codex", "enabled": true, "codexFastModeSupported": true, "supportedReasoningEfforts": ["low", "medium"] } }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "options_variant_capability_duplicate_id", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "push", "path": "options.variants", "value": { "id": "revise", "label": "dup", "available": true } }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_SHAPE_INVALID", "expectedReasonCode": "OPTIONS_SHAPE_INVALID" },
+    { "id": "options_choice_missing_id", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "push", "path": "options.projects", "value": { "label": "no id", "available": true } }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_SHAPE_INVALID", "expectedReasonCode": "OPTIONS_SHAPE_INVALID" },
+    { "id": "options_choice_available_wrong_type", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "push", "path": "options.branches", "value": { "id": "b", "label": "B", "available": "yes" } }], "expectedAccepted": false, "expectedDisposition": "OPTIONS_SHAPE_INVALID", "expectedReasonCode": "OPTIONS_SHAPE_INVALID" },
+    { "id": "options_eligibility_missing", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "delete", "path": "options.eligibility" }], "expectedAccepted": false, "expectedDisposition": "INTENT_ELIGIBILITY_INVALID", "expectedReasonCode": "INTENT_ELIGIBILITY_INVALID" },
+    { "id": "options_eligibility_attempt_state_missing", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "delete", "path": "options.eligibility.attemptState" }], "expectedAccepted": false, "expectedDisposition": "INTENT_ELIGIBILITY_INVALID", "expectedReasonCode": "INTENT_ELIGIBILITY_INVALID" },
+    { "id": "options_eligibility_attempt_state_empty_string", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.eligibility.attemptState", "value": "" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "options_backend_candidate_invalid_fingerprint", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.backendCandidates", "value": [{ "configId": "cfg", "configFingerprint": "bad", "configName": "Codex", "source": "codexconfig" }] }], "expectedAccepted": false, "expectedDisposition": "BACKEND_OPTIONS_INVALID", "expectedReasonCode": "BACKEND_OPTIONS_INVALID" },
+    { "id": "options_backend_candidates_empty_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.backendCandidates", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_dev_contexts_empty_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.developmentContexts", "value": [] }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+
+    { "id": "intent_commit_content_hash_is_array_no_panic", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.contentHash", "value": ["not-a-string"] }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "RECEIPT_IDENTITY_MISMATCH" },
+    { "id": "intent_commit_frozen_backend_selection_is_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.backendSelection", "value": [] }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "FROZEN_BACKEND_SHAPE" },
+    { "id": "intent_commit_frozen_backend_selection_is_string", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "commitEnvelope", "mutation": [{ "op": "set", "path": "intent.commit.backendSelection", "value": "frozen" }], "expectedAccepted": false, "expectedDisposition": "ENTRY_SCHEMA_INVALID", "expectedReasonCode": "FROZEN_BACKEND_SHAPE" },
+    { "id": "intent_submission_is_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.submission", "value": [] }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_SHAPE_INVALID" },
+    { "id": "intent_submission_is_empty_string", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.submission", "value": "" }], "expectedAccepted": true, "expectedDisposition": "", "expectedReasonCode": "" },
+    { "id": "intent_direct_file_is_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "directFileEnvelope", "mutation": [{ "op": "set", "path": "intent.currentDirectFile", "value": [] }], "expectedAccepted": false, "expectedDisposition": "CURRENT_FILE_IDENTITY_MISMATCH", "expectedReasonCode": "CURRENT_FILE_IDENTITY_MISMATCH" },
+    { "id": "intent_upper_review_is_array", "kind": "INTENT_ENTRY", "scope": "MOUNT_ABSOLUTE", "fixture": "intentEnvelope", "mutation": [{ "op": "set", "path": "intent.currentUpperReview", "value": ["x"] }], "expectedAccepted": false, "expectedDisposition": "CURRENT_REVIEW_IDENTITY_MISMATCH", "expectedReasonCode": "CURRENT_REVIEW_IDENTITY_MISMATCH" },
+    { "id": "submission_request_selection_backend_is_null", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.request.selection.backend", "value": null }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_BACKEND_SHAPE" },
+    { "id": "submission_request_selection_runtime_config_is_array", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.request.selection.runtimeConfig", "value": [] }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_RUNTIME_SHAPE" },
+    { "id": "submission_request_selection_verification_waiver_is_number", "kind": "SUBMISSION", "scope": "MOUNT_ABSOLUTE", "fixture": "submissionEnvelope", "mutation": [{ "op": "set", "path": "intent.submission.request.selection.verificationWaiver", "value": 5 }], "expectedAccepted": false, "expectedDisposition": "RESPONSE_DECODE", "expectedReasonCode": "SUBMISSION_WAIVER_SHAPE" },
+    { "id": "options_runtime_revision_too_large_for_safe_integer", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.runtimeInventoryRevision", "value": 1e20 }], "expectedAccepted": false, "expectedDisposition": "RUNTIME_SOURCE_INVALID", "expectedReasonCode": "RUNTIME_SOURCE_INVALID" },
+    { "id": "options_locked_backend_is_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.lockedBackend", "value": [] }], "expectedAccepted": false, "expectedDisposition": "LOCKED_BACKEND_INVALID", "expectedReasonCode": "LOCKED_BACKEND_INVALID" },
+    { "id": "options_locked_runtime_config_is_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.lockedRuntimeConfig", "value": [] }], "expectedAccepted": false, "expectedDisposition": "LOCKED_CONFIG_INVALID", "expectedReasonCode": "LOCKED_CONFIG_INVALID" },
+    { "id": "options_conversation_model_default_is_array", "kind": "OPTIONS", "scope": "MOUNT_ABSOLUTE", "fixture": "optionsEnvelope", "mutation": [{ "op": "set", "path": "options.conversationModelDefault", "value": ["x"] }], "expectedAccepted": false, "expectedDisposition": "CONVERSATION_MODEL_DEFAULT_INVALID", "expectedReasonCode": "CONVERSATION_MODEL_DEFAULT_INVALID" },
+
+    { "id": "intent_stale_version", "kind": "INTENT_ENTRY", "scope": "BOUND_ENTRY_RELATIVE", "fixture": "intentEnvelope", "boundEntry": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "projectId": "project", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" }, "mutation": [{ "op": "set", "path": "intent.version", "value": 2 }], "expectedAccepted": false, "expectedDisposition": "INTENT_STALE", "expectedReasonCode": "INTENT_IDENTITY_MISMATCH" },
+    { "id": "intent_stale_content_hash", "kind": "INTENT_ENTRY", "scope": "BOUND_ENTRY_RELATIVE", "fixture": "intentEnvelope", "boundEntry": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "projectId": "project", "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" }, "mutation": [], "expectedAccepted": false, "expectedDisposition": "INTENT_STALE", "expectedReasonCode": "CONTENT_VERSION_MISMATCH" },
+    { "id": "intent_stale_project", "kind": "INTENT_ENTRY", "scope": "BOUND_ENTRY_RELATIVE", "fixture": "intentEnvelope", "boundEntry": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "projectId": "other-project", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" }, "mutation": [], "expectedAccepted": false, "expectedDisposition": "INTENT_STALE", "expectedReasonCode": "PROJECT_IDENTITY_MISMATCH" },
+    { "id": "intent_selection_conflict", "kind": "INTENT_ENTRY", "scope": "BOUND_ENTRY_RELATIVE", "fixture": "commitEnvelope", "boundEntry": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "projectId": "project", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" }, "pendingCommit": { "aiSessionId": "session", "intentId": "confirm_contract_fixture_v5", "version": 1, "purpose": "REVIEW", "action": "REVISE", "requestId": "commit-request-1", "contentHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "variantId": "revise", "selection": { "projectId": "different" } }, "mutation": [], "expectedAccepted": false, "expectedDisposition": "INTENT_STALE", "expectedReasonCode": "CONFIRMATION_SELECTION_CONFLICT" }
+  ]
+}

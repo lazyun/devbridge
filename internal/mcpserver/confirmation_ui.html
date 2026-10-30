@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dev Bridge · 操作确认</title>
+<style id="confirmation-style">
+/* DEV BRIDGE confirmation V5. Sole stylesheet: replace, never append to V1–V3. */
+:root {
+  color-scheme: light dark;
+  --dbc-fg: var(--color-text-primary, #18243b);
+  --dbc-muted: var(--color-text-secondary, #66758d);
+  --dbc-surface: var(--color-background-primary, #fff);
+  --dbc-soft: var(--color-background-secondary, #f8fafd);
+  --dbc-border: #dce4f0;
+  --dbc-line: #e8edf5;
+  --dbc-accent: #1264e9;
+  --dbc-accent-hover: #0954ce;
+  --dbc-tint: #f0f5ff;
+  --dbc-icon-bg: #eaf2ff;
+  --dbc-area-fg: #6941b8;
+  --dbc-area-bg: #f4efff;
+  --dbc-area-border: #d9c9f5;
+  --dbc-warning: #b65316;
+  --dbc-warning-bg: #fff5eb;
+  --dbc-warning-border: #ffd3ae;
+  --dbc-danger: var(--color-text-danger, #ad252d);
+  --dbc-focus: #2674ff;
+  --dbc-shadow: 0 12px 34px rgb(23 43 76 / 8%), 0 2px 6px rgb(23 43 76 / 3%);
+  --dbc-modal-shadow: 0 24px 68px rgb(19 35 65 / 22%);
+  /* The unchanged reader controller writes these geometry variables. */
+  --db-reader-width: 480px;
+  --db-reader-height: 500px;
+  --db-reader-left: 16px;
+  --db-reader-top: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --dbc-fg: var(--color-text-primary, #e9eef8);
+    --dbc-muted: var(--color-text-secondary, #a8b5cb);
+    --dbc-surface: var(--color-background-primary, #1c2534);
+    --dbc-soft: var(--color-background-secondary, #232e40);
+    --dbc-border: #41506a;
+    --dbc-line: #34435b;
+    --dbc-accent: #73a9ff;
+    --dbc-accent-hover: #93bbff;
+    --dbc-tint: #24324b;
+    --dbc-icon-bg: #293e60;
+    --dbc-area-fg: #d3b8ff;
+    --dbc-area-bg: #352b48;
+    --dbc-area-border: #685184;
+    --dbc-warning: #ffbd8c;
+    --dbc-warning-bg: #3a2f28;
+    --dbc-warning-border: #785638;
+    --dbc-danger: var(--color-text-danger, #ffa1a8);
+    --dbc-focus: #9bc2ff;
+    --dbc-shadow: 0 12px 34px rgb(0 0 0 / 22%);
+  }
+}
+/* Document geometry is deliberately minimal; no root viewport-height rules. */
+html { margin: 0; padding: 0; background: transparent; }
+body.dbc-surface {
+  margin: 0;
+  padding: 16px;
+  background: transparent;
+  color: var(--dbc-fg);
+  font: 14px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+#db-confirmation-shell,
+#db-confirmation-shell *,
+#debug,
+#debug *,
+.db-plan-dialog,
+.db-plan-dialog * { box-sizing: border-box; }
+/* Stable shell: sizer/reader observe this node, not an unpadded host root. */
+#db-confirmation-shell {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  max-width: 820px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0;
+  border: 1px solid var(--dbc-border);
+  border-radius: 18px;
+  background: var(--dbc-surface);
+  box-shadow: var(--dbc-shadow);
+}
+/* Dedicated content wrapper defeats generic main/#root resets without !important. */
+#db-confirmation-shell > #root.dbc-content {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 26px 28px 24px;
+  color: var(--dbc-fg);
+  background: transparent;
+  font: inherit;
+}
+#db-confirmation-shell :is(h1,h2,h3,p,dl,dd,ul,ol),
+#debug :is(h1,h2,p) { margin: 0; }
+#db-confirmation-shell :is(h1,h2,h3) { color: var(--dbc-fg); }
+#db-confirmation-shell h1 { font-size: 21px; line-height: 1.42; font-weight: 730; letter-spacing: -.025em; overflow-wrap: anywhere; }
+#db-confirmation-shell h2 { font-size: 15px; line-height: 1.5; font-weight: 660; }
+#db-confirmation-shell h3 { font-size: 14px; line-height: 1.5; }
+#db-confirmation-shell p { line-height: 1.65; overflow-wrap: anywhere; }
+#db-confirmation-shell .muted { color: var(--dbc-muted); font-size: 12px; }
+#db-confirmation-shell .error,
+#debug .error,
+.db-plan-dialog .error { color: var(--dbc-danger); overflow-wrap: anywhere; }
+#db-confirmation-shell .notice { white-space: pre-wrap; overflow-wrap: anywhere; }
+.dbc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.dbc-brand-group { min-width: 0; flex: 1; }
+.dbc-brand { display: block; font-size: 17px; letter-spacing: .08em; line-height: 1.35; font-weight: 750; }
+#db-confirmation-shell .dbc-environment { margin-top: 7px; color: var(--dbc-muted); font-size: 13px; overflow-wrap: anywhere; }
+.dbc-header-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: flex-end; }
+.dbc-status { display: inline-flex; gap: 6px; align-items: center; max-width: 220px; padding: 4px 11px; border: 1px solid var(--dbc-warning-border); border-radius: 999px; background: var(--dbc-warning-bg); color: var(--dbc-warning); font-size: 12px; line-height: 1.4; }
+#root[data-state="COMPLETED"] .dbc-status { border-color: var(--dbc-border); background: var(--dbc-tint); color: var(--dbc-fg); }
+.dbc-intro { margin-bottom: 18px; }
+.dbc-purpose { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; margin-bottom: 14px; padding: 7px 13px; border: 1px solid var(--dbc-border); border-radius: 9px; background: var(--dbc-icon-bg); color: var(--dbc-accent); font-size: 15px; font-weight: 730; line-height: 1.5; }
+.dbc-purpose[data-purpose="FEATURE_AREA"] { color: var(--dbc-area-fg); background: var(--dbc-area-bg); border-color: var(--dbc-area-border); }
+.dbc-purpose > span { overflow-wrap: anywhere; min-width: 0; }
+#db-confirmation-shell .dbc-initial-task { margin-top: 12px; padding: 10px 13px; border: 1px solid var(--dbc-line); border-radius: 9px; background: var(--dbc-soft); }
+.dbc-initial-task > strong { display: block; margin-bottom: 3px; font-size: 13px; }
+#db-confirmation-shell .dbc-eyebrow { font-size: 13px; color: var(--dbc-muted); margin-bottom: 7px; }
+#db-confirmation-shell .engineering-summary { margin-top: 12px; font-size: 14px; color: var(--dbc-fg); line-height: 1.7; }
+.dbc-callout { border: 1px solid var(--dbc-line); border-radius: 13px; padding: 18px; background: linear-gradient(110deg, var(--dbc-tint), var(--dbc-soft)); margin-bottom: 16px; }
+.dbc-info-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 13px; align-items: start; }
+.dbc-info-row + .dbc-info-row { margin-top: 18px; }
+.dbc-info-body { min-width: 0; }
+#db-confirmation-shell .dbc-info-body > p,
+#db-confirmation-shell .dbc-info-body > ul { margin-top: 5px; color: var(--dbc-muted); font-size: 14px; }
+#db-confirmation-shell .dbc-constraints { list-style: none; padding: 0; }
+.dbc-constraints li + li { margin-top: 3px; }
+.dbc-icon { width: 19px; height: 19px; display: block; flex: 0 0 auto; pointer-events: none; }
+.dbc-icon-tile { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--dbc-accent); background: var(--dbc-icon-bg); }
+.dbc-icon-tile .dbc-icon { width: 22px; height: 22px; }
+.dbc-config { border: 1px solid var(--dbc-line); border-radius: 13px; padding: 18px; background: var(--dbc-surface); margin-top: 16px; }
+.dbc-section-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 12px; }
+.dbc-config-content { margin-left: 49px; min-width: 0; }
+.dbc-config-content > * + * { margin-top: 11px; }
+#db-confirmation-shell .dbc-config-content .muted { margin-top: 8px; }
+.dbc-fields { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 16px; margin-top: 15px; }
+.dbc-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; color: var(--dbc-fg); font-size: 13px; }
+.dbc-field-label { font-weight: 520; }
+.dbc-select-shell { position: relative; display: block; min-width: 0; }
+#db-confirmation-shell select {
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 36px 8px 12px;
+  margin: 0;
+  border: 1px solid var(--dbc-border);
+  border-radius: 9px;
+  color: var(--dbc-fg);
+  background: var(--dbc-surface);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.dbc-select-shell > .dbc-icon { position: absolute; right: 11px; top: calc(50% - 8px); width: 16px; height: 16px; color: var(--dbc-muted); }
+#db-confirmation-shell .dbc-fast { display: flex; align-items: center; gap: 9px; margin-top: 13px; font-size: 13px; cursor: pointer; }
+#db-confirmation-shell input[type="checkbox"] { appearance: auto; width: 17px; height: 17px; margin: 0; flex: 0 0 auto; accent-color: #1264e9; }
+#db-confirmation-shell dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 16px; font-size: 14px; }
+#db-confirmation-shell dt { color: var(--dbc-muted); }
+#db-confirmation-shell dd { min-width: 0; overflow-wrap: anywhere; }
+#db-confirmation-shell .dbc-feedback:not(:empty) { margin-top: 14px; }
+.dbc-feedback .error, .dbc-feedback .notice { padding: 9px 11px; border-inline-start: 3px solid var(--dbc-warning-border); background: var(--dbc-soft); border-radius: 5px; }
+.dbc-feedback > * + * { margin-top: 7px; }
+.dbc-feedback > [hidden] { display: none; }
+#db-confirmation-shell .outcome { margin: 14px 0; padding: 13px 15px; border: 1px solid var(--dbc-line); border-radius: 10px; background: var(--dbc-soft); }
+#db-confirmation-shell .outcome > * + * { margin-top: 7px; }
+.dbc-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--dbc-line); }
+.dbc-secondary-actions, .dbc-primary-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.dbc-primary-actions { margin-inline-start: auto; }
+#db-confirmation-shell button,
+#debug button,
+.db-plan-dialog button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 38px; max-width: 100%; padding: 8px 13px; margin: 0;
+  border: 1px solid var(--dbc-border); border-radius: 9px;
+  background: var(--dbc-surface); color: var(--dbc-fg);
+  font: inherit; font-size: 13px; line-height: 1.45; font-weight: 560;
+  cursor: pointer; text-align: center; white-space: normal;
+}
+#db-confirmation-shell button:not(:disabled):hover,
+#debug button:not(:disabled):hover,
+.db-plan-dialog button:not(:disabled):hover { background: var(--dbc-soft); }
+#db-confirmation-shell button.primary { border-color: #1264e9; background: #1264e9; color: #fff; box-shadow: 0 3px 7px rgb(18 100 233 / 15%); }
+#db-confirmation-shell button.primary:not(:disabled):hover { background: #0954ce; border-color: #0954ce; }
+#db-confirmation-shell button.dbc-outline { color: var(--dbc-accent); border-color: var(--dbc-accent); }
+#db-confirmation-shell button.dbc-settings { border-color: transparent; background: transparent; min-height: 30px; padding: 1px 0; }
+#db-confirmation-shell button:disabled,
+#db-confirmation-shell select:disabled { opacity: .54; cursor: not-allowed; }
+#db-confirmation-shell :is(button,select,input,a,[tabindex]):focus-visible,
+#debug :is(button,textarea):focus-visible,
+.db-plan-dialog :is(button,a,[tabindex]):focus-visible { outline: 2px solid var(--dbc-focus); outline-offset: 3px; }
+.dbc-empty { padding: 14px 0 4px; color: var(--dbc-muted); }
+#db-confirmation-shell textarea.copy { display: block; width: 100%; min-height: 90px; margin-top: 10px; border: 1px solid var(--dbc-border); border-radius: 8px; background: var(--dbc-soft); color: var(--dbc-fg); font: 12px/1.6 ui-monospace, monospace; }
+/* Native reader. Existing immutable-content controller is preserved. */
+dialog.db-plan-dialog {
+  position: fixed; inset: auto;
+  left: var(--db-reader-left); top: var(--db-reader-top);
+  width: var(--db-reader-width); height: var(--db-reader-height);
+  max-width: none; max-height: none; min-width: 0; min-height: 0;
+  margin: 0; padding: 0; overflow: hidden;
+  border: 1px solid var(--dbc-border); border-radius: 17px;
+  background: var(--dbc-surface); color: var(--dbc-fg);
+  box-shadow: var(--dbc-modal-shadow);
+  font: 14px/1.7 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+dialog.db-plan-dialog:not([open]), #debug:not([open]) { display: none; }
+dialog.db-plan-dialog[open] { display: grid; grid-template-rows:auto auto auto minmax(0,1fr) auto; }
+dialog.db-plan-dialog::backdrop, #debug::backdrop { background: rgb(23 37 62 / 28%); }
+.db-plan-header { display: flex; align-items: flex-start; gap: 12px; padding: 19px 20px 15px; border-bottom: 1px solid var(--dbc-line); }
+.db-plan-heading-group { flex: 1; min-width: 0; }
+.db-plan-title { margin: 0; font-size: 18px; line-height: 1.4; font-weight: 710; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-plan-subtitle { margin: 7px 0 0; font-size: 12px; line-height: 1.5; color: var(--dbc-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.db-plan-notice { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--dbc-warning); }
+.db-plan-dialog .db-icon-button { flex: 0 0 auto; width: 34px; min-height: 34px; height: 34px; padding: 0; border-color: transparent; background: transparent; font-size: 25px; font-weight: 350; }
+.db-plan-body { min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 19px 21px 24px; overflow-wrap: anywhere; outline-offset: -3px; }
+.db-plan-feedback:not([hidden]) { margin: 0 0 17px; padding: 11px 13px; border: 1px solid var(--dbc-line); border-radius: 9px; background: var(--dbc-soft); }
+.db-plan-feedback .outcome { margin: 9px 0; }
+.db-plan-feedback p { margin: 5px 0; }
+.overview-document h2,.structured-fields>.field-group>h2 {font-size:16px;line-height:1.5;margin:20px 0 10px;}
+.overview-document h3 {font-size:14px;margin:16px 0 7px;}
+.prompt-document h1 {font-size:21px;line-height:1.4;margin:26px 0 14px;font-weight:720;}
+.prompt-document h2 {font-size:18px;line-height:1.5;margin:24px 0 11px;font-weight:670;}
+.prompt-document h3 {font-size:15px;line-height:1.55;margin:20px 0 9px;font-weight:650;}
+.prompt-document :is(h4,h5,h6) {font-size:14px;line-height:1.55;margin:16px 0 7px;}
+.prompt-document>:is(h1,h2,h3):first-child {margin-top:0;}
+.db-plan-content p { margin: 7px 0; }
+.db-plan-content :is(ol,ul) { margin: 7px 0; padding-inline-start: 24px; }
+.db-plan-content li { margin: 6px 0; }
+.db-plan-content .document-section { margin: 15px 0; }
+.db-plan-content .checks > li { padding: 7px 0 12px; }
+.db-plan-content .checks > li + li { border-top: 1px solid var(--dbc-line); }
+.db-plan-content pre { display: block; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; padding: 12px; border: 1px solid var(--dbc-line); border-radius: 9px; background: var(--dbc-soft); white-space: pre; }
+.db-plan-content code { font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.db-plan-content table { display: block; max-width: 100%; border-collapse: collapse; overflow-x: auto; font-size: 12px; }
+.db-plan-content :is(td,th) { border: 1px solid var(--dbc-border); padding: 6px 9px; text-align: start; }
+.db-plan-content a { color: var(--dbc-accent); }
+.db-plan-content blockquote { margin-inline: 0; padding-inline-start: 12px; border-inline-start: 3px solid var(--dbc-border); color: var(--dbc-muted); }
+.db-plan-content dl, .db-plan-feedback dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; }
+.db-plan-content dd, .db-plan-feedback dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.db-plan-content dt, .db-plan-feedback dt { color: var(--dbc-muted); }
+.db-plan-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 20px; border-top: 1px solid var(--dbc-line); background: var(--dbc-surface); }
+.db-plan-help { color: var(--dbc-muted); font-size: 12px; }
+.db-plan-dialog [hidden] { display: none !important; }
+.db-plan-dialog[data-compact="true"] { grid-template-rows:auto auto auto minmax(0,1fr); }
+.db-plan-dialog[data-compact="true"] .db-plan-subtitle,
+.db-plan-dialog[data-compact="true"] .db-plan-footer { display: none; }
+.db-plan-dialog[data-compact="true"] .db-plan-header { padding: 8px 10px; }
+.db-plan-dialog[data-compact="true"] .db-plan-body { padding: 12px; }
+.db-plan-dialog[data-compact="true"] .db-plan-notice { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.reader-tabs {display:flex;gap:4px;min-width:0;padding:6px 14px;border-bottom:1px solid var(--dbc-line);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;}
+.reader-tabs .reader-tab {flex:0 0 auto;border-color:transparent;white-space:nowrap;min-height:36px;padding:6px 10px;}
+.reader-tab[aria-selected="true"],.reader-toolbar button[aria-pressed="true"] {background:var(--dbc-tint);color:var(--dbc-accent);border-color:var(--dbc-border);}
+.reader-toolbar {min-width:0;padding:8px 18px;border-bottom:1px solid var(--dbc-line);background:var(--dbc-soft);}
+.reader-toolbar-meta {display:flex;align-items:center;gap:10px;min-width:0;}
+.reader-content-type {font-size:13px;line-height:1.5;flex:0 0 auto;}
+.reader-source-path {font:12px/1.5 ui-monospace,monospace;color:var(--dbc-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.reader-toolbar-actions {display:flex;gap:5px;align-items:center;margin-top:5px;flex-wrap:wrap;}
+.reader-toolbar-actions button {font-size:12px;min-height:34px;padding:5px 8px;}
+.reader-source-choice {display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--dbc-muted);}
+.reader-source-select {min-width:0;width:100%;max-width:100%;font:12px/1.5 ui-monospace,monospace;color:var(--dbc-fg);background:var(--dbc-surface);padding:5px;border:1px solid var(--dbc-border);border-radius:5px;}
+.reader-copy-feedback {margin:3px 0 0;font-size:12px;line-height:1.4;color:var(--dbc-muted);}
+.reader-copy-feedback:empty {display:none;}
+.reader-meta {font-size:12px;line-height:1.6;color:var(--dbc-muted);}
+.db-plan-content pre.raw-prompt,.reader-manual pre.raw-prompt {white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible;min-height:0;max-height:none;margin:0;padding:0;border:0;background:transparent;font:13px/1.7 ui-monospace,monospace;}
+.structured-fields .field-group {margin:18px 0;}
+.structured-fields .field-group>h2 {font-size:14px;line-height:1.5;margin:12px 0 8px;}
+.structured-fields :is(dt,dd) {font-size:13px;}
+.structured-fields .field-value {white-space:pre-wrap;overflow-wrap:anywhere;}
+.structured-fields .field-type {display:block;font:11px/1.5 ui-monospace,monospace;color:var(--dbc-muted);}
+.structured-fields>section>ol>li+li {border-top:1px solid var(--dbc-line);padding-top:10px;}
+.source-details h2 {font:12px/1.5 ui-monospace,monospace;overflow-wrap:anywhere;}
+.reader-manual .raw-prompt {margin-top:10px;}
+.db-plan-dialog[data-compact="true"] .reader-tabs {padding:3px 7px;gap:1px;}
+.db-plan-dialog[data-compact="true"] .reader-toolbar {padding:4px 10px;}
+.db-plan-dialog[data-compact="true"] .reader-toolbar-actions {margin-top:2px;gap:3px;}
+.db-plan-dialog[data-compact="true"] .reader-toolbar-meta {gap:6px;}
+/* The existing technical dialog keeps its real copy handlers and safe fields. */
+#debug { width: min(660px, calc(100vw - 32px)); max-height: min(560px, calc(100dvh - 32px)); padding: 0; margin: auto; border: 1px solid var(--dbc-border); border-radius: 16px; overflow: hidden; color: var(--dbc-fg); background: var(--dbc-surface); box-shadow: var(--dbc-modal-shadow); font: 14px/1.6 system-ui, sans-serif; }
+#debug[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto; }
+.dbc-debug-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 19px; border-bottom: 1px solid var(--dbc-line); }
+#debug h2 { font-size: 16px; display: flex; align-items: center; gap: 9px; }
+#debug #debug-close { padding: 0; min-height: 32px; width: 32px; border-color: transparent; font-size: 24px; font-weight: 400; }
+.dbc-debug-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 15px 19px; }
+#debug-text { display: block; width: 100%; height: 290px; min-height: 100px; resize: vertical; padding: 12px; border: 1px solid var(--dbc-border); border-radius: 9px; color: var(--dbc-fg); background: var(--dbc-soft); font: 12px/1.6 ui-monospace, monospace; }
+.dbc-debug-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 19px; border-top: 1px solid var(--dbc-line); }
+#debug-feedback { color: var(--dbc-muted); font-size: 12px; }
+@media (max-width: 540px) {
+  body.dbc-surface { padding: 10px; }
+  #db-confirmation-shell { border-radius: 15px; }
+  #db-confirmation-shell > #root.dbc-content { padding: 20px 18px 19px; }
+  .dbc-header { gap: 11px; margin-bottom: 21px; }
+  .dbc-header-controls { gap: 7px; }
+  .dbc-brand { font-size: 16px; }
+  .dbc-status { max-width: 145px; font-size: 11px; }
+  #db-confirmation-shell h1 { font-size: 19px; }
+  .dbc-callout, .dbc-config { padding: 15px; }
+  .dbc-config-content { margin-left: 0; }
+  .dbc-fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dbc-footer { gap: 12px; }
+  .dbc-primary-actions { width: 100%; margin-inline-start: 0; }
+  .dbc-primary-actions > .primary { width: 100%; }
+  .db-plan-header { padding: 13px 14px 11px; }
+  .db-plan-body { padding: 14px 15px 18px; }
+  .db-plan-footer { padding: 11px 14px; }
+}
+@media (max-width: 350px) {
+  .dbc-header { flex-direction: column; }
+  .dbc-header-controls { align-self: stretch; justify-content: space-between; }
+  .dbc-info-row { grid-template-columns: 28px minmax(0,1fr); gap: 9px; }
+  .dbc-icon-tile { width: 28px; height: 28px; }
+  #db-confirmation-shell dl { grid-template-columns: minmax(0,1fr); gap: 3px; }
+}
+@media (pointer: coarse) {
+  #db-confirmation-shell :is(button,select), #debug button, .db-plan-dialog button { min-height: 44px; }
+  #db-confirmation-shell button.dbc-settings { min-height: 44px; }
+  #debug #debug-close { min-height: 44px; width: 44px; }
+  .db-plan-dialog .db-icon-button { width: 44px; height: 44px; }
+  #db-confirmation-shell .dbc-fast { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #db-confirmation-shell *, #debug *, .db-plan-dialog * { scroll-behavior: auto !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  #db-confirmation-shell, #debug, .db-plan-dialog { border: 2px solid CanvasText; box-shadow: none; }
+  #db-confirmation-shell button.primary { border-color: ButtonText; }
+  .dbc-icon-tile, .dbc-callout { background: Canvas; }
+  #db-confirmation-shell select { appearance: auto; }
+  .dbc-select-shell > .dbc-icon { display: none; }
+}
+.db-plan-header > .dbc-icon { flex: 0 0 auto; width: 22px; height: 22px; margin-top: 2px; color: var(--dbc-muted); }
+</style>
+</head>
+<body class="dbc-surface">
+<div id="db-confirmation-shell" role="region" aria-label="Dev Bridge 操作确认">
+  <div id="root" class="dbc-content" aria-live="polite"><p class="dbc-empty">等待准确确认内容…</p></div>
+</div>
+<dialog id="debug" aria-labelledby="debug-title">
+  <header class="dbc-debug-heading"><h2 id="debug-title">技术详情与诊断</h2><button id="debug-close" type="button" aria-label="关闭技术详情">×</button></header>
+  <div class="dbc-debug-body"><textarea id="debug-text" readonly aria-label="可复制的诊断信息" spellcheck="false"></textarea></div>
+  <footer class="dbc-debug-footer"><p id="debug-feedback" role="status"></p><button id="debug-copy" type="button">复制诊断</button></footer>
+</dialog>
+<script id="confirmation-main">
+'use strict';
+(()=>{
+const COMPONENT='PURPOSE_CONFIRMATION_V14',RESOURCE='ui://devbridge/confirmation/v14';
+const root=document.getElementById('root'),debug=document.getElementById('debug');
+const own=(v,k)=>Object.prototype.hasOwnProperty.call(v,k),obj=v=>!!v&&typeof v==='object'&&!Array.isArray(v),str=v=>typeof v==='string';
+const el=(tag,value,cls)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=String(value);if(cls)n.className=cls;if(tag==='button')n.type='button';return n;};
+const TOOLS=new Set(['confirmation_get','confirmation_options_get','confirmation_commit','confirmation_submission_withdraw','confirmation_discard']);
+let disposed=false,initialized=false,entry=null,input=null,intent=null,options=null,generation=0,sequence=0,nextID=1,flight=false,unknown=false,stale=false,error='',notice='',pendingCommit=null,pendingHash='',lastFailure=null,confirmedOutcome='',submissionNext='',renderFailed=false,scriptSHA='UNKNOWN',readbackInProgress=false,entryDisposition='',editableRetry=false,lastSubmission=null,lastReceipt=null,lastRejectedRequestId='',lastRejectedPayloadSHA256='';
+const pending=new Map(),events=[];
+let creationChoice='',creationAcknowledgement='',continuationNotice='',continuationFallback='',continuationAttempts=new Set();
+let display=null,planReader=null,cardSizer=null,planReaderIssue='',readerContextValid=false;
+function note(stage,fields){const event={at:new Date().toISOString(),stage};if(obj(fields))for(const key of ['operation','requestId','intentId','version','attempt','hostMethod','result','errorSource','errorCode','payloadSHA256','variantId']){const value=fields[key];if(value!==undefined&&value!==null&&value!=='')event[key]=value;}events.push(event);if(events.length>24)events.shift();if(debug.open)paintDebug();}
+function fail(stage,code=stage,source='CARD',message='当前步骤无法确认'){const e=new Error(message);e.stage=stage;e.code=code;e.source=source;return e;}
+function notify(method,params){if(!disposed)parent.postMessage({jsonrpc:'2.0',method,params},'*');}
+function resize(){try{cardSizer?.schedule();}catch(_){planReaderIssue='CARD_SIZE_SCHEDULE_FAILED';}}
+function rpc(name,args,userGesture=false){return new Promise((resolve,reject)=>{if(window.devBridgeHistoryReadOnly===true&&['confirmation_commit','confirmation_submission_withdraw','confirmation_discard','ui/message'].includes(name)){reject(fail('HISTORY_READ_ONLY'));return;}if(disposed||name!=='ui/initialize'&&!TOOLS.has(name)&&!(name==='ui/message'&&userGesture===true)){reject(fail('TOOL_NOT_ALLOWED'));return;}const id=nextID++,timer=setTimeout(()=>{if(!pending.has(id))return;pending.delete(id);note('RPC_TIMEOUT');reject(fail('HOST_TRANSPORT','HOST_TIMEOUT','HOST'));},45000);pending.set(id,{resolve,reject,timer});try{parent.postMessage({jsonrpc:'2.0',id,method:['ui/initialize','ui/message'].includes(name)?name:'tools/call',params:['ui/initialize','ui/message'].includes(name)?args:{name,arguments:args}},'*');note('RPC_SENT');}catch(_){clearTimeout(timer);pending.delete(id);reject(fail('HOST_TRANSPORT','HOST_SEND_FAILED','HOST'));}});}
+function decode(result){
+ if(!obj(result))throw fail('RESPONSE_DECODE','MCP_RESULT_INVALID');
+ if(own(result,'isError')&&typeof result.isError!=='boolean')throw fail('RESPONSE_DECODE','MCP_ERROR_FLAG_INVALID');
+ if(!obj(result.structuredContent))throw fail('RESPONSE_DECODE','STRUCTURED_CONTENT_MISSING');
+ const value=result.structuredContent;
+ if(Object.keys(value).some(k=>!['intent','options','failure','display'].includes(k))||!Object.keys(value).length||own(value,'intent')&&!obj(value.intent)||own(value,'options')&&!obj(value.options)||own(value,'failure')&&!obj(value.failure)||value.intent&&value.options)throw fail('RESPONSE_DECODE','CONFIRMATION_ENVELOPE_INVALID');
+ if(value.failure)validateFailure(value.failure);
+ if(result.isError===true&&!value.failure)throw fail('RESPONSE_DECODE','MCP_FAILURE_FACTS_MISSING');
+ if(result.isError!==true&&value.failure)throw fail('RESPONSE_DECODE','MCP_FAILURE_FLAG_MISMATCH');
+ note('RESPONSE_DECODED');return {...value,toolIsError:result.isError===true};
+}
+const NEXT_ACTIONS=new Set(['EDIT_SELECTION','READ_CURRENT_TARGET','PREPARE_NEW_VERSION','PREPARE_RECOVERY_STATUS','READ_ORIGINAL_RECEIPT','CONTINUE_ORIGINAL_STEPS','ACCESS_BLOCKED']);
+const RETRY_DISPOSITIONS=new Set(['NONE','EDIT_SELECTION_AND_RESUBMIT','REPREPARE_REQUIRED','READ_ORIGINAL_RECEIPT']);
+const CORE_STAGES=new Set(['INPUT_IDENTITY','PREPARE','CONFIRMATION_PREFLIGHT','UNIQUE_CONSUMPTION','BUSINESS_STEP','DISPATCH','RECEIPT_READBACK']);
+function validateFailure(value){if(!obj(value)||Object.keys(value).some(k=>!['code','reasonCode','source','stage','message','nextAction'].includes(k))||!str(value.code)||!value.code||value.code.length>128||own(value,'reasonCode')&&(!str(value.reasonCode)||!value.reasonCode)||!['CORE','DOMAIN','RUNTIME','CONFIRMATION','STORAGE'].includes(value.source)||!CORE_STAGES.has(value.stage)||!str(value.message)||!value.message||value.message.length>1024||!NEXT_ACTIONS.has(value.nextAction))throw fail('RESPONSE_DECODE','FAILURE_SHAPE_INVALID');return value;}
+function recordFailure(value){lastFailure=value?{code:value.code,reasonCode:value.reasonCode,source:value.source,stage:value.stage,message:value.message,nextAction:value.nextAction}:null;error=value?String(value.code):'';if(value)note(value.stage);}
+function caught(e,fallback){recordFailure({code:e.code??fallback,source:e.source||'CARD',stage:e.stage||fallback,message:e.source==='HOST'?'宿主 RPC 返回错误；确认结果须回读。':e.code?e.message:'当前步骤无法确认。'});}
+function stable(value){if(Array.isArray(value))return '['+value.map(stable).join(',')+']';if(obj(value))return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+stable(value[k])).join(',')+'}';return JSON.stringify(value);}
+async function requestHash(value){if(!crypto.subtle)throw fail('RESPONSE_DECODE','REQUEST_HASH_UNAVAILABLE');const text=stable(value).replace(/[<>&\u2028\u2029]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');}
+
+function inline(parent,text){const re=/(`[^`\n]+`)|\[([^\]\n]+)\]\(([^\s)]+)\)/g;let at=0,m;while((m=re.exec(text))){parent.append(document.createTextNode(text.slice(at,m.index)));if(m[1])parent.append(el('code',m[1].slice(1,-1)));else{let url;try{url=new URL(m[3]);}catch(_){}if(url&&['https:','http:'].includes(url.protocol)&&!url.username&&!url.password){const a=el('a',m[2]);a.href=url.href;a.target='_blank';a.rel='noopener noreferrer';parent.append(a);}else parent.append(document.createTextNode(m[0]));}at=re.lastIndex;}parent.append(document.createTextNode(text.slice(at)));}
+// Deliberately restricted Markdown: DOM text only, no raw HTML or image fetches.
+function markdown(text){const box=el('div',undefined,'markdown'),lines=text.split('\n');let i=0;const cells=s=>s.trim().replace(/^\||\|$/g,'').split('|').map(v=>v.trim());while(i<lines.length){const line=lines[i];if(/^\s*```/.test(line)){const pre=el('pre'),code=el('code');const body=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i]))body.push(lines[i++]);code.textContent=body.join('\n');pre.append(code);box.append(pre);if(i<lines.length)i++;continue;}if(!line.trim()){i++;continue;}if(i+1<lines.length&&line.includes('|')&&/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i+1])){const table=el('table'),head=el('tr');for(const c of cells(line)){const th=el('th');inline(th,c);head.append(th);}table.append(head);i+=2;while(i<lines.length&&lines[i].includes('|')&&lines[i].trim()){const row=el('tr');for(const c of cells(lines[i++])){const td=el('td');inline(td,c);row.append(td);}table.append(row);}box.append(table);continue;}const h=/^(#{1,6})\s+(.+)$/.exec(line);if(h){const n=el('h'+Math.min(h[1].length,6));inline(n,h[2]);box.append(n);i++;continue;}if(/^\s*([-*+] |\d+\. )/.test(line)){const ordered=/^\s*\d+\./.test(line),list=el(ordered?'ol':'ul');while(i<lines.length&&/^\s*([-*+] |\d+\. )/.test(lines[i])){const li=el('li');inline(li,lines[i++].replace(/^\s*([-*+] |\d+\. )/,''));list.append(li);}box.append(list);continue;}const p=el(line.startsWith('> ')?'blockquote':'p');inline(p,line.startsWith('> ')?line.slice(2):line);box.append(p);i++;}return box;}
+function bodySection(title,text){if(!str(text)||!text)return null;const section=el('section',undefined,'document-section');section.append(el('h3',title),markdown(text));return section;}
+async function copy(value,button,container){const mine=generation,identity=entry,label=button.textContent;const current=()=>!disposed&&generation===mine&&entry===identity&&button.isConnected;try{if(!navigator.clipboard?.writeText)throw fail('CLIPBOARD_UNAVAILABLE');await navigator.clipboard.writeText(value);if(!current())return;button.textContent='已复制';setTimeout(()=>{if(current())button.textContent=label;},1800);}catch(_){if(!current())return;const field=el('textarea',undefined,'copy');field.readOnly=true;field.value=value;field.setAttribute('aria-label','请手动复制完整继续引用');container.append(el('p','剪贴板不可用，请手动复制。','muted'),field);field.focus();field.select();resize();}}
+function readerDefinitionReferences(){const references=[];let visited=0,limited=false;const walk=(value,path)=>{if(++visited>4096){limited=true;return;}if(Array.isArray(value)){for(let index=0;index<value.length;index++)walk(value[index],path+'['+index+']');return;}if(!obj(value))return;for(const [key,item]of Object.entries(value)){if(definitionIdentityField(key)&&str(item)&&item){if(references.length>=256){limited=true;continue;}references.push({path:path+'.'+key,value:item});}else if(obj(item)||Array.isArray(item))walk(item,path+'.'+key);}};for(const key of ['featureArea','task','review','execution','variants'])if(intent?.content?.[key])walk(intent.content[key],'content.'+key);return {references,limited};}
+function technicalFacts(){const c=intent?.content||{},fields={};for(const key of ['projectSetup','featureArea','task','review','execution']){const value=c[key];if(!obj(value))continue;const ids={};for(const [name,item]of Object.entries(value))if((name.endsWith('Id')||name==='action')&&str(item))ids[name]=item;if(value.expectedTarget)ids.expectedTarget=value.expectedTarget;fields[key]=ids;}const upper=intent?.currentUpperReview,file=intent?.currentDirectFile;return {componentVersion:COMPONENT,resource:RESOURCE,mainScriptSHA256:scriptSHA,initialized,entryBound:!!entry,entryDisposition,identity:entry,generation,sequence,readerContextValid,planReaderOpen:!!planReader?.isOpen,planReaderIssue,requestInFlight:flight,outcomeUnknown:unknown,staleIntent:stale,confirmedOutcome,pendingRequestId:pendingCommit?.requestId||'',pendingPayloadSHA256:pendingHash,contentTargets:fields,readerDefinitionReferences:readerDefinitionReferences(),variants:c.variants?.map(v=>({id:v.id,label:v.label,executorKind:v.executorKind,implementationMode:v.implementationMode})),display,selectedEnvironment:options&&entry?.purpose==='PROJECT_SETUP'?{project:options.projects.find(v=>v.id===draft.projectId),repository:options.repositories.find(v=>v.id===draft.repositoryId),branch:options.branches.find(v=>v.id===draft.developmentRef)}:null,variantCapabilities:options?.variants,runtimeAuthority:options?{source:options.runtimeInventorySource,revision:options.runtimeInventoryRevision,readError:options.runtimeInventoryReadError}:null,configuration:{recommended:c.recommendedRuntimeConfig,locked:options?.lockedRuntimeConfig,confirmed:intent?.commit?.selection.runtimeConfig},submission:intent?.submission,rejectedSubmission:lastSubmission,rejectedReceipt:lastReceipt,editableRetry,commit:intent?.commit,steps:intent?.steps,canResume:intent?.canResume,currentAccessReadError:intent?.currentAccessReadError,currentFile:file?{state:file.state,taskId:file.taskId,taskDefinitionRevisionId:file.taskDefinitionRevisionId,workflowId:file.workflowId,workspaceId:file.workspaceId,executionScope:file.executionScope,allowedOperations:file.allowedOperations,failureCode:file.failureCode,failureReason:file.failureReason,enabled:file.enabled}:null,currentUpper:upper?{state:upper.state,target:upper.target,baseline:upper.baseline,startSnapshot:upper.startSnapshot,workspaceId:upper.workspaceId,allowedPaths:upper.allowedPaths,forbiddenPaths:upper.forbiddenPaths,blocker:upper.blocker,readAvailable:intent.currentUpperReadAvailable}:null,failure:lastFailure?{code:lastFailure.code,reasonCode:lastFailure.reasonCode,source:lastFailure.source,stage:lastFailure.stage,nextAction:lastFailure.nextAction}:null,events};}
+function uiIcon(name) {
+  const shapes = {
+    target: [['circle',{cx:12,cy:12,r:8}],['circle',{cx:12,cy:12,r:4}],['circle',{cx:12,cy:12,r:1}],['path',{d:'m16 8 5-5M17 3h4v4'}]],
+    shield: [['path',{d:'M12 3 4.5 6v5.8c0 4.3 3 7.4 7.5 9.2 4.5-1.8 7.5-4.9 7.5-9.2V6L12 3Z'}],['path',{d:'m8.3 12 2.5 2.5 4.9-5'}]],
+    code: [['path',{d:'m7.2 7-5 5 5 5m9.6-10 5 5-5 5M14 4l-4 16'}]],
+    document: [['path',{d:'M6 3h8l4 4v14H6V3Z'}],['path',{d:'M14 3v5h4M9 12h6M9 16h6'}]],
+    refresh: [['path',{d:'M20 7v5h-5M4 17v-5h5'}],['path',{d:'M6.4 6.1A8 8 0 0 1 20 12M17.6 17.9A8 8 0 0 1 4 12'}]],
+    play: [['path',{d:'m8 4 12 8-12 8V4Z'}]],
+    settings: [['path',{d:'m9.8 3-.6 2.1-2 .9-2-.5L3 9.3l1.4 1.6v2.2L3 14.7l2.2 3.8 2-.5 2 .9.6 2.1h4.4l.6-2.1 2-.9 2 .5 2.2-3.8-1.4-1.6v-2.2L21 9.3l-2.2-3.8-2 .5-2-.9-.6-2.1H9.8Z'}],['circle',{cx:12,cy:12,r:3}]],
+    chevron: [['path',{d:'m6 9 6 6 6-6'}]],
+    folder: [['path',{d:'M3 6a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v10H3V6Z'}]],
+    copy: [['rect',{x:8,y:8,width:12,height:13,rx:2}],['path',{d:'M16 8V3H3v13h5'}]]
+  };
+  if (!Object.prototype.hasOwnProperty.call(shapes,name)) throw new TypeError('Unknown local icon');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  for(const [key,value] of Object.entries({viewBox:'0 0 24 24',fill:'none',stroke:'currentColor','stroke-width':'1.8','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true',focusable:'false',class:'dbc-icon'}))svg.setAttribute(key,value);
+  for(const [tag,attributes] of shapes[name]){const node=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attributes))node.setAttribute(key,String(value));svg.append(node);}
+  return svg;
+}
+
+function uiButton(label,iconName,tone='') {
+  const button=el('button',undefined,tone);
+  if(iconName)button.append(uiIcon(iconName));
+  button.append(el('span',label));
+  return button;
+}
+
+function uiIconTile(name) { const tile=el('span',undefined,'dbc-icon-tile');tile.append(uiIcon(name));return tile; }
+
+function uiInfoRow(iconName,title,content) {
+  const row=el('div',undefined,'dbc-info-row'),body=el('div',undefined,'dbc-info-body');
+  body.append(el('h2',title),content);row.append(uiIconTile(iconName),body);return row;
+}
+
+function readLayoutMetrics() {
+  // Deliberately local/display-only. No URLs, parent DOM, payloads or telemetry.
+  try {
+    const shell=document.getElementById('db-confirmation-shell');
+    const r=shell.getBoundingClientRect(),c=root.getBoundingClientRect(),s=getComputedStyle(root);
+    const first=root.firstElementChild?.getBoundingClientRect();
+    const round=n=>Number.isFinite(n)?Math.round(n*100)/100:null;
+    return {shell:{width:round(r.width),height:round(r.height)},content:{width:round(c.width),paddingTop:s.paddingTop,paddingRight:s.paddingRight,paddingBottom:s.paddingBottom,paddingLeft:s.paddingLeft},firstContentInset:first?{left:round(first.left-r.left),top:round(first.top-r.top)}:null,readerOpen:!!planReader?.isOpen};
+  } catch (_) { return {status:'DISPLAY_METRICS_UNAVAILABLE'}; }
+}
+
+function decorateReaderHeading() {
+  // The native reader remains the sole owner of modal geometry/lifecycle.
+  const header=document.querySelector('dialog.db-plan-dialog .db-plan-header');
+  if(header&&!header.querySelector(':scope > .dbc-icon'))header.prepend(uiIcon('document'));
+}
+
+function paintDebug() {
+  document.getElementById('debug-text').value=JSON.stringify({...technicalFacts(),events,lastFailure,layout:readLayoutMetrics()},null,2);
+}
+function renderTechnicalDetail(){if(disposed||planReader?.isOpen||document.querySelector('dialog[open]'))return;try{paintDebug();document.getElementById('debug-feedback').textContent='';debug.showModal();}catch(_){reportReaderIssue('TECHNICAL_MODAL_UNAVAILABLE');}}
+document.getElementById('debug-close').onclick=()=>debug.close();document.getElementById('debug-copy').onclick=async()=>{paintDebug();const field=document.getElementById('debug-text'),feedback=document.getElementById('debug-feedback'),mine=generation;const current=()=>!disposed&&generation===mine&&debug.open&&field.isConnected;try{if(!navigator.clipboard?.writeText)throw fail('CLIPBOARD_UNAVAILABLE');await navigator.clipboard.writeText(field.value);if(current())feedback.textContent='已复制诊断';}catch(_){if(!current())return;feedback.textContent='剪贴板不可用，请手动复制。';field.focus();field.select();}};
+const PURPOSES=new Set(['PROJECT_SETUP','FEATURE_AREA','TASK','REVIEW','EXECUTION','RECOVERY_PURPOSE']);
+const STATES=new Set(['PENDING','CONFIRMING','COMPLETED','PARTIAL','UNKNOWN','REJECTED','SUPERSEDED','ABANDONED']);
+const TITLES={PROJECT_SETUP:'项目设置确认',FEATURE_AREA:'领域确认',TASK:'任务创建确认',REVIEW:'审查确认',EXECUTION:'实施确认',RECOVERY_PURPOSE:'恢复目的确认'};
+const STATE_LABELS={PENDING:'待确认',CONFIRMING:'已受理，正在处理',COMPLETED:'本次确认已完成',PARTIAL:'部分步骤已完成',UNKNOWN:'结果暂时无法确认',REJECTED:'选择已消费，步骤被拒绝',SUPERSEDED:'已被新版本替代',ABANDONED:'本次待确认内容已放弃'};
+const SUBMISSION_LABELS={AWAITING_USER_CONFIRMATION:'待确认',SUBMITTING:'提交中',RESULT_READBACK_REQUIRED:'需要回读结果',RESULT_READBACK_IN_PROGRESS:'确认结果回读中',OUTCOME_UNKNOWN:'确认结果未知',COMMITTED:'本次确认已完成',REJECTED:'本次确认被拒绝',STALE:'确认内容已过期'};
+function submissionState(){if(confirmedOutcome==='CONSUMED')return intent?.submission?.businessOutcome==='REJECTED_NO_EFFECT'?'REJECTED':'COMMITTED';if(confirmedOutcome==='REJECTED_NOT_CONSUMED')return 'REJECTED';if(readbackInProgress)return 'RESULT_READBACK_IN_PROGRESS';if(flight)return 'SUBMITTING';if(unknown)return 'OUTCOME_UNKNOWN';if(stale)return 'STALE';if(intent?.state==='PENDING'&&!pendingCommit)return 'AWAITING_USER_CONFIRMATION';return intent?.state||'READING';}
+function submissionLabel(){const state=submissionState();return SUBMISSION_LABELS[state]||STATE_LABELS[state]||'读取中';}
+let draft={reviewMode:'',startReview:true,developmentContexts:{},variantId:'',projectId:'',repositoryId:'',developmentRef:'',backendConfigId:'',backendConfigFingerprint:'',model:'',reasoningEffort:'',codexFastMode:false,verificationWaived:false,verificationWaiverReason:''},fatal=false,resumeReadback=false;
+function identity(v){if(!obj(v)||!str(v.aiSessionId)||!v.aiSessionId||!str(v.intentId)||!v.intentId||!Number.isInteger(v.version)||v.version<1||!PURPOSES.has(v.purpose))throw fail('ENTRY_SCHEMA_INVALID','ENTRY_IDENTITY_INVALID');return {aiSessionId:v.aiSessionId,intentId:v.intentId,version:v.version,purpose:v.purpose};}
+function sameIdentity(a,b){return a&&b&&a.aiSessionId===b.aiSessionId&&a.intentId===b.intentId&&a.version===b.version&&a.purpose===b.purpose;}
+function sameCommit(a,b){if((a.selection?.reviewMode||'')!==(b.selection?.reviewMode||''))return false;if(a.selection?.startReview!==b.selection?.startReview)return false;if(JSON.stringify(a.selection?.developmentContexts||[])!==JSON.stringify(b.selection?.developmentContexts||[])||JSON.stringify(a.selection?.verificationWaiver||null)!==JSON.stringify(b.selection?.verificationWaiver||null))return false;if(!sameIdentity(a,b)||a.action!==b.action||a.contentHash!==b.contentHash||a.variantId!==b.variantId)return false;for(const key of ['projectId','repositoryId','developmentRef'])if((a.selection?.[key]||'')!==(b.selection?.[key]||''))return false;const ba=a.selection?.backend,bb=b.selection?.backend;if(!!ba!==!!bb||ba&&(ba.configId!==bb.configId||ba.configFingerprint!==bb.configFingerprint))return false;const x=a.selection?.runtimeConfig,y=b.selection?.runtimeConfig;if(!!x!==!!y)return false;return !x||x.model===y.model&&x.reasoningEffort===y.reasoningEffort&&x.codexFastMode===y.codexFastMode;}
+function validateIntent(v){const id=identity(v);if(entry&&!sameIdentity(entry,id))throw fail('INTENT_STALE','INTENT_IDENTITY_MISMATCH');if(!obj(v.content))throw fail('INTENT_FACTS_UNAVAILABLE','CONTENT_MISSING');if(!str(v.projectId))throw fail('INTENT_FACTS_UNAVAILABLE','PROJECT_ID_MISSING');if(!str(v.contentHash)||!/^[a-f0-9]{64}$/i.test(v.contentHash))throw fail('INTENT_FACTS_UNAVAILABLE','CONTENT_HASH_INVALID');if(!STATES.has(v.state))throw fail('INTENT_FACTS_UNAVAILABLE','STATE_INVALID');if(typeof v.canResume!=='boolean')throw fail('ENTRY_SCHEMA_INVALID','CAN_RESUME_TYPE');if(v.content.aiSessionId!==v.aiSessionId||v.content.purpose!==v.purpose||!str(v.content.action)||v.action!==v.content.action)throw fail('ENTRY_SCHEMA_INVALID','CONTENT_IDENTITY_MISMATCH');if(!Array.isArray(v.content.variants))throw fail('INTENT_FACTS_UNAVAILABLE','VARIANTS_MISSING');if(!Array.isArray(v.steps))throw fail('INTENT_FACTS_UNAVAILABLE','STEPS_MISSING');if(entry&&entry.contentHash&&v.contentHash!==entry.contentHash)throw fail('INTENT_STALE','CONTENT_VERSION_MISMATCH');if(entry&&v.projectId!==entry.projectId)throw fail('INTENT_STALE','PROJECT_IDENTITY_MISMATCH');if(intent&&(v.contentHash!==intent.contentHash||JSON.stringify(v.content)!==JSON.stringify(intent.content)))throw fail('INTENT_STALE','CONTENT_VERSION_MISMATCH');const bodyKey={PROJECT_SETUP:'projectSetup',FEATURE_AREA:'featureArea',TASK:'task',REVIEW:'review',EXECUTION:'execution',RECOVERY_PURPOSE:'recoveryPurpose'}[v.purpose];if(!obj(v.content[bodyKey]))throw fail('INTENT_FACTS_UNAVAILABLE','PURPOSE_CONTENT_MISSING');const ids=new Set();for(const variant of v.content.variants){if(!obj(variant)||!str(variant.id)||!variant.id||ids.has(variant.id)||!str(variant.label)||!str(variant.summary))throw fail('ENTRY_SCHEMA_INVALID','VARIANT_SHAPE_INVALID');ids.add(variant.id);}if(own(v,'currentUpperReadAvailable')&&typeof v.currentUpperReadAvailable!=='boolean')throw fail('ENTRY_SCHEMA_INVALID','UPPER_READ_QUALIFICATION_INVALID');if(v.canResume&&!v.commit)throw fail('INTENT_FACTS_UNAVAILABLE','RESUME_RECEIPT_MISSING');if(v.commit){if(!sameIdentity(id,identity(v.commit))||v.commit.contentHash!==v.contentHash||v.commit.action!==v.content.action||!ids.has(v.commit.variantId)||!obj(v.commit.selection)||!str(v.commit.requestId))throw fail('ENTRY_SCHEMA_INVALID','RECEIPT_IDENTITY_MISMATCH');if(own(v.commit.selection,'reviewMode')&&!['UPPER_LLM','CODING_AGENT','NONE'].includes(v.commit.selection.reviewMode))throw fail('ENTRY_SCHEMA_INVALID','RECEIPT_IDENTITY_MISMATCH');if(own(v.commit.selection,'startReview')&&typeof v.commit.selection.startReview!=='boolean')throw fail('ENTRY_SCHEMA_INVALID','RECEIPT_IDENTITY_MISMATCH');const frozen=v.commit.backendSelection,narrow=v.commit.selection.backend;if(frozen&&(!obj(frozen)||!str(frozen.configId)||!/^[a-f0-9]{64}$/i.test(frozen.configFingerprint)||!str(frozen.configName)||!str(frozen.source)||!narrow||frozen.configId!==narrow.configId||frozen.configFingerprint!==narrow.configFingerprint))throw fail('ENTRY_SCHEMA_INVALID','FROZEN_BACKEND_SHAPE');if(pendingCommit?.selection&&!sameCommit(v.commit,pendingCommit))throw fail('INTENT_STALE','CONFIRMATION_SELECTION_CONFLICT');}for(const step of v.steps){if(!obj(step)||!str(step.kind)||!str(step.requestId)||!['PENDING','UNKNOWN','COMPLETED','REJECTED'].includes(step.state)||own(step,'effect')&&!['NOT_STARTED','COMMAND_COMPLETED','RESERVED','RUNTIME_HANDOFF_ACCEPTED','NO_EFFECT_PROVEN','PREPARATION_READY','UNKNOWN'].includes(step.effect))throw fail('ENTRY_SCHEMA_INVALID','STEP_SHAPE_INVALID');if(step.failure)validateFailure(step.failure);}validateAccess(v);return v;}
+// Every public read carries the frozen content digest. entry.contentHash is taken
+// from the Core-validated intent at bind time, never from Host tool input, so a
+// caller cannot address a read with an id/version pair it does not hold the content
+// for (§7).
+function readInput(){return {aiSessionId:entry.aiSessionId,intentId:entry.intentId,version:entry.version,purpose:entry.purpose,contentHash:entry.contentHash};}
+function receiptInput(){const value=readInput();const requestId=pendingCommit?.requestId||intent?.commit?.requestId;if(requestId)value.requestId=requestId;return value;}
+function current(mine,seq){return !disposed&&!fatal&&generation===mine&&sequence===seq;}
+function rememberPending(){try{const save=window.openai?.setWidgetState;if(typeof save==='function'){const result=save({componentVersion:COMPONENT,identity:{...readInput(),projectId:entry.projectId,contentHash:entry.contentHash},pendingRequest:pendingCommit,payloadSHA256:pendingHash,pendingRequestId:pendingCommit?.requestId||'',outcomeUnknown:unknown===true,draft:{...draft}});if(result?.catch)result.catch(()=>note('HOST_SNAPSHOT_UNAVAILABLE'));}}catch(_){note('HOST_SNAPSHOT_UNAVAILABLE');}}
+function restorePendingMarker(){const saved=window.openai?.widgetState;if(!obj(saved)||![COMPONENT,'PURPOSE_CONFIRMATION_V13','PURPOSE_CONFIRMATION_V12','PURPOSE_CONFIRMATION_V11','PURPOSE_CONFIRMATION_V10','PURPOSE_CONFIRMATION_V4','PURPOSE_CONFIRMATION_V3','PURPOSE_CONFIRMATION_V2','PURPOSE_CONFIRMATION_V1'].includes(saved.componentVersion)||!sameIdentity(saved.identity,entry)||saved.outcomeUnknown!==true)return;unknown=true;notice='此前确认结果尚未核实。请读取本次确认状态，不要重复提交。';const request=saved.pendingRequest;if(saved.identity.projectId===entry.projectId&&saved.identity.contentHash===entry.contentHash&&obj(request)&&sameIdentity(request,entry)&&request.contentHash===entry.contentHash&&request.requestId===saved.pendingRequestId&&str(request.requestId)&&request.requestId&&obj(request.selection)&&str(saved.payloadSHA256)&&/^[a-f0-9]{64}$/.test(saved.payloadSHA256)){pendingCommit=structuredClone(request);pendingHash=saved.payloadSHA256;const restored={reviewMode:request.selection.reviewMode||saved.draft?.reviewMode||'',...saved.draft,startReview:typeof request.selection.startReview==='boolean'?request.selection.startReview:typeof saved.draft?.startReview==='boolean'?saved.draft.startReview:true};if(obj(saved.draft)&&Object.keys(draft).every(k=>typeof restored[k]===typeof draft[k])){draft={...draft,...Object.fromEntries(Object.keys(draft).map(k=>[k,restored[k]]))};modelTouched=true;}recommendationSeeded=true;}else if(str(saved.pendingRequestId)&&saved.pendingRequestId){pendingCommit={...readInput(),requestId:saved.pendingRequestId};note('PENDING_PAYLOAD_UNPROVEN');}}
+function resolvedVariantId(){if(str(draft.variantId)&&draft.variantId)return draft.variantId;const variants=intent?.content?.variants;return Array.isArray(variants)&&variants.length===1&&obj(variants[0])&&str(variants[0].id)&&variants[0].id?variants[0].id:'';}
+function selectedVariant(){const id=resolvedVariantId();return intent?.content.variants.find(v=>v.id===id)||null;}
+function validateRequestShape(request){
+ const keys=['aiSessionId','intentId','version','purpose','action','requestId','contentHash','variantId','selection'];
+ if(!obj(request)||keys.some(k=>!own(request,k))||Object.keys(request).some(k=>!keys.includes(k))||!obj(request.selection)||Object.keys(request.selection).some(k=>!['reviewMode','startReview','projectId','repositoryId','developmentRef','backend','runtimeConfig','verificationWaiver'].includes(k)))throw fail('RESPONSE_DECODE','SUBMISSION_REQUEST_SHAPE');
+ if(own(request.selection,'reviewMode')&&!['UPPER_LLM','CODING_AGENT','NONE'].includes(request.selection.reviewMode))throw fail('RESPONSE_DECODE','SUBMISSION_REVIEW_MODE');
+ if(own(request.selection,'startReview')&&typeof request.selection.startReview!=='boolean')throw fail('RESPONSE_DECODE','SUBMISSION_SELECTION_SHAPE');
+ if(own(request.selection,'backend')){const backend=request.selection.backend;if(!obj(backend)||Object.keys(backend).some(k=>!['configId','configFingerprint'].includes(k))||!str(backend.configId)||!/^[a-f0-9]{64}$/i.test(backend.configFingerprint))throw fail('RESPONSE_DECODE','SUBMISSION_BACKEND_SHAPE');}
+ for(const key of ['projectId','repositoryId','developmentRef'])if(own(request.selection,key)&&(!str(request.selection[key])||!request.selection[key]))throw fail('RESPONSE_DECODE','SUBMISSION_SELECTION_SHAPE');
+ if(own(request.selection,'runtimeConfig')){const config=request.selection.runtimeConfig;if(!obj(config)||Object.keys(config).some(k=>!['model','reasoningEffort','codexFastMode','serviceTier'].includes(k))||!str(config.model)||!config.model||!str(config.reasoningEffort)||!config.reasoningEffort||typeof config.codexFastMode!=='boolean'||own(config,'serviceTier')&&!str(config.serviceTier))throw fail('RESPONSE_DECODE','SUBMISSION_RUNTIME_SHAPE');}
+ if(own(request.selection,'verificationWaiver')){const waiver=request.selection.verificationWaiver;if(!obj(waiver)||Object.keys(waiver).some(k=>!['source','reason'].includes(k))||waiver.source!=='USER_WAIVED'||!str(waiver.reason)||Array.from(waiver.reason).length>2048)throw fail('RESPONSE_DECODE','SUBMISSION_WAIVER_SHAPE');}
+}
+function rejectedContinuationWithoutEffect(value){
+ const steps=value.steps,first=steps?.[0],next=steps?.[1],sub=value.submission;
+ return value.state==='REJECTED'&&value.canResume===false&&value.purpose==='EXECUTION'&&value.action==='REQUEST_CHANGES'&&!!value.commit&&sub?.recorded===true&&sub.receiptRequestId===value.commit.requestId&&steps?.length===2&&first.kind==='RESOLVE_CONTINUATION'&&first.state==='REJECTED'&&first.effect==='NO_EFFECT_PROVEN'&&first.failure?.code==='REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW'&&first.failure.stage==='RECEIPT_READBACK'&&next.kind==='START_IMPLEMENTATION'&&next.state==='PENDING'&&steps.every(step=>['executionId','runId','revisionId','workflowId'].every(key=>!step[key]));
+}
+function noEffectRejectionNotice(){return '本次变更已拒绝，已核实未产生业务副作用。原确认已消费，不能重复提交；请读取当前任务并发起补充审查，再正式审批新定义。';}
+function validateSubmission(value){
+ const submission=value.submission;if(!submission)return null;
+ if(!obj(submission)||Object.keys(submission).some(k=>!['request','payloadSHA256','outcome','recorded','failure','nextAction','receiptRequestId','businessOutcome','consumptionDisposition','consumed','redispatchSameIntent','reprepareAllowed','retryDisposition'].includes(k))||!['REJECTED_NOT_CONSUMED','CONSUMED','UNKNOWN'].includes(submission.outcome)||!['COMMITTED','REJECTED_NO_EFFECT','REJECTED_NOT_CONSUMED','OUTCOME_UNKNOWN'].includes(submission.businessOutcome)||!['CONSUMED','NOT_CONSUMED','UNKNOWN'].includes(submission.consumptionDisposition)||!RETRY_DISPOSITIONS.has(submission.retryDisposition)||typeof submission.recorded!=='boolean'||typeof submission.redispatchSameIntent!=='boolean'||typeof submission.reprepareAllowed!=='boolean'||submission.redispatchSameIntent!==false||!NEXT_ACTIONS.has(submission.nextAction)||!str(submission.receiptRequestId)||!str(submission.payloadSHA256))throw fail('RESPONSE_DECODE','SUBMISSION_SHAPE_INVALID');
+ if(submission.failure)validateFailure(submission.failure);
+ if(!submission.recorded){if(submission.outcome!=='UNKNOWN'||submission.businessOutcome!=='OUTCOME_UNKNOWN'||submission.consumptionDisposition!=='UNKNOWN'||own(submission,'consumed')||submission.reprepareAllowed)throw fail('RESPONSE_DECODE','UNRECORDED_OUTCOME_INVALID');if(submission.retryDisposition!=='READ_ORIGINAL_RECEIPT')throw fail('RESPONSE_DECODE','RETRY_DISPOSITION_CONFLICT');return submission;}
+ if(submission.outcome==='UNKNOWN'||submission.outcome==='REJECTED_NOT_CONSUMED'&&!submission.failure)throw fail('RESPONSE_DECODE','RECORDED_OUTCOME_INVALID');
+ const request=submission.request;validateRequestShape(request);
+ if(!obj(request)||!sameIdentity(request,value)||request.contentHash!==value.contentHash||request.action!==value.action||!str(request.requestId)||!request.requestId||!str(request.variantId)||!value.content.variants.some(v=>v.id===request.variantId)||!obj(request.selection)||!/^[a-f0-9]{64}$/.test(submission.payloadSHA256))throw fail('INTENT_VALIDATE','SUBMISSION_IDENTITY_MISMATCH');
+ if(pendingCommit&&(request.requestId!==pendingCommit.requestId||!pendingHash||submission.payloadSHA256!==pendingHash||!sameCommit(request,pendingCommit)))throw fail('INTENT_VALIDATE','SUBMISSION_REQUEST_CONFLICT');
+ if(submission.outcome==='CONSUMED'&&(!value.commit||submission.receiptRequestId!==value.commit.requestId||!sameCommit(value.commit,request)||!['COMMITTED','REJECTED_NO_EFFECT'].includes(submission.businessOutcome)||submission.consumptionDisposition!=='CONSUMED'||submission.consumed!==true))throw fail('INTENT_VALIDATE','CONSUMPTION_RECEIPT_MISMATCH');
+ if(submission.businessOutcome==='REJECTED_NO_EFFECT'&&(submission.outcome!=='CONSUMED'||!rejectedContinuationWithoutEffect(value)||submission.nextAction!=='READ_CURRENT_TARGET'||submission.reprepareAllowed))throw fail('INTENT_VALIDATE','REJECTED_NO_EFFECT_PROOF_INVALID');
+ if(submission.outcome==='CONSUMED'&&submission.retryDisposition!=='NONE')throw fail('INTENT_VALIDATE','RETRY_DISPOSITION_CONFLICT');
+ if(submission.outcome==='REJECTED_NOT_CONSUMED'&&(submission.receiptRequestId||submission.businessOutcome!=='REJECTED_NOT_CONSUMED'||submission.consumptionDisposition!=='NOT_CONSUMED'||submission.consumed!==false))throw fail('INTENT_VALIDATE','REJECTION_RECEIPT_CONFLICT');
+ // EDIT_SELECTION_AND_RESUBMIT is the only value that re-arms a confirmation control, so
+ // every non-consumption fact behind it is re-checked here instead of trusted from the wire.
+ if(submission.retryDisposition==='EDIT_SELECTION_AND_RESUBMIT'&&(value.state!=='PENDING'||value.commit||submission.nextAction!=='EDIT_SELECTION'))throw fail('INTENT_VALIDATE','RETRY_DISPOSITION_CONFLICT');
+ return submission;
+}
+// The one §5 unlock predicate. It reads only durable receipt facts, the intent they
+// were recorded against, and the request this Card still holds; a Host transport
+// error, a timeout, a Card refresh, a missing successor Review or an unchanged Task
+// state is never evidence of non-consumption, so nothing else can reach true here.
+function canUnlockRejectedSubmissionForUserRetry(submission,currentIntent,heldRequest){
+ if(!obj(submission)||!obj(currentIntent))return false;
+ if(submission.recorded!==true||submission.retryDisposition!=='EDIT_SELECTION_AND_RESUBMIT')return false;
+ if(submission.outcome!=='REJECTED_NOT_CONSUMED'||submission.businessOutcome!=='REJECTED_NOT_CONSUMED'||submission.consumptionDisposition!=='NOT_CONSUMED'||submission.consumed!==false)return false;
+ if(submission.nextAction!=='EDIT_SELECTION'||submission.redispatchSameIntent!==false)return false;
+ // A rejection carries no consumption pointer; its receipt identity is the frozen
+ // request plus the payload hash Core stored beside it.
+ if(submission.receiptRequestId||typeof submission.payloadSHA256!=='string'||!/^[a-f0-9]{64}$/.test(submission.payloadSHA256))return false;
+ if(currentIntent.state!=='PENDING'||currentIntent.commit)return false;
+ const request=submission.request;
+ if(!obj(request)||!sameIdentity(request,currentIntent)||request.contentHash!==currentIntent.contentHash||request.action!==currentIntent.action)return false;
+ // A held request that is not exactly the rejected one is still unproven; unlocking
+ // over it would drop the only identity a later readback can use.
+ if(heldRequest&&heldRequest.requestId!==request.requestId)return false;
+ return true;
+}
+function rejectionHistory(submission){const request=submission.request;return {aiSessionId:request.aiSessionId,intentId:request.intentId,version:request.version,purpose:request.purpose,action:request.action,variantId:request.variantId,requestId:request.requestId,contentHash:request.contentHash,payloadSHA256:submission.payloadSHA256,outcome:submission.outcome,businessOutcome:submission.businessOutcome,consumptionDisposition:submission.consumptionDisposition,consumed:submission.consumed,nextAction:submission.nextAction,retryDisposition:submission.retryDisposition,receiptRequestId:submission.receiptRequestId};}
+function rejectedNotice(){return editableRetry?'本次确认未被消费。请修改选择或重新确认。':lastSubmission?.retryDisposition==='REPREPARE_REQUIRED'?'本次确认已明确拒绝且未产生业务副作用。需要根据当前 Decision 状态重新准备新的确认。':'原请求已明确拒绝且未消费。请修正选择后主动确认。';}
+function applyIntent(value){const next=validateIntent(value),submission=validateSubmission(next);intent=next;editableRetry=false;
+ if(submission?.recorded&&submission.outcome==='CONSUMED'){if(entry.purpose==='TASK')draft.reviewMode=submission.request.selection.reviewMode||'';confirmedOutcome='CONSUMED';unknown=false;submissionNext=submission.nextAction;pendingCommit=originalSubmission(submission.request);pendingHash=submission.payloadSHA256;draft.variantId=next.commit.variantId;}
+ else if(submission?.recorded&&submission.outcome==='REJECTED_NOT_CONSUMED'&&next.state==='PENDING'&&!next.commit){if(entry.purpose==='TASK'&&lastRejectedRequestId!==submission.request.requestId)draft.startReview=submission.request.selection.startReview??next.content.task.startReview;confirmedOutcome='REJECTED_NOT_CONSUMED';submissionNext=submission.nextAction;pendingCommit=originalSubmission(submission.request);pendingHash=submission.payloadSHA256;unknown=false;stale=staleCapabilityFailure(submission.failure)||submission.nextAction==='PREPARE_NEW_VERSION';recommendationSeeded=true;lastSubmission=rejectionHistory(submission);lastReceipt={requestId:submission.request.requestId,payloadSHA256:submission.payloadSHA256,receiptRequestId:submission.receiptRequestId};lastRejectedRequestId=submission.request.requestId;lastRejectedPayloadSHA256=submission.payloadSHA256;
+  // EDITABLE_RETRY_READY releases only this Card's held request. The durable rejection,
+  // its requestId and its payload hash stay visible as history, and the next submission
+  // is a new user command with a new requestId and a new payload hash.
+  if(canUnlockRejectedSubmissionForUserRetry(submission,next,pendingCommit)){pendingCommit=null;pendingHash='';stale=false;editableRetry=true;notice=rejectedNotice();}}
+ else if(next.commit){if(entry.purpose==='TASK')draft.reviewMode=next.commit.selection.reviewMode||'';unknown=confirmedOutcome!=='CONSUMED';draft.variantId=next.commit.variantId;}
+ // PENDING, no record, or missing submission never proves non-consumption.
+ if(submission?.failure)recordFailure(submission.failure);rememberPending();note('INTENT_VALIDATED');return submission;
+}
+function applyEnvelope(value){try{if(!value.intent){invalidatePlanContext();if(value.failure){options=null;recordFailure(value.failure);return false;}throw fail('RESPONSE_DECODE','INTENT_MISSING');}applyIntent(value.intent);readerContextValid=value.failure?.nextAction!=='ACCESS_BLOCKED';display=readDisplay(value.display,intent);if(value.failure)recordFailure(value.failure);else if(!value.intent.submission?.failure)recordFailure(null);return true;}catch(e){invalidatePlanContext();throw e;}}
+
+async function refresh(){if(!initialized||!entry||flight||fatal||disposed)return;flight=true;resumeReadback=false;recordFailure(null);const mine=generation,seq=++sequence;safeRender();try{note('READ_RECEIPT_SENT',{operation:'READ_RECEIPT',requestId:receiptInput().requestId});const value=decode(await rpc('confirmation_get',receiptInput()));if(!current(mine,seq))return;if(!applyEnvelope(value))return;note('READ_RECEIPT_RESULT',{operation:'READ_RECEIPT',requestId:pendingCommit?.requestId||intent?.commit?.requestId||'',result:intent.submission?.recorded?intent.submission.outcome:'UNKNOWN'});resumeReadback=intent.canResume===true&&!!intent.commit&&intent.submission?.recorded===true&&intent.submission.outcome==='CONSUMED';if(intent.state==='PENDING'&&!pendingCommit&&!unknown){options=null;options=await readOptions();if(!current(mine,seq))return;seedRecommendation();}else options=null;notice=resumeReadback?'Core 已确认可安全继续尚未开始的原步骤。':unknown?'确认结果尚未确定；请回读准确请求回执，不重复提交。':intent.submission?.businessOutcome==='REJECTED_NO_EFFECT'?noEffectRejectionNotice():confirmedOutcome==='REJECTED_NOT_CONSUMED'?rejectedNotice():'';}catch(e){if(current(mine,seq))caught(e,'READ_FAILED');}finally{if(current(mine,seq)){flight=false;safeRender();}}}
+async function readbackOriginal(){if(!initialized||!entry||fatal||disposed||flight||!pendingCommit)return;readbackInProgress=true;unknown=true;const mine=generation,seq=++sequence;recordFailure(null);safeRender();try{note('READ_RECEIPT_SENT',{operation:'READ_RECEIPT',requestId:pendingCommit.requestId});const value=decode(await rpc('confirmation_get',receiptInput()));if(!current(mine,seq))return;if(!applyEnvelope(value))return;note('READ_RECEIPT_RESULT',{operation:'READ_RECEIPT',requestId:pendingCommit?.requestId||'',result:intent?.submission?.recorded?intent.submission.outcome:'UNKNOWN'});notice=intent?.submission?.recorded?(confirmedOutcome==='CONSUMED'?(intent.submission?.businessOutcome==='REJECTED_NO_EFFECT'?noEffectRejectionNotice():'已回读原确认回执：选择已消费。'):confirmedOutcome==='REJECTED_NOT_CONSUMED'?'已回读原确认回执：请求被明确拒绝且未消费。':'已回读原确认回执。'):'确认结果仍未确定；已保留原请求身份，不会重复提交。';}catch(e){if(current(mine,seq))caught(e,'RESULT_READBACK_FAILED');}finally{if(current(mine,seq)){readbackInProgress=false;safeRender();}}}
+// Display metadata is optional, read-only, and never repairs canonical identity failures.
+function relatedDisplay(value,currentIntent){if(value===undefined)return true;if(!obj(value)||Object.keys(value).some(k=>!['availability','kind','id','state','outcome','failureCode','reviewRun','implementationRun','verificationRun','readFailureCode','taskDisposition','taskDispositionSummary'].includes(k))||!['AVAILABLE','UNAVAILABLE'].includes(value.availability)||!['REVIEW','EXECUTION'].includes(value.kind)||!str(value.id)||!value.id)return false;for(const key of ['state','outcome','failureCode','readFailureCode','taskDisposition','taskDispositionSummary'])if(own(value,key)&&!str(value[key]))return false;const action=currentIntent.purpose==='REVIEW'?currentIntent.content.action:currentIntent.content.execution?.action;if(value.kind==='REVIEW'?!reviewDecisionAction(action):!acceptanceDecisionAction(action))return false;const body=value.kind==='REVIEW'?currentIntent.content.review:currentIntent.content.execution;if(!body||value.id!==(value.kind==='REVIEW'?body.reviewId:body.executionId))return false;const run=part=>{if(part===undefined)return true;return obj(part)&&Object.keys(part).every(k=>['id','status','failureCode'].includes(k))&&str(part.id)&&part.id&&str(part.status)&&part.status&&(!own(part,'failureCode')||str(part.failureCode));};if(!run(value.reviewRun)||!run(value.implementationRun)||!run(value.verificationRun))return false;if(value.kind==='REVIEW'&&(value.implementationRun!==undefined||value.verificationRun!==undefined)||value.kind==='EXECUTION'&&value.reviewRun!==undefined)return false;return true;}
+function readDisplay(value,currentIntent){if(value===undefined)return null;const numeric=['reviewOrdinal','repositoryCount','topologyRevision'],allowed=['aiSessionId','intentId','version','purpose','projectId','taskId','reviewId','decisionId','featureAreaId','repositoryId','projectName','taskName','featureAreaName','repositoryName','developmentBranch','reviewOrdinal','repositoryCount','topologyRevision','decisionPurpose','presentationIssue','status','objectNameSource','related'];const reject=()=>{note('DISPLAY_METADATA_UNAVAILABLE');return null;};if(!obj(value)||Object.keys(value).some(k=>!allowed.includes(k))||!sameIdentity(value,currentIntent)||value.projectId!==currentIntent.projectId||!['AVAILABLE','PARTIAL','UNAVAILABLE'].includes(value.status)||!['PREPARED_CONTENT','CURRENT_AUTHORIZED_OBJECT','UNAVAILABLE'].includes(value.objectNameSource)||!relatedDisplay(value.related,currentIntent))return reject();for(const key of allowed.filter(k=>!['version','purpose','status','objectNameSource','related',...numeric].includes(k)))if(own(value,key)&&!str(value[key]))return reject();for(const key of numeric)if(own(value,key)&&(!Number.isSafeInteger(value[key])||value[key]<0))return reject();const c=currentIntent.content,body=c.execution||c.review||c.task||c.featureArea?.initialTask||c.featureArea||{};for(const key of ['taskId','reviewId','decisionId','featureAreaId','repositoryId'])if(value[key]){const exact=body[key];const stepMatches=currentIntent.steps.some(step=>step[key]===value[key]);const derivedExecutionRepository=key==='repositoryId'&&currentIntent.purpose==='EXECUTION'&&value.taskId===body.taskId&&value.featureAreaId===body.featureAreaId&&value.objectNameSource==='CURRENT_AUTHORIZED_OBJECT';if(exact?exact!==value[key]:!stepMatches&&!derivedExecutionRepository&&!(key==='repositoryId'&&currentIntent.commit?.selection.repositoryId===value[key]))return reject();}return {...value};}
+function shortDisplay(variant){const value=variant?.displaySummary;if(!obj(value)||Object.keys(value).some(k=>!['summary','keyConstraints'].includes(k))||!str(value.summary)||Array.from(value.summary).length<1||Array.from(value.summary).length>160||own(value,'keyConstraints')&&(!Array.isArray(value.keyConstraints)||value.keyConstraints.length>3||value.keyConstraints.some(v=>!str(v)||Array.from(v).length<1||Array.from(v).length>60)))return null;return value;}
+function modeLabel(v){if(intent?.action==='MERGE_FEATURE_AREA')return '合入已验收提交';if(acceptanceDecisionAction(intent?.action))return '确认执行结果';return v?.executorKind==='CODING_AGENT'?'Codex 审查':v?.executorKind==='UPPER_LLM'?'GPT 审查（在原对话读取文件并提交报告）':v?.implementationMode==='CODING_AGENT'?'Codex':v?.implementationMode==='DIRECT_FILE'?'GPT 文件实施':'创建内容';}
+function reviewDecisionAction(action){return action==='REVISE'||action==='REJECT';}
+function acceptanceDecisionAction(action){return ['ACCEPT','REJECT','REQUEST_REVERIFICATION','COMPLETE_TASK','DEFER_TASK','CONTINUE_TASK'].includes(action);}
+function decisionAction(){const c=intent?.content;return entry?.purpose==='REVIEW'&&reviewDecisionAction(c?.action)||entry?.purpose==='EXECUTION'&&acceptanceDecisionAction(c?.execution?.action);}
+function actionTitle(){const taskChoice=({COMPLETE_TASK:'完成并合入',DEFER_TASK:'暂存任务',CONTINUE_TASK:'延续任务'})[intent?.action];if(taskChoice)return taskChoice;if(selectedContinuation())return '续接任务';const c=intent.content,a=c.execution?.action;if(entry.purpose==='RECOVERY_PURPOSE')return '确认恢复目的';if(a==='CONFIRM_AND_START_IMPLEMENTATION')return '确认并开始实施';if(a==='CONFIRM_IMPLEMENTATION')return '确认实施方案';if(intent.action==='APPROVE')return '批准实施方案';if(entry.purpose==='PROJECT_SETUP')return intent.action==='SELECT_PROJECT'?'进入项目':intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT'?'配置开发上下文':'选择工作环境';if(entry.purpose==='FEATURE_AREA')return c.action==='MERGE_FEATURE_AREA'?'合入领域交付':'创建领域';if(entry.purpose==='TASK')return '创建任务';if(entry.purpose==='REVIEW')return reviewDecisionAction(c.action)?(c.action==='REVISE'?'重新审查':'放弃任务'):(c.action==='REQUEST_SUPPLEMENTAL_REVIEW'?'补充审查':'开始审查');if(a==='START_DIRECT_FILE')return '开始文件实施';if(a==='RECOVER_DIRECT_FILE')return '恢复文件实施';if(a==='CANCEL_DIRECT_FILE')return '取消文件实施';if(acceptanceDecisionAction(a))return ({ACCEPT:'验收当前执行结果',REJECT:'拒绝当前执行结果',REQUEST_REVERIFICATION:'请求重新验证'})[a];return ['RETRY_IMPLEMENTATION','REQUEST_CHANGES'].includes(a)?'重新实施':'开始实施';}
+function objectName(){if(selectedContinuation())return selectedContinuation().title;const c=intent.content;return entry.purpose==='FEATURE_AREA'?(intent.action==='MERGE_FEATURE_AREA'?display?.featureAreaName||'当前领域（名称暂不可读取）':c.featureArea.title||'待创建领域'):entry.purpose==='TASK'?c.task.title||'待创建任务':entry.purpose==='PROJECT_SETUP'?'项目与开发分支':display?.taskName||'当前任务（名称暂不可读取）';}
+function actionLabel(){const taskChoice=({COMPLETE_TASK:'确认验收并合入',DEFER_TASK:'确认暂存任务',CONTINUE_TASK:'确认延续原任务'})[intent?.action];if(taskChoice)return taskChoice;const c=intent.content,v=selectedVariant(),a=c.execution?.action;if(a==='CONFIRM_AND_START_IMPLEMENTATION')return '确认并开始实施';if(a==='CONFIRM_IMPLEMENTATION')return '确认实施方案';if(entry.purpose==='TASK'&&draft.reviewMode==='NONE')return '创建任务，进入实施确认';if(intent.action==='APPROVE')return '仅批准方案';if(c.action==='MERGE_FEATURE_AREA')return '确认逐仓合入';if(a==='START_DIRECT_FILE')return '开始已批准文件实施';if(a==='RECOVER_DIRECT_FILE')return '恢复文件实施权限';if(a==='CANCEL_DIRECT_FILE')return '取消文件实施权限';if(entry.purpose==='EXECUTION'&&v?.implementationMode==='DIRECT_FILE')return a==='APPROVE_AND_START'?'批准并授予文件权限':'确认文件实施授权';if(entry.purpose==='REVIEW'&&reviewDecisionAction(c.action))return c.action==='REVISE'?'确认要求修订':'确认拒绝审查';if(entry.purpose==='RECOVERY_PURPOSE')return '确认恢复后继目的';if(entry.purpose==='EXECUTION'&&acceptanceDecisionAction(a))return ({ACCEPT:'确认验收',REJECT:'确认拒绝结果',REQUEST_REVERIFICATION:'确认请求重新验证'})[a];return entry.purpose==='PROJECT_SETUP'?(intent.action==='SELECT_PROJECT'?'确认进入项目':intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT'?'确认开发分支映射':'确认项目与分支'):entry.purpose==='FEATURE_AREA'?(c.featureArea.initialTask?.startReview?'创建领域并开始审查':'创建领域'):entry.purpose==='TASK'?(taskReviewSelected()?'创建任务并开始审查':'创建任务'):entry.purpose==='REVIEW'?'确认并开始审查':({APPROVE_AND_START:'批准并开始实施',START_APPROVED:'开始已批准实施',RETRY_IMPLEMENTATION:'确认并重新实施',REQUEST_CHANGES:'确认并重新实施'}[a]||'确认本次实施');}
+function consequence(){const taskChoice=({COMPLETE_TASK:'一次确认覆盖当前结果验收、提交及逐仓合入目标开发分支。全部合入成功后才完成任务；失败保留进度并显示合入受阻。',DEFER_TASK:'保存当前进度、验证结果和待办，停止后续自动推进。保留原任务及全部历史，不执行 Git stash。',CONTINUE_TASK:'沿用同一个 Task，解除暂存并准备后续实施或验证。旧结果及未知状态保留；需要修订时进入原任务的正式审查与审批流程，不从此点击直接启动 Codex。'})[intent?.action];if(taskChoice)return taskChoice;if(selectedContinuation())return '保留原 Task、审查、执行和分析记录。先在对话中核对当前状态与继续路径；审批和执行仍按原流程确认。';const c=intent.content,v=selectedVariant(),a=c.execution?.action;if(a==='CONFIRM_AND_START_IMPLEMENTATION')return '一次确认完整实施与验证方案、目标仓库及基线、后端与运行配置，冻结方案后立即开始 Codex 实施，无需再次确认启动。';if(a==='CONFIRM_IMPLEMENTATION')return '用户已选择跳过审查。本次仅确认完整实施与验证方案；不会自动启动 Codex。之后仍需明确确认运行配置并启动。';if(entry.purpose==='TASK'&&draft.reviewMode==='NONE')return '跳过审查并创建任务，下一步确认完整实施与验证方案；本次不会启动 Codex 或修改代码。';if(intent.action==='APPROVE')return '保存本次完整获批定义，不启动实施。';if(c.action==='MERGE_FEATURE_AREA')return c.featureArea.deliveryPlan?.predecessorMergeRequestId?'保留原验收与历史合入回执，按本次冻结的目标继续合入；所有目标合入完成后结束原任务。':'按冻结的逐仓交付计划合入已验收 Task 提交；每个仓库独立核验和恢复，不会伪造全局原子性。';if(entry.purpose==='PROJECT_SETUP')return intent.action==='SELECT_PROJECT'?'将当前会话绑定到所选项目。':intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT'?'更新本次明确选择的逐仓开发分支映射。':'绑定所选项目与已有开发分支，沿用当前会话。';if(entry.purpose==='FEATURE_AREA')return c.featureArea.initialTask?(c.featureArea.initialTask.startReview?'创建领域及初始任务，并开始所选方式的审查。':'创建领域及初始任务。'):'创建本次准备的领域。';if(entry.purpose==='TASK')return taskReviewSelected()?'创建任务，并开始所选方式的审查。':'仅创建任务，不启动审查；之后可单独发起审查，实施仍须审批。';if(entry.purpose==='REVIEW'){if(reviewDecisionAction(c.action))return c.action==='REVISE'?'保存原始反馈，在同一个 Task 下创建唯一后继 Review，并由 Core 自动准备和启动。':'放弃当前 Task；保留 Review 与 Run 历史。';const supplemental=c.action==='REQUEST_SUPPLEMENTAL_REVIEW';return v?.executorKind==='UPPER_LLM'?(supplemental?'为当前任务准备补充审查并开放只读文件访问；等待你在对话中继续。':'创建本次审查并开放其只读文件访问；等待你在对话中继续。'):(supplemental?'为当前任务准备并开始补充审查，保留已有审查与执行记录。':'创建并开始本次审查。');}if(acceptanceDecisionAction(a))return ({ACCEPT:'验收当前准确 Execution；确认受理不等于工程运行成功。',REJECT:'拒绝当前准确 Execution 结果；不取消或重置既有 Run。',REQUEST_REVERIFICATION:'请求原 Core 创建准确的重新验证后继；继承原 Execution 配置，不选择新模型或指令。'})[a];if(a==='START_DIRECT_FILE')return v?.verificationSpec?.mode==='RUN'?'激活获批文件写权限，并固定后续 Codex 验证配置；提交文件结果后才启动独立验证。':'为完整冻结工作集准备并激活文件写权限；不会启动 Codex。';if(a==='RECOVER_DIRECT_FILE')return '仅按原 workflow、epoch 和 generation 恢复文件实施权限；不会从读取或历史回执自动恢复。';if(a==='CANCEL_DIRECT_FILE')return '关闭此准确文件实施 workflow 的全部成员权限；不会回滚已完成文件效果。';if(v?.implementationMode==='DIRECT_FILE')return a==='APPROVE_AND_START'?'批准方案并授予获批范围的文件实施权限；权限就绪不表示 GPT 已经操作。':'按获批定义取得文件实施权限；权限就绪不表示 GPT 已经操作。';return {APPROVE_AND_START:'保存获批方案与运行配置，并立即准备和启动 Codex 实施；无需再次确认启动。',START_APPROVED:'启动已有获批实施候选，沿用冻结配置。',RETRY_IMPLEMENTATION:'新建后继实施，保留旧执行记录，不重新审查。',REQUEST_CHANGES:'新建后继实施，保留旧执行记录，不重新审查。'}[a]||'按当前准确方案处理本次实施。';}
+function appendBody(parent,title,text){const body=bodySection(title,text);if(body)parent.append(body);}
+function facts(parent,pairs){const dl=el('dl');for(const [name,value]of pairs)if(str(value)&&value)dl.append(el('dt',name),el('dd',value));if(dl.childNodes.length)parent.append(dl);}
+function documentValue(parent,title,value){if(value===undefined||value===null||value==='')return;if(str(value)){appendBody(parent,title,value);return;}const section=el('section',undefined,'document-section');section.append(el('h3',title));if(Array.isArray(value)){const list=el('ol');for(const item of value){const li=el('li');if(str(item))li.append(markdown(item));else for(const [key,v]of Object.entries(item))documentValue(li,key,v);list.append(li);}section.append(list);}else if(obj(value))for(const [key,v]of Object.entries(value))documentValue(section,key,v);else section.append(el('p',String(value)));parent.append(section);}
+function planIdentityKey(){
+  const variant=selectedVariant();
+  if(disposed||fatal||!readerContextValid||lastFailure?.source==='CARD'||lastFailure?.nextAction==='ACCESS_BLOCKED'||!entry||!intent||!variant)return '';
+  return JSON.stringify([entry.aiSessionId,entry.projectId,entry.intentId,entry.version,intent.contentHash,variant.id]);
+}
+function paintReaderIssue(){
+  const target=root.querySelector('[data-reader-issue]');
+  if(!target)return;
+  target.textContent=planReaderIssue?'方案阅读器暂不可用，请查看技术诊断；确认事实保持不变。':'';
+  target.hidden=!planReaderIssue;resize();
+}
+function reportReaderIssue(code){
+  if(disposed)return;
+  planReaderIssue=code;
+  try{note(code);paintReaderIssue();}catch(_){/* Presentation diagnostics must not alter business state. */}
+}
+function initializeReadingPresentation() {
+  document.body.classList.add('dbc-surface');
+  root.className='dbc-content';
+  const shell=document.getElementById('db-confirmation-shell');
+  try{cardSizer=readerUI.createCardSizer({anchor:shell,isReady:()=>initialized&&!disposed,onHeight:height=>notify('ui/notifications/size-changed',{height})});}catch(_){reportReaderIssue('CARD_SIZER_INITIALIZE_FAILED');}
+  try{planReader=readerUI.createPlanReader({anchor:shell,maxHeight:560,maxWidth:720,restoreFocus:key=>!disposed&&key===planIdentityKey()?root.querySelector('[data-plan-entry]'):null,onIssue:reportReaderIssue});}catch(_){reportReaderIssue('PLAN_READER_INITIALIZE_FAILED');}
+}
+function invalidatePlanContext(){readerContextValid=false;try{planReader?.close('invalid-context');}catch(_){reportReaderIssue('PLAN_READER_CLOSE_FAILED');}}
+function renderPlanFeedback(parent){renderStateFeedback(parent);renderOutcomeSummary(parent);if(intent.commit?.selection.runtimeConfig)parent.append(el('p','以上配置来自已消费选择；本阅读器未读取 Run 最终输入。','reader-meta'));if(intent.state==='PENDING')renderVariantRestriction(parent,selectedVariant());}
+function currentPlanNotice(){
+  if(unknown)return '原请求结果尚未确认；这里只读展示，关闭后回查原请求。';
+  if(error||['SUPERSEDED','ABANDONED','REJECTED','PARTIAL','UNKNOWN'].includes(intent?.state))return '当前操作有状态更新或限制；详见正文顶部说明。';
+  if(intent?.state==='PENDING'&&Date.parse(intent.expiresAt)<=Date.now())return '本次内容已过期，不能从旧卡重新提交。';
+  if(intent?.state==='PENDING'&&options&&selectedVariant()&&variantReason(selectedVariant().id))return '当前方式存在使用限制；详见正文顶部说明。';
+  return intent?STATE_LABELS[intent.state]:'';
+}
+function openPlanReader(opener) {
+  const key=planIdentityKey();if(!key||!planReader)return;
+  if(debug.open){reportReaderIssue('PLAN_READER_OTHER_MODAL_OPEN');return;}
+  planReaderIssue='';paintReaderIssue();
+  try {
+    const result=planReader.open({key,title:entry.purpose==='REVIEW'?'完整审查内容':entry.purpose==='EXECUTION'?'完整实施方案':'完整方案',subtitle:objectName(),opener,notice:currentPlanNotice(),buildSections:buildReaderSections,renderFeedback:renderPlanFeedback});
+    if(!result.ok)reportReaderIssue(result.code);else decorateReaderHeading();
+  } catch (_) {try{planReader.close('open-error');}catch(_){}reportReaderIssue('PLAN_READER_OPEN_FAILED');}
+}
+function detailButton(parent) {
+  const button=uiButton(entry.purpose==='REVIEW'?'查看审查内容':'查看完整方案','document','dbc-outline');
+  button.dataset.planEntry='true';button.setAttribute('aria-haspopup','dialog');
+  button.disabled=!selectedVariant()||!planIdentityKey()||!planReader;
+  button.onclick=()=>openPlanReader(button);parent.append(button);
+}
+function syncPlanReaderAfterRender(){
+  root.dataset.state=intent?.state||'READING';
+  // A failed incoming identity/DTO validation must not leave an old plan readable.
+  // Transport uncertainty retains existing validated facts; it never restores an invalid context.
+  if(lastFailure?.source==='CARD'||lastFailure?.nextAction==='ACCESS_BLOCKED')readerContextValid=false;
+  try{planReader?.syncIdentity(planIdentityKey());if(planReader?.isOpen)planReader.updateStatus({notice:currentPlanNotice(),renderFeedback:renderPlanFeedback});}catch(_){try{planReader?.close('reader-error');}catch(_){}reportReaderIssue('PLAN_READER_SYNC_FAILED');}
+}
+function disposeReadingPresentation(){try{planReader?.dispose();}catch(_){}try{cardSizer?.dispose();}catch(_){}if(debug.open)try{debug.close();}catch(_){} }
+function renderVariantRestriction(parent,variant){if(!options||!variant)return;const reason=variantReason(variant.id);if(!reason)return;parent.append(el('p',reason,'error'));const action=options.variants.find(v=>v.id===variant.id)?.failures?.[0]?.nextAction;const guidance={EDIT_SELECTION:'请修改本次选择后主动确认。',READ_CURRENT_TARGET:'请在对话中读取准确目标的当前状态。',PREPARE_NEW_VERSION:'请在对话中准备新版本。',PREPARE_RECOVERY_STATUS:'来源状态已变化，请重新准备恢复状态评估。',READ_ORIGINAL_RECEIPT:'请只读回查原请求结果。',CONTINUE_ORIGINAL_STEPS:'仅可沿原请求继续已确认安全的步骤。',ACCESS_BLOCKED:'当前权限不允许此操作。'}[action];if(guidance)parent.append(el('p',guidance,'muted'));}
+// Go strings.TrimSpace's Unicode White_Space set, used only to classify blank input.
+// The original string is never trimmed, normalized or reconstructed.
+function hasPreparedInstruction(raw){return typeof raw==='string'&&/[^\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]/u.test(raw)&&new TextEncoder().encode(raw).length<=65536;}
+function instructionField(variant,keys){
+  let container=variant;const sourcePath='variant.'+keys.join('.');
+  for(let i=0;i<keys.length;i++){
+    if(!obj(container))return {sourcePath,presence:container===null?'NULL_CONTAINER':'INVALID_CONTAINER',type:Array.isArray(container)?'array':container===null?'null':typeof container,value:container};
+    if(!own(container,keys[i]))return {sourcePath,presence:i===keys.length-1?'MISSING':'MISSING_CONTAINER',type:'missing'};
+    const value=container[keys[i]];
+    if(i===keys.length-1)return {sourcePath,presence:value===null?'NULL':'VALUE',type:Array.isArray(value)?'array':value===null?'null':typeof value,...(typeof value==='string'?{rawText:value}:{value})};
+    container=value;
+  }
+}
+function resolvePreparedInstruction(variant,kind){
+  const paths=kind==='review'?[['reviewInstruction']]:kind==='implementation'?[['executionInstructions','implementation'],['workSpec','codexInstruction']]:[['executionInstructions','verification'],['verificationSpec','codexInstruction']];
+  const alternativeSources=paths.map(path=>instructionField(variant,path));
+  const outcome=(availability,selectionBasis,source)=>({kind,availability,selectionBasis,sourcePath:source?.sourcePath||'',rawText:source?.rawText,alternativeSources});
+  if(kind==='review'){const source=alternativeSources[0];return hasPreparedInstruction(source.rawText)&&!source.rawText.includes('\u0000')?outcome('AVAILABLE','当前提案的 reviewInstruction 沿正式审查创建入口原样使用；此处未读取实际派发输入。',source):outcome(source.presence==='MISSING'?'MISSING':'INVALID','当前提案未提供可确定的完整审查指令；可查看准确字段状态。');}
+  const instructionsPresent=own(variant,'executionInstructions'),instructions=variant.executionInstructions;
+  const work=variant.workSpec,verification=variant.verificationSpec;
+  if(!obj(work)||!obj(verification)||!['RUN','NONE'].includes(verification.mode))return outcome('INVALID','当前数据缺少可核验的结构化实施或验证定义，无法确定唯一适用指令。');
+  if(instructionsPresent&&!obj(instructions))return outcome('INVALID','executionInstructions 容器形状异常；不把显式 null 或其他值当作字段缺失。');
+  const spec=alternativeSources[1];
+  if(verification.mode==='NONE'&&own(verification,'codexInstruction')&&verification.codexInstruction!=='')return outcome('CONFLICT','NONE 的结构化验证定义含非空或非法 codexInstruction；整个指令来源合同无法成立。');
+  if(instructionsPresent){
+    if(!hasPreparedInstruction(instructions.implementation)||!hasPreparedInstruction(work.codexInstruction))return outcome('INVALID','完整 executionInstructions 合同缺少合法 implementation；只能按字段查看，不能确认适用指令。');
+    if(instructions.implementation!==work.codexInstruction)return outcome('CONFLICT','executionInstructions.implementation 与 workSpec.codexInstruction 不同；正式物化合同无法成立。');
+    if(verification.mode==='RUN'&&(!hasPreparedInstruction(instructions.verification)||!hasPreparedInstruction(verification.codexInstruction)))return outcome('INVALID','RUN 的完整 executionInstructions 合同缺少合法 verification；不能把另一页误标为有效输入。');
+    if(verification.mode==='RUN'&&instructions.verification!==verification.codexInstruction)return outcome('CONFLICT','executionInstructions.verification 与 verificationSpec.codexInstruction 不同；正式物化合同无法成立。');
+    if(verification.mode==='NONE'&&own(instructions,'verification'))return outcome('INVALID','NONE 下 executionInstructions.verification 应缺失；显式空字符串或 null 不属于标准输出形状。');
+  }
+  if(kind==='verification'&&verification.mode==='NONE'){
+    if(own(verification,'codexInstruction')&&verification.codexInstruction!=='')return outcome('CONFLICT','NONE 定义不允许非空或非法验证指令字段；不从检查清单拼接指令。');
+    if(instructionsPresent&&own(instructions,'verification'))return outcome('INVALID','NONE 下 executionInstructions.verification 应缺失；显式空字符串或 null 不属于标准输出形状。');
+    return outcome('EMPTY','当前提案未提供独立验证指令。结构化验证模式为 NONE；未从 checks 生成正文。');
+  }
+  if(!hasPreparedInstruction(spec.rawText))return outcome(spec.presence==='MISSING'?'MISSING':'INVALID',kind==='verification'?'当前提案未提供可确定的独立验证指令；RUN 定义仍保留在配置页。':'当前数据无法确定完整实施指令；结构化定义字段缺失、为空或非法。');
+  if(!instructionsPresent)return outcome('AVAILABLE','executionInstructions 容器缺失；正式物化合同保留结构化定义中的原始指令。此处展示提案输入，不是 Run 最终 Prompt。',spec);
+  const provided=alternativeSources[0];
+  if(!hasPreparedInstruction(provided.rawText))return outcome('INVALID','executionInstructions 已存在，但所需字段缺失、为空或非法；不能回退另一字段掩盖问题。');
+  if(provided.rawText!==spec.rawText)return outcome('CONFLICT','当前数据无法确定唯一适用指令：正式确认合同要求 executionInstructions 与物化定义逐字一致；两字段不同，不自动选取或合并。');
+  return outcome('AVAILABLE','正式确认合同要求两处原始字符串逐字一致；此处使用 executionInstructions，结构化定义中的同文仅作来源证据。未读取实际 Run 输入。',provided);
+}
+// Local reading model only: none of these values enter a confirmation payload.
+function buildReaderSections(){
+  if(!intent||!selectedVariant())return {sections:[],defaultTab:''};
+  const purpose=intent.purpose,c=intent.content,v=selectedVariant();
+  const overview={id:'overview',label:purpose==='PROJECT_SETUP'?'工作环境说明':'概览',kind:'overview'};
+  const fields={id:'definition',label:purpose==='EXECUTION'?'配置与约束':purpose==='REVIEW'?'配置与范围':purpose==='PROJECT_SETUP'?'选择详情':'定义与范围',kind:'definition'};
+  const prompt=(id,label)=>({id,label,kind:'prompt',instruction:resolvePreparedInstruction(v,id)});
+  if(purpose==='EXECUTION'&&['COMPLETE_TASK','DEFER_TASK','CONTINUE_TASK'].includes(intent.action))return {sections:[overview,fields],defaultTab:'overview'};
+  if(purpose==='EXECUTION')return {sections:[overview,prompt('implementation','实施指令'),prompt('verification','验证指令'),fields],defaultTab:'implementation'};
+  if(purpose==='REVIEW')return {sections:[overview,prompt('review','审查指令'),fields],defaultTab:'review'};if(purpose==='RECOVERY_PURPOSE'){const owner=c.recoveryPurpose?.proposal?.ownerKind;return owner==='REVIEW'?{sections:[overview,prompt('review','修订后审查指令'),fields],defaultTab:'review'}:{sections:[overview,prompt('implementation','修订后实施指令'),prompt('verification','修订后验证指令'),fields],defaultTab:'implementation'};}
+  const startReview=(purpose==='TASK'&&c.action==='CREATE_TASK_AND_REVIEW'&&c.task.startReview===true)||(purpose==='FEATURE_AREA'&&c.action==='CREATE_AREA_AND_REVIEW'&&c.featureArea.initialTask?.startReview===true);
+  if(startReview&&['CODING_AGENT','UPPER_LLM'].includes(v.executorKind)&&typeof v.reviewInstruction==='string'&&hasPreparedInstruction(v.reviewInstruction)&&!v.reviewInstruction.includes('\u0000'))return {sections:[overview,prompt('review',purpose==='TASK'&&!taskReviewSelected()?'已准备审查指令':'审查指令'),fields],defaultTab:purpose==='TASK'&&!taskReviewSelected()?'overview':'review'};
+  return {sections:[overview,fields],defaultTab:'overview'};
+}
+function preparedInstructionLabel(kind){if(kind==='review'&&entry.purpose==='TASK'&&!taskReviewSelected())return '已准备审查指令（本次不启动）';const type={implementation:'实施指令',verification:'验证指令',review:'审查指令'}[kind]||'提案指令';return (intent?.commit?'已确认提案':'待确认')+type;}
+function commandPermissionNotice(){
+ if(!intent||intent.state!=='PENDING'||!['EXECUTION','REVIEW','RECOVERY_PURPOSE'].includes(intent.purpose))return '';
+ if(['ACCEPT','COMPLETE_TASK','DEFER_TASK','CONTINUE_TASK','REJECT','CANCEL','REVISE'].includes(intent.action))return '';
+ if(intent.purpose==='REVIEW'&&selectedVariant()?.executorKind!=='CODING_AGENT')return '';
+ const work=selectedVariant()?.workSpec;
+ const network=work?.commandPermissions?.networkAccess;
+ const outputs=work?.commandPermissions?.verificationOutputs;
+ const outputCopy=Array.isArray(outputs)&&outputs.length?' 沙箱验证的额外产物目录：'+outputs.join('、')+'（仅独立副本内、须为 Git 忽略且不含源码的目录）。':'';
+ if(intent.purpose==='REVIEW')return '本次范围内的命令无需逐条批准；只读审查使用独立副本，源码只读，仅批准的产物目录及专用临时目录可写。本次只读审查关闭网络。';
+ const boundary='本次范围内的命令无需逐条批准。新运行按冻结的任务授权及已保存的项目授权执行；可信验证直接使用工作树并核对源码前后快照，沙箱验证使用独立副本。业务范围、必需检查及合入条件继续由 Core 核对。'+outputCopy;
+ return boundary+(network===true?' 本方案已单独允许实施和验证联网；项目联网授权可独立适用于之后的新运行。':work?' 本方案未单独授予联网权限；如项目已授权联网，之后的新实施和验证运行可继承该授权。':' 任务联网授权沿用本次或此前已确认的方案；已保存的项目联网授权可独立生效。');
+}
+function renderOverview(parent){
+  const c=intent.content,v=selectedVariant(),box=el('article',undefined,'overview-document');
+  box.append(el('h2',objectName()),el('p','方案说明，不是实施或审查指令正文。','reader-meta'));
+  if(intent.purpose==='PROJECT_SETUP')appendBody(box,'工作环境说明',c.projectSetup.summary);
+  if(c.featureArea){appendBody(box,'领域目标',c.featureArea.problemStatement);if(c.featureArea.initialTask)appendBody(box,'初始任务目标',c.featureArea.initialTask.problemStatement);}
+  if(c.task)appendBody(box,'任务目标',c.task.problemStatement);
+  if(v?.workSpec)appendBody(box,'已准备目标',v.workSpec.goal);
+  appendBody(box,'本次调整与完整工程摘要',v?.summary);
+  appendBody(box,'本次操作后果',consequence());
+  if(c.review?.supplementalPurpose)appendBody(box,'补审目的与来源说明',c.review.supplementalPurpose);if(c.recoveryPurpose){const proposed=c.recoveryPurpose.proposal?.variants?.find(x=>x.id===v?.id);appendBody(box,'恢复来源',c.recoveryPurpose.proposal?.ownerKind);if(proposed?.review?.supplementalPurpose)appendBody(box,'本次修订目的',proposed.review.supplementalPurpose);}
+  parent.append(box);
+}
+function definitionIdentityField(key){return /(?:Id|ID|Hash|SHA256)$/.test(key)||['expectedTarget','requestId','contentHash','submittedHash','sourceIntentId'].includes(key);}
+function renderDefinitionValue(parent,value,typed=false){
+  if(typed)parent.append(el('span',Array.isArray(value)?'array':value===null?'null':typeof value,'field-type'));
+  if(value===null){parent.append(el('span','null（明确空值）'));return;}
+  if(value===undefined){parent.append(el('span','字段缺失'));return;}
+  if(Array.isArray(value)){if(!value.length){parent.append(el('span','[]（空数组）'));return;}const list=el('ol');for(const item of value){const li=el('li');renderDefinitionValue(li,item,typed);list.append(li);}parent.append(list);return;}
+  if(obj(value)){const fields=Object.entries(value).filter(([key])=>!definitionIdentityField(key));if(!fields.length){parent.append(el('span',Object.keys(value).length?'身份字段见技术详情':'{}（空对象）'));return;}const dl=el('dl');for(const [key,item]of fields){dl.append(el('dt',key));const dd=el('dd');renderDefinitionValue(dd,item,typed);dl.append(dd);}parent.append(dl);return;}
+  const text=typeof value==='string'?(value===''?'""（空字符串）':value):String(value);
+  parent.append(el('div',text,'field-value'));
+}
+function definitionGroup(parent,title,entries){if(!entries.length)return;const section=el('section',undefined,'field-group');section.append(el('h2',title));const dl=el('dl');for(const [name,value]of entries){dl.append(el('dt',name));const dd=el('dd');renderDefinitionValue(dd,value,name==='字段及类型');dl.append(dd);}section.append(dl);parent.append(section);}
+function ownEntries(value,mapping){return obj(value)?Object.entries(mapping).filter(([key])=>own(value,key)).map(([key,label])=>[label,value[key]]):[];}
+function otherDefinitionFields(value,known){if(!obj(value))return value;return Object.fromEntries(Object.entries(value).filter(([key])=>!known.includes(key)&&!definitionIdentityField(key)));}
+function renderStructuredDefinition(parent){
+  const c=intent.content,v=selectedVariant(),box=el('article',undefined,'structured-fields');
+  box.append(el('p','结构化任务定义与当前只读选择。字段由当前提案提供；保存位置不证明作者或实际派发。','reader-meta'));
+  if(intent.purpose==='PROJECT_SETUP'){
+    const selected={project:options?.projects.find(x=>x.id===draft.projectId),repository:options?.repositories.find(x=>x.id===draft.repositoryId),branch:options?.branches.find(x=>x.id===draft.developmentRef)};
+    definitionGroup(box,'当前选择（只读镜像）',intent.action==='SELECT_PROJECT_BRANCH'?[['项目',selected.project?.label||'当前项目选择暂无可读名称'],['Repository',selected.repository?.label||'当前 Repository 选择暂无可读名称'],['开发分支',selected.branch?.label||'当前开发分支选择暂无可读名称']]:[['项目',selected.project?.label||'当前项目选择暂无可读名称'],...(intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT'?Object.entries(draft.developmentContexts).filter(([,ref])=>ref):[])]);box.append(el('p','项目与分支仅在原主卡选择。','reader-meta'));parent.append(box);return;
+  }
+  const config=ownEntries(v,{label:'本次方案名称',executorKind:'审查执行方式',implementationMode:'实施执行方式'});
+  if(own(c,'recommendedRuntimeConfig'))config.push(['推荐配置',c.recommendedRuntimeConfig]);
+  if(runtimeNeeded(v))config.push(['用户当前选择（尚非 Run 输入）',{model:draft.model,reasoningEffort:draft.reasoningEffort,codexFastMode:draft.codexFastMode}]);
+  if(options&&own(options,'lockedRuntimeConfig'))config.push(['本 Execution 冻结配置',options.lockedRuntimeConfig]);
+  if(intent.commit?.selection&&own(intent.commit.selection,'runtimeConfig'))config.push(['已消费选择中的配置',intent.commit.selection.runtimeConfig]);
+  definitionGroup(box,'执行方式与配置',config);
+  if(intent.purpose==='EXECUTION'&&v.implementationMode==='CODING_AGENT')box.append(el('p','Verification 继承本 Execution 的配置；这里未读取 Run 最终输入。','reader-meta'));
+  for(const [label,body]of [['领域定义',c.featureArea],['初始任务定义',c.featureArea?.initialTask],['任务定义',c.task],['审查定义',c.review]])if(body){
+    definitionGroup(box,label,ownEntries(body,{title:'名称',problemStatement:'目标',constraints:'完整约束',startReview:'已准备审查',reviewDepth:'审查深度',supplementalPurpose:'补审目的'}));
+    if(own(body,'reviewPlan'))definitionGroup(box,'生产读取范围与模块',[['审查计划',body.reviewPlan]]);
+    const other=otherDefinitionFields(body,['title','problemStatement','constraints','startReview','reviewDepth','supplementalPurpose','reviewPlan','initialTask']);if(Object.keys(other).length)definitionGroup(box,'其他定义字段',[['字段及类型',other]]);
+  }
+  if(c.recoveryPurpose){const proposed=c.recoveryPurpose.proposal?.variants?.find(x=>x.id===v?.id);if(proposed)definitionGroup(box,'完整恢复目的提案',[['已选择的类型化内容',proposed]]);}if(c.review?.repositoryTargets)definitionGroup(box,'本次只读审查仓库',c.review.repositoryTargets.map(t=>[t.repositoryId,{member:t.memberId,originCommit:t.originCommit,originRef:t.originRef,read:t.read}]));
+ if(v.repositoryTargets)definitionGroup(box,'拟批准的逐仓实施范围',v.repositoryTargets.map(t=>[t.repositoryId,{member:t.memberId,originCommit:t.originCommit,read:t.read,write:t.write}]));
+ if(c.execution?.repositoryId)definitionGroup(box,'实施目标',[['目标仓库',c.execution.repositoryId],['基线提交',c.execution.baseCommit||'未提供']]);
+ const work=v.workSpec,verification=v.verificationSpec;
+  if(own(v,'workSpec')&&!obj(work))definitionGroup(box,'实施定义',[['WorkSpec',work]]);
+  if(obj(work)){
+    definitionGroup(box,'任务目标与完整约束',ownEntries(work,{goal:'实施目标',constraints:'完整约束',implementationMode:'实施方式（准确枚举）'}));
+    definitionGroup(box,'读取与写入范围',ownEntries(work,{executionScope:'写入范围'}));
+    const other=otherDefinitionFields(work,['goal','constraints','implementationMode','executionScope','codexInstruction']);if(Object.keys(other).length)definitionGroup(box,'其他实施定义字段',[['字段及类型',other]]);
+  }
+  if(own(v,'verificationSpec')&&!obj(verification))definitionGroup(box,'验证定义',[['VerificationSpec',verification]]);
+  if(obj(verification)){
+    definitionGroup(box,'验证模式与范围',ownEntries(verification,{mode:'验证模式（准确枚举）',scope:'验证范围'}));
+    if(own(verification,'checks')){const group=el('section',undefined,'field-group');group.append(el('h2','检查清单'));if(Array.isArray(verification.checks)&&verification.checks.length){const list=el('ol');for(const check of verification.checks){const li=el('li');if(obj(check)){definitionGroup(li,'检查',ownEntries(check,{kind:'检查类型',required:'是否必须',command:'原命令',instruction:'完整检查指令',paths:'路径',packages:'包'}));const extra=otherDefinitionFields(check,['kind','required','command','instruction','paths','packages']);if(Object.keys(extra).length)definitionGroup(li,'其他检查字段',[['字段及类型',extra]]);}else renderDefinitionValue(li,check);list.append(li);}group.append(list);}else renderDefinitionValue(group,verification.checks);box.append(group);}
+    definitionGroup(box,'验收标准与豁免',ownEntries(verification,{acceptanceCriteria:'完整验收标准',waiver:'豁免及来源'}));
+    const other=otherDefinitionFields(verification,['mode','scope','checks','acceptanceCriteria','waiver','codexInstruction']);if(Object.keys(other).length)definitionGroup(box,'其他验证定义字段',[['字段及类型',other]]);
+  }
+  if(own(v,'displaySummary'))definitionGroup(box,'提案展示摘要与关键边界',[['已准备内容',v.displaySummary]]);
+  const otherVariant=otherDefinitionFields(v,['id','label','summary','displaySummary','executorKind','implementationMode','reviewInstruction','workSpec','verificationSpec','executionInstructions']);if(Object.keys(otherVariant).length)definitionGroup(box,'其他提案定义字段',[['字段及类型',otherVariant]]);
+  const extraInstructions=otherDefinitionFields(v.executionInstructions,['implementation','verification']);if(obj(extraInstructions)&&Object.keys(extraInstructions).length)definitionGroup(box,'其他指令定义字段',[['字段及类型',extraInstructions]]);
+  if(intent.purpose!=='EXECUTION'&&!(buildReaderSections().sections.some(x=>x.id==='review'))&&own(v,'reviewInstruction'))definitionGroup(box,'本次未启用的提案字段',[['reviewInstruction',v.reviewInstruction]]);
+  parent.append(box);
+}
+function renderPrompt(parent,rawText,mode){if(mode==='RAW'){const raw=el('pre',rawText,'raw-prompt');raw.tabIndex=0;raw.setAttribute('aria-label','指令原文');parent.append(raw);}else{const document=markdown(rawText);document.classList.add('prompt-document');parent.append(document);}}
+function renderSourceDetails(parent,instruction,selectedPath){
+  const box=el('article',undefined,'source-details');box.append(el('p',instruction.selectionBasis,'reader-meta'));
+  for(const source of instruction.alternativeSources){const section=el('section',undefined,'field-group');section.append(el('h2',source.sourcePath),el('p',source.presence+' · '+source.type,'reader-meta'));if(own(source,'value'))renderDefinitionValue(section,source.value,true);if(source.sourcePath===selectedPath&&typeof source.rawText==='string'){section.append(el('p','此字段原文；不单独证明它是有效派发输入。','reader-meta'));renderPrompt(section,source.rawText,'RAW');}box.append(section);}parent.append(box);
+}
+const STEP_LABELS={BIND_PROJECT:'绑定项目',SELECT_BRANCH:'选择开发分支',CREATE_AREA:'创建领域',CREATE_TASK:'创建任务',REQUEST_REVIEW:'准备补充审查',START_REVIEW:'开始审查',CONFIRM_IMPLEMENTATION:'确认实施方案',START_IMPLEMENTATION:'启动实施或准备文件权限',APPROVE:'批准方案',RESOLVE_CONTINUATION:'准备后继实施',RESOLVE_REVIEW_DECISION:'处理 Review 决定',RESOLVE_ACCEPTANCE_DECISION:'处理验收决定'};
+function stepOutcomeLabel(step){if(step.effect==='PREPARATION_READY')return '实施准备已完成；实际运行状态请查看任务进度';if(step.effect==='RUNTIME_HANDOFF_ACCEPTED')return '后端已受理派发';if(step.effect==='RESERVED')return '已预约，派发结果未确认';if(step.effect==='UNKNOWN'||step.state==='UNKNOWN')return '结果尚未确认';return ({PENDING:'尚未开始',COMPLETED:'命令已完成',REJECTED:'已拒绝'}[step.state]||step.state);}
+function renderOutcomeSummary(parent){if(!intent.commit&&!intent.steps.length&&!unknown&&!pendingCommit)return;const box=el('section',undefined,'outcome');box.append(el('h2',confirmedOutcome==='CONSUMED'?'本次选择已受理':'本次请求结果'));for(const step of intent.steps){box.append(el('p',(step.kind==='START_IMPLEMENTATION'?(selectedVariant()?.implementationMode==='DIRECT_FILE'?'准备文件权限':'启动实施'):step.kind==='START_REVIEW'&&selectedVariant()?.executorKind==='UPPER_LLM'?'准备只读审查权限':STEP_LABELS[step.kind]||'确认步骤')+(step.repositoryId?' · '+step.repositoryId+' · '+step.developmentRef:'')+'：'+stepOutcomeLabel(step)));if(step.failure)box.append(el('p',step.failure.message,'error'));}if(!intent.steps.length&&unknown)box.append(el('p','结果尚未确认，请回读原请求；不会重复提交。'));if(intent.commit?.selection.runtimeConfig){const runtime=intent.commit.selection.runtimeConfig,backend=intent.commit.backendSelection;facts(box,[['实际配置',runtime.model+' · '+runtime.reasoningEffort],['Codex Fast Mode',runtime.codexFastMode?'开启':'关闭'],['冻结后端',backend?.configName||backend?.configId||'—']]);}box.append(el('p','确认命令完成或派发受理不代表 Task 或 Run 已经成功。','muted'));parent.append(box);renderCurrentAccess(parent);}
+function renderRelatedBusinessState(parent){const related=display?.related;if(!decisionAction())return;const box=el('section',undefined,'outcome');box.append(el('h2','关联业务状态（只读）'));if(!related){box.append(el('p','关联对象状态尚未读取；本次确认回执保持不变。','notice'));parent.append(box);return;}if(related.availability!=='AVAILABLE'){box.append(el('p','关联的准确 '+(related.kind==='REVIEW'?'Review':'Execution')+' 当前不可读取。','notice'),el('p','原因代码：'+(related.readFailureCode||'READ_UNAVAILABLE'),'muted'));parent.append(box);return;}if(related.taskDispositionSummary)box.append(el('p',related.taskDispositionSummary,related.taskDisposition==='COMPLETED'?'notice':'muted'));facts(box,[['关联对象',related.kind+' · '+related.id],['当前状态',related.state],['当前结果',related.outcome],['失败代码',related.failureCode]]);const run=(label,value)=>{if(!value)return;facts(box,[[label,value.id+' · '+value.status], [label+' 失败代码',value.failureCode]]);};run('Review Run',related.reviewRun);run('实施 Run',related.implementationRun);run('验证 Run',related.verificationRun);box.append(el('p','该区仅读取本 intent 固定的对象身份；不会使用 Task 的最新指针替代。','muted'));parent.append(box);}
+function renderStateFeedback(parent){if(unknown){parent.append(el('p','确认结果未知','notice'));parent.append(el('p','确认请求已经发出，但当前无法确认 Core 是否已消费。系统不会重复提交。请读取原请求结果。','muted'));const host=lastFailure?.source==='HOST'||lastFailure?.stage==='HOST_TRANSPORT'||lastFailure?.stage==='HOST_TIMEOUT';if(host)parent.append(el('p','Host transport error ('+(lastFailure?.code||lastFailure?.stage||'UNKNOWN')+')','muted'));}if(stale){parent.append(el('p','原确认已过期','notice'));parent.append(el('p',lastFailure?.message||'当前能力已变化。请根据当前项目状态正式重新准备；本卡不会提交旧请求。','muted'));}if(intent&&['SUPERSEDED','ABANDONED','REJECTED','PARTIAL','UNKNOWN'].includes(intent.state))parent.append(el('p',STATE_LABELS[intent.state],'notice'));if(intent?.state==='PENDING'&&Date.parse(intent.expiresAt)<=Date.now())parent.append(el('p','本次待确认内容已过期，请在对话准备新版本。','error'));if(error&&!unknown&&!stale)parent.append(el('p',lastFailure?.message||'当前步骤无法确认，请刷新读取准确状态。','error'));if(notice)parent.append(el('p',notice,'notice'));if(editableRetry&&lastRejectedRequestId)parent.append(el('p','原请求 '+lastRejectedRequestId+' 的拒绝回执已保留；下一次确认会使用新的请求标识。','muted'));if(submissionNext==='PREPARE_RECOVERY_STATUS')parent.append(el('p','来源状态已变化，请重新准备恢复状态评估；旧卡不能替换或提交。','notice'));if(submissionNext==='PREPARE_NEW_VERSION'||submissionNext==='READ_CURRENT_TARGET')parent.append(el('p','请返回对话读取准确目标或准备新版本；旧卡不会重新开放确认。','notice'));}
+function renderConfirmationMain(parent) {
+  const compact=window.devBridgeTaskPanel===true;
+  const variant=selectedVariant(),intro=el('section',undefined,'dbc-intro');
+  const purpose=el('div',undefined,'dbc-purpose');purpose.dataset.purpose=entry.purpose;purpose.setAttribute('data-purpose',entry.purpose);
+  purpose.append(uiIcon(entry.purpose==='FEATURE_AREA'?'folder':entry.purpose==='TASK'?'document':'target'),el('span',actionTitle()));
+  if(!compact)intro.append(purpose);
+  if(entry.purpose==='FEATURE_AREA'||entry.purpose==='TASK')intro.append(el('p',entry.purpose==='FEATURE_AREA'?'领域名称':'任务名称','dbc-eyebrow'));
+  if(!compact||window.devBridgeKeepObjectName===true||['PROJECT_SETUP','FEATURE_AREA','TASK'].includes(entry.purpose))intro.append(el('h1',objectName()));
+  if(entry.purpose==='FEATURE_AREA'&&intent.content.action!=='MERGE_FEATURE_AREA'&&intent.content.featureArea.initialTask){
+    const task=el('div',undefined,'dbc-initial-task');task.append(el('strong','同时创建初始任务'),el('p',intent.content.featureArea.initialTask.title||'任务名称未提供'));intro.append(task);
+  }
+  const brief=selectedContinuation()?null:shortDisplay(variant);
+  if(brief&&!compact)intro.append(el('p',brief.summary,'engineering-summary'));
+  if(intro.childNodes.length)parent.append(intro);
+  const callout=el(compact?'details':'section',undefined,compact?'dbc-operation-detail':'dbc-callout');
+  if(compact){
+    parent.append(el('p',consequence(),'dbc-operation-consequence'));
+    callout.append(el('summary','操作说明与范围'));
+    if(brief)callout.append(el('p',brief.summary,'engineering-summary'));
+  }else callout.append(uiInfoRow('target','本次操作',el('p',consequence())));
+  if(brief?.keyConstraints?.length){
+    const constraints=el('ul',undefined,'dbc-constraints');
+    for(const text of brief.keyConstraints)constraints.append(el('li',text));
+    if(compact)callout.append(constraints);else callout.append(uiInfoRow('shield','执行边界',constraints));
+  }
+  const completion=intent.content.execution?.completionPlan;
+  if(intent.action==='COMPLETE_TASK'&&completion){const targets=el('section',undefined,'dbc-callout');targets.append(el('h2','本次冻结的合入目标'));for(const member of completion.members||[]){facts(targets,[['仓库',member.repositoryName||member.repositoryId],['目标开发分支',member.developmentRef],['确认时目标提交',member.expectedDevHead],['已验证快照',member.verifiedSnapshot]]);}targets.append(el('p','仅向以上目标合入当前已验证结果。目标变化时停止处理；不会推送远端。','muted'));parent.append(targets);}
+  if(intent.action==='DEFER_TASK')appendBody(callout,'暂存进度与待办',intent.content.execution?.note||'');
+  if(!compact||brief||intent.action==='DEFER_TASK')parent.append(callout);renderOutcomeSummary(parent);renderRelatedBusinessState(parent);
+  // Exact V3 visibility and action guards are retained, not inferred from styling.
+  const editable=window.devBridgeHistoryReadOnly!==true&&intent.state==='PENDING'&&!pendingCommit&&!unknown&&!stale&&!fatal;
+  if(editable){renderTaskContinuity(parent);if(!taskCreationNeedsChoice()||creationChoice==='NEW')renderRuntimeSelection(parent);}
+  if(editable){const permissionCopy=commandPermissionNotice();if(permissionCopy)parent.append(el('p',permissionCopy,'notice'));}
+  const feedback=el('div',undefined,'dbc-feedback');renderStateFeedback(feedback);
+  if(editable){const reason=choiceError();if(reason)feedback.append(el('p',reason,'error'));}
+  const readerIssue=el('p',planReaderIssue?'方案阅读器暂不可用，请查看技术诊断；确认事实保持不变。':'','muted');
+  readerIssue.dataset.readerIssue='true';readerIssue.hidden=!planReaderIssue;feedback.append(readerIssue);parent.append(feedback);
+  const footer=el('footer',undefined,'dbc-footer'),secondary=el('div',undefined,'dbc-secondary-actions');
+  if(!selectedContinuation())detailButton(secondary);
+  const read=uiButton(flight?'读取中…':'刷新','refresh');read.disabled=flight||fatal;read.onclick=refresh;if(!unknown)secondary.append(read);footer.append(secondary);
+  if(window.devBridgeHistoryReadOnly===true){feedback.append(el('p','历史操作仅供查看，不能重新确认或续接。','notice'));parent.append(footer);return;}
+  const primary=el('div',undefined,'dbc-primary-actions');
+  if(editable&&(!taskCreationNeedsChoice()||creationChoice==='NEW')){const confirm=uiButton(actionLabel(),selectedVariant()?.implementationMode==='DIRECT_FILE'?'shield':'play','primary');confirm.disabled=flight||!!choiceError();confirm.onclick=commit;primary.append(confirm);}
+  if(unknown&&pendingCommit&&!fatal){const readback=uiButton(readbackInProgress?'回读中…':'读取原结果','refresh','primary');readback.disabled=flight||readbackInProgress;readback.onclick=readbackOriginal;primary.append(readback);}
+  if(unknown&&pendingCommit?.action&&pendingCommit?.variantId&&obj(pendingCommit.selection)&&!fatal&&intent.state==='PENDING'&&!intent.commit){
+    const withdraw=uiButton('核对并撤回原请求','refresh');withdraw.disabled=flight||readbackInProgress;
+    withdraw.title='Core 封存尚未消费的原请求；已消费的只回读，不撤销业务结果。成功后仍需你重新确认。';
+    withdraw.onclick=withdrawUnknownSubmission;primary.append(withdraw);
+  }
+  if(intent.state==='PENDING'&&!intent.commit&&!unknown&&!pendingCommit&&!fatal){const discard=uiButton('放弃此未提交方案','refresh');discard.disabled=flight;discard.onclick=discardProposal;secondary.append(discard);}
+  if(resumeReadback&&intent.canResume===true&&intent.commit&&!fatal){
+    const resume=uiButton('继续本次确认','play','primary');resume.disabled=flight;resume.onclick=resumeConfirmation;primary.append(resume);
+    feedback.append(el('p','沿用原请求与选择，只继续已核验尚未开始的原步骤。','muted'));
+  } else if(intent.state!=='PENDING'||pendingCommit||unknown){
+    const reference=el('button','复制继续引用');
+    reference.onclick=()=>copy('Continue confirmation '+entry.intentId+' version '+entry.version+' contentHash '+entry.contentHash,reference,feedback);primary.append(reference);
+  }
+  if(primary.childNodes.length)footer.append(primary);parent.append(footer);
+}
+
+function render() {
+  root.replaceChildren();
+  if(intent&&!draft.variantId&&!pendingCommit&&!unknown)draft.variantId=resolvedVariantId();
+  const header=el('header',undefined,'dbc-header'),brandGroup=el('div',undefined,'dbc-brand-group');
+  brandGroup.append(el('strong','DEV BRIDGE','dbc-brand'));
+  if(entry&&intent){
+    const selectedProject=entry.purpose==='PROJECT_SETUP'?options?.projects.find(v=>v.id===draft.projectId):null;
+    const selectedBranch=entry.purpose==='PROJECT_SETUP'?options?.branches.find(v=>v.id===draft.developmentRef):null;
+    const environment=[selectedProject?.label||display?.projectName||'项目名称暂不可读取'];if(intent.action==='SELECT_PROJECT_BRANCH'||display?.developmentBranch)environment.push(selectedBranch?.label||display?.developmentBranch||'分支名称暂不可读取');
+    brandGroup.append(el('p',environment.join(' · '),'dbc-environment'));
+  }
+  const controls=el('div',undefined,'dbc-header-controls');
+  const status=el('span',intent?submissionLabel():'读取中','dbc-status');status.setAttribute('role','status');
+  const settings=uiButton('设置','settings','dbc-settings');settings.setAttribute('aria-haspopup','dialog');settings.onclick=renderTechnicalDetail;
+  controls.append(status,settings);header.append(brandGroup,controls);root.append(header);
+  if(!entry||!intent){syncPlanReaderAfterRender();root.append(el('p',error?(lastFailure?.message||'入口未能核验，请检查技术诊断。'):'等待准确确认内容…','dbc-empty'));resize();return;}
+  renderConfirmationMain(root);syncPlanReaderAfterRender();resize();
+}
+function safeRender(){try{render();renderFailed=false;}catch(_){try{planReader?.close('render-error');}catch(_){}renderFailed=true;recordFailure({code:'LOCAL_RENDER_FAILED',source:'CARD',stage:'LOCAL_RENDER',message:'显示失败；已核验的确认事实保持不变。'});root.replaceChildren(el('h1','确认结果显示暂不可用'));if(intent){root.append(el('p','准确确认内容已读取','muted'),el('p',STATE_LABELS[intent.state]||'状态已读取'),el('p',confirmedOutcome==='CONSUMED'?'选择已消费；这不代表所有业务步骤完成。':unknown?'原请求结果尚待核实。':'请以准确请求回执为准。'));const read=el('button','只读恢复确认结果');read.disabled=flight||fatal;read.onclick=refresh;root.append(read);}const button=el('button','展示诊断');button.onclick=renderTechnicalDetail;root.append(button);resize();}}
+function capabilityFailure(checked,variantId){const capability=checked?.variants?.find(v=>v.id===variantId),eligibility=checked?.eligibility;if(eligibility?.available===false)return eligibility.failure||{code:eligibility.reasonCode||'INTENT_STALE',reasonCode:eligibility.reasonCode||'INTENT_STALE',source:'CORE',stage:'CONFIRMATION_PREFLIGHT',message:eligibility.reasonMessage||'原确认已过期，请根据当前项目状态重新准备。',nextAction:eligibility.reprepareAllowed===false?'READ_CURRENT_TARGET':'PREPARE_NEW_VERSION'};if(!capability||capability.available!==true)return capability?.failures?.[0]||{code:capability?.reasonCode||'VARIANT_NO_LONGER_AVAILABLE',reasonCode:capability?.reasonCode||'VARIANT_NO_LONGER_AVAILABLE',source:'CORE',stage:'CONFIRMATION_PREFLIGHT',message:capability?.reason||'此方式当前不可用，请根据当前项目状态重新准备。',nextAction:'PREPARE_NEW_VERSION'};return null;}
+function staleCapabilityFailure(value){return value?.nextAction==='PREPARE_NEW_VERSION'||['INTENT_STALE','PROJECT_TOPOLOGY_CHANGED','DEVELOPMENT_BRANCH_CONFIGURATION_CHANGED','DECISION_VERSION_CHANGED','VARIANT_NO_LONGER_AVAILABLE','CURRENT_REVIEW_CHANGED','TASK_PHASE_CHANGED','INTENT_SUPERSEDED'].includes(value?.reasonCode||value?.code);}
+function preflightRejected(value){recordFailure(value);unknown=false;stale=staleCapabilityFailure(value);notice=stale?'原确认已过期。请根据当前项目状态正式重新准备；本卡不会提交旧请求。':'当前方案已不可用；没有发送确认请求。';note('COMMIT_PREFLIGHT_REJECTED',{operation:'CONFIRMATION_PREFLIGHT',errorCode:value.code,variantId:resolvedVariantId()});}
+async function withdrawUnknownSubmission(){
+ if(disposed||flight||fatal||!unknown||!pendingCommit?.action||!pendingCommit?.variantId||!obj(pendingCommit.selection)||window.devBridgeHistoryReadOnly===true)return;
+ const saved=pendingCommit,mine=generation,seq=++sequence;flight=true;recordFailure(null);safeRender();
+ try{
+  const value=decode(await rpc('confirmation_get',receiptInput()));if(!current(mine,seq))return;if(!applyEnvelope(value))return;
+  if(confirmedOutcome==='CONSUMED'||confirmedOutcome==='REJECTED_NOT_CONSUMED'){notice='已取得原请求的正式回执，请按当前状态处理。';return;}
+  if(!unknown||pendingCommit!==saved||intent.state!=='PENDING'||intent.commit)return;
+  // Same complete payload and requestId. Core's writer serializes this fence
+  // against a late commit; this never resubmits a confirmation or starts work.
+  const result=decode(await rpc('confirmation_submission_withdraw',saved));if(!current(mine,seq))return;if(!applyEnvelope(result))return;
+  if(confirmedOutcome==='REJECTED_NOT_CONSUMED'&&!pendingCommit){options=await readOptions();if(!current(mine,seq))return;notice='原请求已封存且未消费，请核对选择后重新确认。';}
+  else notice=confirmedOutcome==='CONSUMED'?'原请求已经消费，已保留原回执与业务结果。':'撤回结果仍未确认，请读取原请求结果。';
+ }catch(e){if(current(mine,seq))caught(e,'WITHDRAWAL_OUTCOME_UNKNOWN');}
+ finally{if(current(mine,seq)){flight=false;rememberPending();safeRender();}}
+}
+
+async function discardProposal(){
+ if(disposed||fatal||flight||unknown||pendingCommit||intent?.commit||intent?.state!=='PENDING'||window.devBridgeHistoryReadOnly===true)return;
+ flight=true;const mine=generation,seq=++sequence;safeRender();
+ try{const result=decode(await rpc('confirmation_discard',readInput()));if(!current(mine,seq))return;if(!applyEnvelope(result))return;notice=intent?.state==='SUPERSEDED'?'此未提交方案已放弃，迟到提交不会执行。请刷新任务当前操作。':'已保留原操作回执，未撤销已消费的结果。';}
+ catch(e){if(current(mine,seq))caught(e,'PROPOSAL_RETIREMENT_UNCONFIRMED');}
+ finally{if(current(mine,seq)){flight=false;safeRender();}}
+}
+async function commit(){if(flight||unknown||stale||pendingCommit||fatal||renderFailed||choiceError()||!intent||intent.state!=='PENDING'||window.devBridgeHistoryReadOnly===true)return;const variantId=resolvedVariantId(),variant=variantId?intent.content.variants.find(v=>v.id===variantId):null;if(!variant||!str(variant.id)||!variant.id){recordFailure({code:'VARIANT_NOT_SELECTED',source:'CARD',stage:'INPUT_IDENTITY',message:'请先选择本次已准备好的方案。'});safeRender();return;}draft.variantId=variant.id;flight=true;resumeReadback=false;readbackInProgress=false;recordFailure(null);const mine=generation,seq=++sequence;safeRender();let request=null;try{const checked=await readOptions();if(!current(mine,seq))return;options=checked;const continuityError=taskCreationError();if(continuityError){notice=continuityError;return;}const unavailable=capabilityFailure(checked,variant.id);if(unavailable){preflightRejected(unavailable);return;}const random=crypto.randomUUID?.();if(!random)throw fail('INPUT_IDENTITY','REQUEST_ID_UNAVAILABLE','CARD','无法生成确认请求标识。');request={...readInput(),action:intent.content.action,requestId:'confirm_'+random,contentHash:intent.contentHash,variantId:variant.id,selection:selection()};const hash=await requestHash(request);if(!current(mine,seq))return;pendingCommit=request;pendingHash=hash;confirmedOutcome='';submissionNext='';unknown=true;stale=false;rememberPending();note('COMMIT_SENT',{operation:'COMMIT',requestId:request.requestId,variantId:request.variantId,payloadSHA256:hash,intentId:entry.intentId,version:entry.version});const value=decode(await rpc('confirmation_commit',request));if(!current(mine,seq)||pendingCommit!==request)return;if(!applyEnvelope(value))return;note('COMMIT_RESULT',{operation:'COMMIT',requestId:request.requestId,variantId:request.variantId,payloadSHA256:pendingHash,result:confirmedOutcome||'UNKNOWN'});if(confirmedOutcome==='REJECTED_NOT_CONSUMED'&&!pendingCommit){options=null;options=await readOptions();if(!current(mine,seq))return;notice=rejectedNotice();}else notice=confirmedOutcome==='CONSUMED'?'选择已消费；请分别查看子步骤和关联工作状态。':confirmedOutcome==='REJECTED_NOT_CONSUMED'?rejectedNotice():'本次请求结果尚未确认，请只读回查原请求。';}catch(e){if(current(mine,seq)){if(!request){const typed=lastFailure?.source==='CORE'||lastFailure?.source==='DOMAIN'||lastFailure?.source==='CONFIRMATION'?lastFailure:null;unknown=false;stale=staleCapabilityFailure(typed)||staleCapabilityFailure({code:e.code,reasonCode:e.reasonCode,nextAction:e.nextAction});if(typed)recordFailure(typed);else caught(e,'PREFLIGHT_READ_FAILED');notice=stale?'原确认已过期；没有发送确认请求。':'确认前无法读取当前能力；没有发送确认请求。';}else{if(confirmedOutcome!=='CONSUMED'&&confirmedOutcome!=='REJECTED_NOT_CONSUMED')unknown=true;caught(e,'COMMIT_OUTCOME_UNKNOWN');note('COMMIT_OUTCOME_UNKNOWN',{operation:'COMMIT',requestId:request.requestId,variantId:request.variantId,payloadSHA256:pendingHash,errorSource:e.source||'CARD',errorCode:e.code||'COMMIT_OUTCOME_UNKNOWN'});notice=unknown?'':'已核验的请求结果保持不变。';}}}finally{if(current(mine,seq)){flight=false;safeRender();}}if(!disposed&&unknown&&confirmedOutcome!=='CONSUMED'&&confirmedOutcome!=='REJECTED_NOT_CONSUMED'&&pendingCommit)await readbackOriginal();}
+function acceptEntry(envelope){if(!envelope.intent){if(envelope.failure)recordFailure(envelope.failure);else{entryDisposition='ENTRY_NOT_PROVIDED';note('ENTRY_NOT_PROVIDED');}safeRender();return;}if(entry&&!sameIdentity(entry,envelope.intent)){entryDisposition='ENTRY_INSTANCE_IDENTITY_MISMATCH';note('ENTRY_INSTANCE_IDENTITY_MISMATCH',{expectedIntentId:entry.intentId,gotIntentId:envelope.intent.intentId});safeRender();return;}const next=validateIntent(envelope.intent);if(input&&!sameIdentity(identity(input),identity(next)))throw fail('INPUT_RESULT_MISMATCH');if(entry){if(!sameIdentity(entry,identity(next)))throw fail('SHOW_ENTRY_CHANGED');return;}entry={...identity(next),projectId:next.projectId,contentHash:next.contentHash};entryDisposition='';generation++;intent=next;restorePendingMarker();applyIntent(next);display=readDisplay(envelope.display,next);if(envelope.failure)recordFailure(envelope.failure);if(initialized&&!(next.submission?.recorded))refresh();else safeRender();}
+function receive(event){if(event.source!==parent||!obj(event.data)||event.data.jsonrpc!=='2.0')return;const data=event.data;if(own(data,'id')&&pending.has(data.id)){const item=pending.get(data.id);pending.delete(data.id);clearTimeout(item.timer);if(own(data,'error')){const code=obj(data.error)&&typeof data.error.code==='number'&&Number.isFinite(data.error.code)?data.error.code:'HOST_RPC_ERROR';item.reject(fail('HOST_TRANSPORT',code,'HOST','宿主 RPC 返回错误；确认结果须回读。'));}else if(!own(data,'result'))item.reject(fail('RPC_RESULT_MISSING'));else{note('RPC_RESULT');item.resolve(data.result);}return;}try{if(data.method==='ui/notifications/tool-input'){const next=data.params?.arguments;identity(next);if(input&&!sameIdentity(input,next)||entry&&!sameIdentity(entry,next))throw fail('INPUT_IDENTITY_CHANGED');input=next;}if(data.method==='ui/notifications/tool-result')acceptEntry(decode(data.params));if(data.method==='ui/resource-teardown'&&own(data,'id')){dispose();parent.postMessage({jsonrpc:'2.0',id:data.id,result:{}},'*');}}catch(e){fatal=true;generation++;flight=false;error=e.stage||'ENTRY_REJECTED';entryDisposition=['ENTRY_NOT_PROVIDED','ENTRY_SCHEMA_INVALID','INTENT_FACTS_UNAVAILABLE','INTENT_STALE'].includes(e.stage)?e.stage:'ENTRY_SCHEMA_INVALID';note(error);safeRender();}}
+function dispose(){disposed=true;if(activityNoticeTimer!==null)clearTimeout(activityNoticeTimer);generation++;disposeReadingPresentation();removeEventListener('beforeunload',dispose);for(const item of pending.values()){clearTimeout(item.timer);item.reject(fail('RESOURCE_CLOSED'));}pending.clear();removeEventListener('message',receive);}
+async function initialize(){try{const response=await rpc('ui/initialize',{protocolVersion:'2026-01-26',appInfo:{name:'devbridge-confirmation',version:COMPONENT},appCapabilities:{availableDisplayModes:['inline']}});if(!obj(response))throw fail('HOST_INITIALIZE_INVALID');if(disposed)return;initialized=true;notify('ui/notifications/initialized',{});resize();if(entry)refresh();}catch(e){error=e.stage||'HOST_INITIALIZE_FAILED';note(error);safeRender();}}
+let recommendationSeeded=false,modelTouched=false;
+let activityNoticeTimer=null;
+function ageActivityNotice(){if(disposed)return;if(intent?.commit&&intent?.currentUpperReview&&!flight)safeRender();activityNoticeTimer=setTimeout(ageActivityNotice,60000);}
+activityNoticeTimer=setTimeout(ageActivityNotice,60000);
+// A held request or consumed receipt owns this choice; draft changes must never
+// change the meaning of pending readback. Omitted legacy selections keep the action.
+function taskReviewSelected(){if(entry?.purpose!=='TASK')return false;const held=intent?.commit||pendingCommit;if(held?.selection)return held.selection.startReview??intent.content.task.startReview;return intent?.action==='CREATE_TASK_AND_REVIEW'&&intent.content.task?.startReview===true&&draft.startReview!==false;}
+function runtimeNeeded(variant=selectedVariant()){if(intent?.action==='CONFIRM_IMPLEMENTATION')return false;if(entry?.purpose==='RECOVERY_PURPOSE'||entry?.purpose==='TASK'&&!taskReviewSelected())return false;const fileVerification=variant?.implementationMode==='DIRECT_FILE'&&variant?.verificationSpec?.mode==='RUN'&&!draft.verificationWaived&&(intent?.action==='START_DIRECT_FILE'||['APPROVE','APPROVE_AND_START'].includes(intent?.action)&&!variant?.repositoryTargets?.length);return (intent?.action!=='APPROVE'||!variant?.repositoryTargets?.length||fileVerification)&&!!variant&&(entry.purpose==='EXECUTION'?variant.implementationMode==='CODING_AGENT'||fileVerification:variant.executorKind==='CODING_AGENT');}
+function variantReason(id){const choice=options?.variants.find(v=>v.id===id);return !choice?'该内容尚无当前能力证明。':choice.available?'':choice.failures?.[0]?.message||choice.reason||'此方式当前不可用。';}
+function validateBackendContinuity(value){const fact=value.backendContinuity;if(!fact)return;const states=['THREADLESS','BOUND_AVAILABLE','BOUND_UNAVAILABLE','HISTORICAL_UNKNOWN','READ_UNAVAILABLE','CONFLICT'];if(!obj(fact)||!states.includes(fact.state)||own(fact,'reason')&&!str(fact.reason)||fact.state==='THREADLESS'&&(fact.threadId||fact.boundBackend)||!['THREADLESS','READ_UNAVAILABLE'].includes(fact.state)&&!str(fact.conversationId)||['BOUND_AVAILABLE','BOUND_UNAVAILABLE'].includes(fact.state)&&(!str(fact.threadId)||!str(fact.sourceRunId)||!['REVIEW','EXECUTION'].includes(fact.sourceOperationKind)||!str(fact.sourceOperationId)||!obj(fact.boundBackend))||fact.boundBackend&&(!str(fact.boundBackend.configId)||!/^[a-f0-9]{64}$/i.test(fact.boundBackend.configFingerprint)||!str(fact.boundBackend.configName)||!str(fact.boundBackend.source)))throw fail('BACKEND_CONTINUITY_INVALID');if(fact.state==='BOUND_AVAILABLE'&&(!value.lockedBackend||value.lockedBackend.configId!==fact.boundBackend.configId||value.lockedBackend.configFingerprint!==fact.boundBackend.configFingerprint))throw fail('BACKEND_CONTINUITY_LOCK_MISMATCH');}
+function validateOptions(value,query){if(obj(value)&&own(value,'startReview')&&typeof value.startReview!=='boolean')throw fail('TASK_REVIEW_OPTIONS_INVALID');if(entry?.purpose==='TASK'&&value?.startReview!==query.startReview)throw fail('OPTIONS_IDENTITY_MISMATCH');if(intent?.action==='CONFIGURE_DEVELOPMENT_CONTEXT'&&query.projectId){if(value.repositoryInventoryComplete!==true||!Array.isArray(value.developmentContexts))throw fail('REPOSITORY_INVENTORY_UNAVAILABLE');const seen=new Set();for(const row of value.developmentContexts){if(!obj(row)||!str(row.repositoryId)||!row.repositoryId||seen.has(row.repositoryId)||!str(row.label)||!str(row.developmentRef)||typeof row.available!=='boolean'||!Array.isArray(row.branches))throw fail('REPOSITORY_OPTIONS_INVALID');seen.add(row.repositoryId);const refs=new Set();for(const b of row.branches){if(!str(b.id)||!str(b.label)||typeof b.available!=='boolean'||refs.has(b.id))throw fail('BRANCH_OPTIONS_INVALID');refs.add(b.id);}}}if(!obj(value)||!sameIdentity(value,entry)||value.projectId!==(query.projectId||'')||value.repositoryId!==(query.repositoryId||''))throw fail('OPTIONS_IDENTITY_MISMATCH');const eligibility=value.eligibility;if(!obj(eligibility)||typeof eligibility.available!=='boolean'||typeof eligibility.reprepareAllowed!=='boolean'||!str(eligibility.attemptState)||!str(eligibility.receiptState)||own(eligibility,'reasonCode')&&(!str(eligibility.reasonCode)||!eligibility.reasonCode)||own(eligibility,'reasonMessage')&&(!str(eligibility.reasonMessage)||!eligibility.reasonMessage)||own(eligibility,'nextAction')&&!NEXT_ACTIONS.has(eligibility.nextAction)||own(eligibility,'retryDisposition')&&!RETRY_DISPOSITIONS.has(eligibility.retryDisposition))throw fail('INTENT_ELIGIBILITY_INVALID');if(!str(value.runtimeInventorySource)||!Number.isSafeInteger(value.runtimeInventoryRevision)||value.runtimeInventoryRevision<0)throw fail('RUNTIME_SOURCE_INVALID');for(const key of ['projects','repositories','branches','variants']){if(!Array.isArray(value[key]))throw fail('OPTIONS_INVENTORY_UNAVAILABLE');const seen=new Set();for(const item of value[key]){if(!obj(item)||!str(item.id)||!item.id||!str(item.label)||typeof item.available!=='boolean'||seen.has(item.id)||own(item,'headCommit')&&(!str(item.headCommit)||!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(item.headCommit)))throw fail('OPTIONS_SHAPE_INVALID');if(own(item,'failures')){if(!Array.isArray(item.failures)||item.failures.length>8)throw fail('RESPONSE_DECODE','OPTIONS_FAILURES_INVALID');for(const failure of item.failures)validateFailure(failure);}seen.add(item.id);}}if(own(value,'runtimeSelectionMode')&&!['FROZEN_EXECUTION','EXPLICIT_SELECTION'].includes(value.runtimeSelectionMode))throw fail('RUNTIME_SELECTION_MODE_INVALID');if(value.lockedRuntimeConfig&&(!obj(value.lockedRuntimeConfig)||!str(value.lockedRuntimeConfig.model)||!str(value.lockedRuntimeConfig.reasoningEffort)||typeof value.lockedRuntimeConfig.codexFastMode!=='boolean'||!str(value.lockedRuntimeConfig.serviceTier)))throw fail('LOCKED_CONFIG_INVALID');if(!Array.isArray(value.runtimeOptions)||value.runtimeOptions.some(v=>!obj(v)||!str(v.modelId)||!v.modelId||typeof v.enabled!=='boolean'||typeof v.codexFastModeSupported!=='boolean'||!Array.isArray(v.supportedReasoningEfforts)||v.supportedReasoningEfforts.some(e=>!str(e)||!e)))throw fail('RUNTIME_OPTIONS_UNAVAILABLE');if(typeof value.backendInventoryComplete!=='boolean'||own(value,'backendCandidates')&&!Array.isArray(value.backendCandidates))throw fail('BACKEND_OPTIONS_UNAVAILABLE');value.backendCandidates=value.backendCandidates||[];const ids=new Set();for(const backend of value.backendCandidates){if(!obj(backend)||!str(backend.configId)||!backend.configId||!/^[a-f0-9]{64}$/i.test(backend.configFingerprint)||!str(backend.configName)||!str(backend.source)||ids.has(backend.configId))throw fail('BACKEND_OPTIONS_INVALID');ids.add(backend.configId);}if(value.lockedBackend&&(!obj(value.lockedBackend)||!str(value.lockedBackend.configId)||!/^[a-f0-9]{64}$/i.test(value.lockedBackend.configFingerprint)||!str(value.lockedBackend.configName)||!str(value.lockedBackend.source)))throw fail('LOCKED_BACKEND_INVALID');const source=value.conversationModelDefault;if(source){if(!obj(source)||!['THREADLESS','KNOWN','HISTORICAL_UNKNOWN','READ_UNAVAILABLE'].includes(source.state)||source.state==='KNOWN'&&(!str(source.conversationId)||!str(source.threadId)||!str(source.initialModel)||!str(source.sourceRunId))||source.state==='HISTORICAL_UNKNOWN'&&(!str(source.conversationId)||!str(source.threadId)))throw fail('CONVERSATION_MODEL_DEFAULT_INVALID');}return value;}
+async function readOptions(){const query={...readInput()};if(entry.purpose==='TASK')query.startReview=taskReviewSelected();if(entry.purpose==='PROJECT_SETUP'){if(draft.projectId)query.projectId=draft.projectId;if(draft.repositoryId)query.repositoryId=draft.repositoryId;}const mine=generation,seq=sequence;const raw=await rpc('confirmation_options_get',query);if(!current(mine,seq))throw fail('RESPONSE_DECODE','STALE_RESPONSE');const value=decode(raw);if(value.failure){recordFailure(value.failure);throw fail(value.failure.stage,value.failure.code,value.failure.source,value.failure.message);}if(!value.options)throw fail('RESPONSE_DECODE','OPTIONS_MISSING');const checked=validateOptions(value.options,query);validateTaskContinuity(checked.taskContinuity);validateBackendContinuity(checked);return checked;}
+function seedRecommendation(){if(recommendationSeeded||!options||!runtimeNeeded())return;if(!options.lockedBackend&&!options.backendInventoryReadError&&options.backendInventoryComplete&&options.backendCandidates.length===1&&!draft.backendConfigId){draft.backendConfigId=options.backendCandidates[0].configId;draft.backendConfigFingerprint=options.backendCandidates[0].configFingerprint;}if(options.lockedRuntimeConfig){recommendationSeeded=true;return;}const source=options.conversationModelDefault,state=source?.state||'THREADLESS',suggestion=intent.content.recommendedRuntimeConfig;if(!modelTouched&&!draft.model&&state==='KNOWN')draft.model=source.initialModel;if(state==='THREADLESS'&&obj(suggestion)){const candidate=options.runtimeOptions.find(v=>v.modelId===suggestion.model&&v.enabled);if(!modelTouched&&!draft.model&&candidate)draft.model=suggestion.model;if(draft.model===suggestion.model&&candidate?.supportedReasoningEfforts.includes(suggestion.reasoningEffort)&&typeof suggestion.codexFastMode==='boolean'&&(!suggestion.codexFastMode||candidate.codexFastModeSupported)){if(!draft.reasoningEffort)draft.reasoningEffort=suggestion.reasoningEffort;if(!draft.codexFastMode)draft.codexFastMode=suggestion.codexFastMode;}}else if(state==='KNOWN'&&obj(suggestion)&&draft.model===suggestion.model){const candidate=options.runtimeOptions.find(v=>v.modelId===draft.model);if(candidate?.supportedReasoningEfforts.includes(suggestion.reasoningEffort)&&typeof suggestion.codexFastMode==='boolean'&&(!suggestion.codexFastMode||candidate.codexFastModeSupported)){if(!draft.reasoningEffort)draft.reasoningEffort=suggestion.reasoningEffort;if(!draft.codexFastMode)draft.codexFastMode=suggestion.codexFastMode;}}recommendationSeeded=true;}
+async function changeEnvironment(field,value){if(flight||pendingCommit)return;draft[field]=value;if(field==='projectId'){draft.repositoryId='';draft.developmentRef='';draft.developmentContexts={};}else draft.developmentRef='';options=null;flight=true;error='';const mine=generation,seq=++sequence;safeRender();try{const result=await readOptions();if(current(mine,seq))options=result;}catch(e){if(current(mine,seq)){caught(e,'OPTIONS_READ_FAILED');}}finally{if(current(mine,seq)){flight=false;safeRender();}}}
+async function changeTaskReview(value){
+  if(flight||pendingCommit||unknown||stale||fatal||disposed||intent?.state!=='PENDING'||entry?.purpose!=='TASK'||intent.action!=='CREATE_TASK_AND_REVIEW'||intent.content.task.startReview!==true||Date.parse(intent.expiresAt)<=Date.now()||typeof value!=='boolean')return;
+  draft.startReview=value;options=null;flight=true;recordFailure(null);notice='';const mine=generation,seq=++sequence;safeRender();
+  try{const result=await readOptions();if(current(mine,seq)){options=result;seedRecommendation();}}
+  catch(e){if(current(mine,seq))caught(e,'OPTIONS_READ_FAILED');}
+  finally{if(current(mine,seq)){flight=false;safeRender();root.querySelector('[data-task-review]')?.focus({preventScroll:true});}}
+}
+async function changeReviewMode(mode){
+ if(flight||pendingCommit||unknown||stale||fatal||disposed||intent?.state!=='PENDING'||Date.parse(intent.expiresAt)<=Date.now()||entry?.purpose!=='TASK'||!['UPPER_LLM','CODING_AGENT','NONE'].includes(mode))return;
+ if(mode!=='NONE'){
+  const variant=intent.content.variants.find(v=>v.executorKind===mode);
+  if(!variant||intent.content.task.startReview!==true)return;
+  draft.variantId=variant.id;
+ }
+ if(mode==='NONE'&&!draft.variantId)draft.variantId=intent.content.variants[0]?.id||'';
+ draft.reviewMode=mode;draft.startReview=mode!=='NONE';
+ options=null;flight=true;recordFailure(null);notice='';const mine=generation,seq=++sequence;safeRender();
+ try{const result=await readOptions();if(current(mine,seq)){options=result;seedRecommendation();}}
+ catch(e){if(current(mine,seq))caught(e,'OPTIONS_READ_FAILED');}
+ finally{if(current(mine,seq)){flight=false;safeRender();}}
+}
+// Creation guidance is local UI state; it never enters selection(), a content
+// hash or a confirmation receipt. Continuation has no confirmation_commit path.
+function validateTaskContinuity(fact){
+ if(fact===undefined)return; // Older servers remain readable.
+ const keys=['availability','projectId','featureAreaId','tasks','total','readFailureCode'];
+ if(entry?.purpose!=='TASK'||!obj(fact)||Object.keys(fact).some(k=>!keys.includes(k))||!['AVAILABLE','UNAVAILABLE'].includes(fact.availability)||fact.projectId!==intent.projectId||fact.featureAreaId!==intent.content.task.featureAreaId||!Array.isArray(fact.tasks)||fact.tasks.length>20||!Number.isSafeInteger(fact.total)||fact.total<fact.tasks.length||fact.availability==='UNAVAILABLE'&&(fact.tasks.length||fact.total)||own(fact,'readFailureCode')&&!str(fact.readFailureCode))throw fail('TASK_CONTINUITY_INVALID');
+ const ids=new Set();for(const item of fact.tasks){if(!obj(item)||Object.keys(item).some(k=>!['taskId','title','status','phase','stage','summary','taskDefinitionRevisionId'].includes(k))||!str(item.taskId)||!item.taskId||ids.has(item.taskId)||!str(item.title)||!item.title||!['ACTIVE','PLANNING','READY','RUNNING'].includes(item.status)||!['phase','stage','summary'].every(k=>str(item[k]))||own(item,'taskDefinitionRevisionId')&&!str(item.taskDefinitionRevisionId))throw fail('TASK_CONTINUITY_INVALID');ids.add(item.taskId);}
+}
+function taskCreationNeedsChoice(){return entry?.purpose==='TASK'&&!!options?.taskContinuity&&(options.taskContinuity.availability!=='AVAILABLE'||options.taskContinuity.total>0);}
+function creationContextKey(){const f=options?.taskContinuity;return f?JSON.stringify([f.availability,f.projectId,f.featureAreaId,f.total,f.tasks.map(v=>[v.taskId,v.status,v.phase,v.taskDefinitionRevisionId||'']).sort((a,b)=>a[0].localeCompare(b[0]))]):'';}
+function selectedContinuation(){return entry?.purpose==='TASK'&&options?.taskContinuity?.availability==='AVAILABLE'?options.taskContinuity.tasks.find(v=>creationChoice==='TASK:'+v.taskId)||null:null;}
+function taskCreationError(){
+ if(!taskCreationNeedsChoice())return '';
+ if(creationChoice==='NEW'&&creationAcknowledgement===creationContextKey())return '';
+ if(creationChoice==='NEW')return '原任务状态已变化，请重新选择续接原任务或创建独立新任务。';
+ return creationChoice==='CANCEL'?'已取消本次选择；未创建或关闭任何任务。':selectedContinuation()?(continuationIsReview(selectedContinuation())?'请点击“继续当前审查”，让 GPT 完成审查并提交结果。':'请点击“继续原任务”，先在对话中核对继续路径。'):'请先选择续接原任务或创建独立新任务。';
+}
+function changeCreationChoice(value){
+ if(flight||pendingCommit||unknown||stale||fatal||intent?.state!=='PENDING')return;
+ if(!['NEW','CANCEL',''].includes(value)&&!options?.taskContinuity?.tasks.some(v=>'TASK:'+v.taskId===value))return;
+ creationChoice=value;creationAcknowledgement=value==='NEW'?creationContextKey():'';continuationNotice='';continuationFallback='';safeRender();
+}
+function continuationIsReview(item){return item?.phase==='REVIEWING';}
+function continuationLabel(item){return continuationIsReview(item)?'继续当前审查':'继续原任务';}
+function continuationPrompt(item){
+ const identity={aiSessionId:entry.aiSessionId,projectId:intent.projectId,featureAreaId:intent.content.task.featureAreaId,taskId:item.taskId,taskDefinitionRevisionId:item.taskDefinitionRevisionId||''};
+ if(continuationIsReview(item))return '沿用原任务，继续当前 GPT 审查并正式提交审查结果，不创建新任务。\n准确任务：'+JSON.stringify(identity)+'\n先调用 workspace_get 读取准确 Task，核对任务定义版本与当前 Review、Run、执行者和文件授权；锁定返回的 Review/Run 身份，后续不替换。仅当仍为 REVIEWING 且当前执行者为 UPPER_LLM 时，按原冻结审查指令，使用 review_access_get 获取该 Review 的准确授权目标；已获当前版本授权但仍为 PREPARING 时使用 review_access_prepare 准备该目标，再读取允许范围内的文件并完成实际审查。按正式报告格式调用 review_result_submit 提交结果，并回读确认入库；不要只说明续接步骤，也不要把关闭文件读取当成审查完成。若报告已经入库，读取已有报告，不重复提交。\n若文件授权失效或 Core 要求重新授权，先在当前任务统一面板展示该准确 Review 的正式重新授权入口，等待用户确认；不得自动 agent_operation_recover 或扩大文件权限。若目标结束、版本变化或执行者为 Codex/Pi，说明实际状态并停止，不把它改成 GPT 审查。\n本次允许已授权的 GPT 文件审查及正式报告提交，不批准方案、不启动实施或 Codex、不关闭任务、不修改产品文件或订阅。当前创建提案尚未提交，不要消费它。';
+ return '沿用原任务，先只读核对当前状态和可用的续接路径，不创建新任务。\n准确目标：'+JSON.stringify(identity)+'\n请读取准确 Task 的当前状态、执行结果、已记录分析和可用操作，说明继续原任务需要的步骤。若目标已结束或身份发生变化，请说明并停止，不替换为其他任务。本消息不授权关闭任务、提交分析、批准、恢复、重试或启动执行；需要确认时展示该 Task 的正式确认入口。当前创建提案尚未提交，不要消费它。';
+}
+async function continueExistingTask(){
+ const selected=selectedContinuation();if(window.devBridgeHistoryReadOnly===true||!selected||flight||pendingCommit||unknown||stale||fatal||disposed||intent?.state!=='PENDING'||Date.parse(intent.expiresAt)<=Date.now())return;
+ flight=true;const mine=generation,seq=++sequence;continuationNotice='正在核对原任务…';safeRender();let prompt='';
+ try{
+  const currentOptions=await readOptions();if(!current(mine,seq))return;options=currentOptions;
+  const item=selectedContinuation();if(!item||item.taskId!==selected.taskId||item.phase!==selected.phase||(item.taskDefinitionRevisionId||'')!==(selected.taskDefinitionRevisionId||'')){continuationNotice='原任务状态已变化，请刷新后重新选择。';return;}
+  const key=entry.intentId+':'+item.taskId;if(continuationAttempts.has(key)){continuationNotice='已请求读取原任务，请在对话中查看。';return;}
+  prompt=continuationPrompt(item);continuationAttempts.add(key);
+  continuationNotice=continuationIsReview(item)?'正在请求 GPT 继续审查并提交结果…':'正在请求对话读取原任务…';safeRender();
+  const reply=await rpc('ui/message',{role:'user',content:[{type:'text',text:prompt}]},true);
+  if(reply?.isError)throw fail('CONTINUATION_MESSAGE_REJECTED');
+  if(current(mine,seq))continuationNotice=continuationIsReview(item)?'已请求 GPT 继续审查并提交结果；授权失效时须先重新授权。':'已请求读取原任务，请在对话中查看续接路径；未创建新任务或启动执行。';
+ }catch(_){if(current(mine,seq)){continuationNotice=prompt?'未能确认消息是否发送。请先检查对话；未收到时复制下方指令手动发送。':'无法核对原任务，请刷新后重试；未提交创建确认。';continuationFallback=prompt;}}
+ finally{if(current(mine,seq)){flight=false;safeRender();}}
+}
+function renderTaskContinuity(parent){
+ if(!taskCreationNeedsChoice())return;
+ const f=options.taskContinuity,box=el('section',undefined,'dbc-callout');box.append(el('h2',f.availability==='AVAILABLE'?'此领域有 '+f.total+' 个未完成任务':'未能核对已有任务'));
+ box.append(el('p','待创建的新任务提案：'+intent.content.task.title+'（尚未提交）','muted'));
+ box.append(el('p','续接保留原任务及其审查、执行和分析记录。创建独立新任务不会自动完成或关闭原任务。','muted'));
+ if(f.availability!=='AVAILABLE')box.append(el('p','任务清单暂不可读取，不能据此判断原任务已完成；可刷新重试，或明确选择创建独立新任务。','error'));
+ for(const item of f.tasks){const row=el('div',undefined,'dbc-initial-task');row.append(el('strong',item.title),el('p','未完成 · '+item.stage),el('p',item.summary,'muted'));box.append(row);}
+ if(f.total>f.tasks.length)box.append(el('p','仅展示最近 '+f.tasks.length+' 个；如需续接其他原任务，请在对话中指定准确任务。','muted'));
+ const choices=f.tasks.map(v=>({id:'TASK:'+v.taskId,label:'继续原任务'+(f.tasks.length===1?'（推荐）':'')+'：'+v.title,available:true}));
+ choices.push({id:'NEW',label:'创建独立新任务',available:true},{id:'CANCEL',label:'取消本次选择',available:true});
+ const control=selectControl('本次操作',choices,creationChoice,changeCreationChoice,'taskCreationChoice');control.querySelector?.('select')?.removeAttribute('aria-describedby');box.append(control);
+ if(creationChoice==='NEW')box.append(el('p','你选择创建独立新任务。原任务仍未完成，不会自动关闭。','error'));
+ if(selectedContinuation()){
+  const button=uiButton(continuationLabel(selectedContinuation()),'document','primary');button.disabled=flight||continuationAttempts.has(entry.intentId+':'+selectedContinuation().taskId);button.onclick=continueExistingTask;box.append(button);
+  box.append(el('p',continuationIsReview(selectedContinuation())?'当前为 GPT 审查时，将继续读取授权文件并正式提交审查结果；重新授权须先由你确认。':'此按钮仅请求 GPT 读取原任务并说明续接路径，不批准、恢复或启动执行。','muted'));
+ }
+ if(continuationNotice)box.append(el('p',continuationNotice,'muted'));
+ if(continuationFallback){const field=el('textarea');field.value=continuationFallback;field.readOnly=true;field.setAttribute('aria-label','原任务续接指令');box.append(field);}
+ parent.append(box);
+}
+function renderTaskReviewSelection(parent){
+ const prepared=intent.action==='CREATE_TASK_AND_REVIEW'&&intent.content.task.startReview===true;
+ const modes=[{id:'UPPER_LLM',label:'GPT 审查（在原对话读取文件并提交报告）'},{id:'CODING_AGENT',label:'Codex 审查'},{id:'NONE',label:'不审查，进入实施确认'}].map(mode=>{
+  const present=mode.id==='NONE'||prepared&&intent.content.variants.some(v=>v.executorKind===mode.id);
+  return {...mode,available:present,reason:present?'':'需在对话中准备该方式的完整审查指令'};
+ });
+ const control=selectControl('审查方式（由你选择）',modes,draft.reviewMode,changeReviewMode,'reviewMode');
+ const description=draft.reviewMode==='UPPER_LLM'?'由发起对话中的 AI 主动读取文件并提交报告，不启动 Codex 后台进程；等待或刷新不会自动执行。':draft.reviewMode==='CODING_AGENT'?'确认后由 Codex 在独立工作区执行审查，请选择本次模型与后端。':draft.reviewMode==='NONE'?'用户明确跳过审查，直接进入实施方案确认；创建任务不会自动授权代码修改。':'请选择本次审查方式；AI 的提案顺序不代表你的选择。';
+ const help=el('p',description,'muted');help.id='task-review-help';parent.append(control,help);
+}
+function selectControl(label,choices,value,change,dataKey) {
+  // Keep the existing exact value/unavailable-option/change semantics.
+  const field=el('label',undefined,'dbc-field'),caption=el('span',label,'dbc-field-label');
+  const wrapper=el('span',undefined,'dbc-select-shell'),select=el('select');
+  if(dataKey){select.dataset[dataKey]='true';select.setAttribute('aria-describedby','task-review-help');}
+  const prompt=el('option','请选择');prompt.value='';select.append(prompt);
+  for(const choice of choices){const option=el('option',choice.label+(choice.available?'':' · '+(choice.reason||'不可用')));option.value=choice.id;option.disabled=!choice.available;select.append(option);}
+  if(value&&!choices.some(v=>v.id===value)){const absent=el('option',value+' · 当前不可用');absent.value=value;absent.disabled=true;select.append(absent);}
+  select.value=value;select.disabled=flight||!choices.length;select.onchange=()=>change(select.value);
+  wrapper.append(select,uiIcon('chevron'));field.append(caption,wrapper);return field;
+}
+function renderAreaMergeTargets(parent){if(intent.action!=='MERGE_FEATURE_AREA')return;const plan=intent.content.featureArea.deliveryPlan;if(!plan||plan.projectId!==intent.projectId||plan.featureAreaId!==intent.content.featureArea.featureAreaId||!Array.isArray(plan.members)||!plan.members.length){parent.append(el('p','合入目标不可核对，请刷新准确提案。','error'));return;}parent.append(el('h3',plan.predecessorMergeRequestId?'重新确认合入目标':'逐仓合入目标'));if(plan.predecessorMergeRequestId)parent.append(el('p','保留原任务的验收与已完成合入记录。本次仅确认以下新的合入目标。'));for(const member of plan.members)facts(parent,[['仓库',member.repositoryId],['目标开发分支',member.developmentRef],['预期目标提交',member.expectedDevHead],['来源分支',member.sourceBranch],['已验收提交',member.sourceHead]]);}
+function renderRuntimeSelection(parent) {
+  const box=el('section',undefined,'dbc-config'),heading=el('div',undefined,'dbc-section-heading');
+  heading.append(uiIconTile(entry.purpose==='PROJECT_SETUP'?'folder':'code'),el('h2',entry.purpose==='PROJECT_SETUP'?'工作环境':'本次选择'));
+  const content=el('div',undefined,'dbc-config-content');box.append(heading,content);
+  if(entry.purpose==='TASK')renderTaskReviewSelection(content);
+  renderAreaMergeTargets(content);
+  if(['DEFER_TASK','CONTINUE_TASK'].includes(intent.action)&&intent.content.execution.note)content.append(el('h3','本次保存的进度与待办'),el('p',intent.content.execution.note));
+  if(intent.action==='COMPLETE_TASK'){const plan=intent.content.execution.completionPlan;if(!plan||plan.taskId!==intent.content.execution.taskId||plan.executionId!==intent.content.execution.executionId||plan.taskDefinitionRevisionId!==intent.content.execution.taskDefinitionRevisionId||!Array.isArray(plan.members)||!plan.members.length){content.append(el('p','合入目标不可核对，请刷新准确提案。','error'));}else{content.append(el('h3','验收与合入目标'));for(const member of plan.members){facts(content,[['仓库',member.repositoryName||member.repositoryId],['目标开发分支',member.developmentRef],['预期目标提交',member.expectedDevHead],['来源分支',member.sourceBranch],['已验证快照',member.verifiedSnapshot]]);}}}
+  if(['CONFIRM_IMPLEMENTATION','CONFIRM_AND_START_IMPLEMENTATION'].includes(intent.action)&&intent.content.execution?.repositoryId)facts(content,[['目标仓库',intent.content.execution.repositoryId],['基线提交',intent.content.execution.baseCommit]]);
+  if(!options){content.append(el('p','正在读取准确可用选项；读取失败时不会使用默认配置。','muted'));parent.append(box);return;}
+  if(entry.purpose==='PROJECT_SETUP'){
+    const grid=el('div',undefined,'dbc-fields');
+    grid.append(selectControl('项目',options.projects,draft.projectId,v=>changeEnvironment('projectId',v)));
+    if(intent.action==='SELECT_PROJECT_BRANCH')grid.append(selectControl('Repository',options.repositories,draft.repositoryId,v=>changeEnvironment('repositoryId',v)),selectControl('已有开发分支',options.branches,draft.developmentRef,v=>{draft.developmentRef=v;safeRender();}));
+    if(intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT')for(const row of options.developmentContexts||[]){
+      const group=el('div'); group.append(el('p',row.label+' · '+row.repositoryId+' · '+(row.developmentRef||'尚未配置')));
+      if(!row.available)group.append(el('p','仓库不可用：'+(row.reason||'UNAVAILABLE'),'error'));
+      group.append(selectControl('本次配置（留空保持原映射）',row.branches,draft.developmentContexts[row.repositoryId]||'',v=>{draft.developmentContexts[row.repositoryId]=v;safeRender();}));grid.append(group);
+    }
+    content.append(grid,el('p','只读取现有分支。选择不会绑定项目、创建或切换分支；确认后沿用原 Session。','muted'));
+  }
+  const variants=intent.content.variants.map(v=>{const authority=options.variants.find(c=>c.id===v.id);return {id:v.id,label:v.label,available:!!authority?.available,reason:authority?.failures?.[0]?.message||authority?.reason||(!authority?'能力未确认':'')};});
+  if(entry.purpose==='TASK'&&!taskReviewSelected()){
+    renderVariantRestriction(content,selectedVariant());parent.append(box);return;
+  }
+  if(entry.purpose==='TASK'||variants.length===1)facts(content,[['执行方式',modeLabel(selectedVariant())]]);
+  else{content.append(selectControl('已准备方案',variants,draft.variantId,v=>{draft.variantId=v;seedRecommendation();safeRender();}));if(selectedVariant())facts(content,[['执行方式',modeLabel(selectedVariant())]]);}
+  const variant=selectedVariant();renderVariantRestriction(content,variant);
+  const depth=intent.content.review?.reviewDepth||intent.content.task?.reviewDepth||intent.content.featureArea?.initialTask?.reviewDepth;
+  if(depth)facts(content,[['审查深度',depth]]);
+  if(variant?.executorKind==='UPPER_LLM')content.append(el('p','文件审查只读；权限就绪不表示 GPT 已开始操作。','muted'));
+  if(variant?.implementationMode==='DIRECT_FILE')content.append(el('p',variant?.verificationSpec?.mode==='RUN'?'GPT 按获批范围修改文件；提交结果后由 Codex 独立执行验证并记录命令证据，验证完成后进入验收。':'文件实施依获批范围授权；权限就绪不表示 GPT 已开始操作。','muted'));
+  if(entry.purpose==='EXECUTION'&&intent.action==='APPROVE'&&variant?.implementationMode==='DIRECT_FILE'&&variant?.repositoryTargets?.length){const waiver=el('div',undefined,'dbc-config-content'),label=el('label',undefined,'dbc-fast'),box=el('input');box.type='checkbox';box.checked=draft.verificationWaived;box.onchange=()=>{draft.verificationWaived=box.checked;if(!box.checked)draft.verificationWaiverReason='';safeRender();};label.append(box,document.createTextNode('我明确放弃本次文件实施的命令验证'));waiver.append(label);if(draft.verificationWaived){const reason=el('textarea');reason.maxLength=2048;reason.value=draft.verificationWaiverReason;reason.placeholder='说明用户明确放弃验证的原因';reason.oninput=()=>{draft.verificationWaiverReason=reason.value;safeRender();};waiver.append(reason,el('p','此选择只会在本次 DIRECT_FILE 批准中将验证规格替换为 NONE；未勾选不会发送 waiver，准备中的 RUN 规格保持不变。','muted'));}content.append(waiver);}
+  if(runtimeNeeded()&&options.runtimeInventoryReadError)content.append(el('p',options.runtimeInventoryReadError,'error'));
+  if(runtimeNeeded()&&options.backendContinuity){const continuity=options.backendContinuity,label=({THREADLESS:'尚无 Thread，可首次选择后端',BOUND_AVAILABLE:'沿用当前领域会话后端',BOUND_UNAVAILABLE:'原会话后端当前不可用',HISTORICAL_UNKNOWN:'历史 Thread 缺少后端来源',READ_UNAVAILABLE:'后端连续性读取不可用',CONFLICT:'后端连续性关联冲突'})[continuity.state]||continuity.state;facts(content,[['领域后端连续性',label],['原 Thread',continuity.threadId||'—'],['来源 Run',continuity.sourceRunId||'—'],['来源工作',continuity.sourceOperationKind&&continuity.sourceOperationId?continuity.sourceOperationKind+' · '+continuity.sourceOperationId:'—']]);if(continuity.reason)content.append(el('p',continuity.reason,['THREADLESS','BOUND_AVAILABLE'].includes(continuity.state)?'muted':'error'));}
+  if(runtimeNeeded()&&options.lockedRuntimeConfig){
+    const saved=options.lockedRuntimeConfig;
+    content.append(el('p','本次实施与验证已有共同冻结配置，不能在此更改。','muted'));
+    facts(content,[['Codex 后端',options.lockedBackend?.configName||options.lockedBackend?.configId||'证据不可用'],['后端配置 ID',options.lockedBackend?.configId||'—'],['模型',saved.model],['思考等级',saved.reasoningEffort],['Codex Fast Mode',saved.codexFastMode?'开启':'关闭'],['服务等级',saved.serviceTier||'默认']]);
+  } else if(runtimeNeeded()){
+    content.append(el('p',variant?.implementationMode==='DIRECT_FILE'?'本配置仅用于文件结果提交后的 Codex 验证；文件实施仍由 GPT 完成。':entry.purpose==='EXECUTION'?'实施与验证共用本次配置。':'本配置仅用于本次审查。','muted'));
+    const source=options.conversationModelDefault;if(source?.state==='KNOWN')content.append(el('p','默认模型来自当前领域会话首次 Thread：'+source.initialModel+'。可为本次工作改选；后续新工作仍默认该初始模型。','muted'));else if(source?.state==='HISTORICAL_UNKNOWN')content.append(el('p','当前会话已有 Thread，但初始模型未记录；请明确选择当前合法模型。','muted'));else if(source?.state==='READ_UNAVAILABLE')content.append(el('p','会话初始模型读取不可用；仍可明确选择当前合法模型。','muted'));
+    const grid=el('div',undefined,'dbc-fields'),model=options.runtimeOptions.find(v=>v.modelId===draft.model);
+    if(runtimeNeeded()&&!options.lockedBackend){
+      grid.append(selectControl('Codex 后端',(options.backendCandidates||[]).map(v=>({id:v.configId,label:v.configName||v.configId,available:true,reason:v.configFingerprint})),draft.backendConfigId,v=>{draft.backendConfigId=v;const selected=(options.backendCandidates||[]).find(x=>x.configId===v);draft.backendConfigFingerprint=selected?.configFingerprint||'';safeRender();}));
+    }
+    grid.append(
+      selectControl('Codex 模型',options.runtimeOptions.map(v=>({id:v.modelId,label:v.modelId,available:v.enabled,reason:'模型已禁用'})),draft.model,v=>{modelTouched=true;draft.model=v;const selected=options.runtimeOptions.find(m=>m.modelId===v);if(!selected?.supportedReasoningEfforts.includes(draft.reasoningEffort))draft.reasoningEffort='';safeRender();}),
+      selectControl('思考等级',(model?.supportedReasoningEfforts||[]).map(v=>({id:v,label:v,available:true})),draft.reasoningEffort,v=>{draft.reasoningEffort=v;safeRender();})
+    );content.append(grid);
+    const label=el('label',undefined,'dbc-fast'),fast=el('input');fast.type='checkbox';fast.checked=draft.codexFastMode;
+    fast.disabled=flight||!model||(!model.codexFastModeSupported&&!draft.codexFastMode);
+    fast.onchange=()=>{draft.codexFastMode=fast.checked;safeRender();};label.append(fast,document.createTextNode('Codex Fast Mode'));content.append(label);
+    if(recommendationSeeded&&intent.content.recommendedRuntimeConfig)content.append(el('p','模型默认值、推荐的 effort/Fast 均可在本次确认中调整。','muted'));
+    if(model&&!model.codexFastModeSupported)content.append(el('p','此模型不支持 Fast Mode；已选择的值不会被静默替换。','muted'));
+  }
+  parent.append(box);
+}
+function choiceError(){const continuityError=entry?.purpose==='TASK'?taskCreationError():'';if(continuityError)return continuityError;if(!initialized||!intent||fatal)return '确认入口未就绪。';if(error&&!(editableRetry&&lastFailure?.nextAction==='EDIT_SELECTION'))return '请先重新读取当前选项。';if(!options)return '尚未取得本次合法选项。';if(intent.action==='COMPLETE_TASK'){const p=intent.content.execution?.completionPlan;if(!p||p.taskId!==intent.content.execution.taskId||p.executionId!==intent.content.execution.executionId||p.taskDefinitionRevisionId!==intent.content.execution.taskDefinitionRevisionId||!Array.isArray(p.members)||!p.members.length)return '合入目标不可核对，禁止完成任务。';}if(entry.purpose==='TASK'&&!draft.reviewMode)return '请由用户选择审查方式。';if(entry.purpose==='TASK'&&options.startReview!==taskReviewSelected())return '请重新读取本次审查选择的可用选项。';if(Number.isFinite(Date.parse(intent.expiresAt))&&Date.parse(intent.expiresAt)<=Date.now())return '本次待确认内容已过期，请在对话准备新版本。';if(!selectedVariant())return '请选择已准备好的内容和方式。';if(draft.verificationWaived&&(!str(draft.verificationWaiverReason)||Array.from(draft.verificationWaiverReason).length>2048))return '请填写本次明确放弃验证的原因。';if(runtimeNeeded()&&entry.purpose==='EXECUTION'&&intent.content.execution.action==='START_APPROVED'){if(!['FROZEN_EXECUTION','EXPLICIT_SELECTION'].includes(options.runtimeSelectionMode))return '本次运行配置选择方式不可确认，请重新读取。';if(options.runtimeSelectionMode==='FROZEN_EXECUTION'&&(!options.lockedRuntimeConfig||!options.lockedBackend))return '已有候选的冻结配置不可读取，禁止使用默认值替代。';if(options.runtimeSelectionMode==='EXPLICIT_SELECTION'&&options.lockedRuntimeConfig)return '本次新运行配置与冻结配置冲突，请重新读取。';}const reason=variantReason(draft.variantId);if(reason)return reason;if(entry.purpose==='PROJECT_SETUP'){
+ const required=intent.action==='SELECT_PROJECT_BRANCH'?[['projectId','projects'],['repositoryId','repositories'],['developmentRef','branches']]:[['projectId','projects']];
+ for(const [field,list] of required)if(!draft[field]||!options[list].some(v=>v.id===draft[field]&&v.available))return '请明确选择可用的项目或分支。';
+ if(intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT'){
+ if(!options.repositoryInventoryComplete)return '仓库清单不完整，请刷新。';
+ const selected=Object.entries(draft.developmentContexts).filter(([,ref])=>ref);if(!selected.length)return '请配置至少一个仓库的开发分支。';
+ for(const [id,ref] of selected){const row=options.developmentContexts?.find(r=>r.repositoryId===id);if(!row?.available||!row.branches.some(b=>b.id===ref&&b.available))return '所选仓库分支不可用，请刷新。';}
+ }
+ }if(runtimeNeeded()){if(options.runtimeInventoryReadError)return '运行能力读取失败，不使用缓存或默认配置。';if(!options.lockedBackend){if(options.backendInventoryReadError)return '后端清单读取失败，请刷新准确选项。';if(!options.backendInventoryComplete)return '后端清单不完整，不能据此选择默认后端。';const backend=options.backendCandidates.find(v=>v.configId===draft.backendConfigId&&v.configFingerprint===draft.backendConfigFingerprint);if(!backend)return '请选择本次实施使用的准确 Codex 后端。';}const config=options.lockedRuntimeConfig||draft;const model=options.runtimeOptions.find(v=>v.modelId===config.model);if(!model?.enabled)return '请选择当前可用的模型。';if(!model.supportedReasoningEfforts.includes(config.reasoningEffort))return '请选择该模型支持的思考等级。';if(config.codexFastMode&&!model.codexFastModeSupported)return '此模型不支持所选 Fast Mode，请明确调整。';}return '';}
+function selection(){const result={};if(entry.purpose==='TASK'){result.startReview=taskReviewSelected();result.reviewMode=draft.reviewMode;}if(entry.purpose==='PROJECT_SETUP'){result.projectId=draft.projectId;if(intent.action==='SELECT_PROJECT_BRANCH'){result.repositoryId=draft.repositoryId;result.developmentRef=draft.developmentRef;}if(intent.action==='CONFIGURE_DEVELOPMENT_CONTEXT')result.developmentContexts=Object.entries(draft.developmentContexts).filter(([,ref])=>ref).sort(([a],[b])=>a.localeCompare(b)).map(([repositoryId,developmentRef])=>({repositoryId,developmentRef}));}if(draft.verificationWaived)result.verificationWaiver={source:'USER_WAIVED',reason:draft.verificationWaiverReason};if(runtimeNeeded()){const config=options.lockedRuntimeConfig||draft,backend=options.lockedBackend||{configId:draft.backendConfigId,configFingerprint:draft.backendConfigFingerprint};result.runtimeConfig={model:config.model,reasoningEffort:config.reasoningEffort,codexFastMode:config.codexFastMode};result.backend={configId:backend.configId,configFingerprint:backend.configFingerprint};}return result;}
+
+function validateAccess(value){
+  const file=value.currentDirectFile,upper=value.currentUpperReview;
+  if(file){const owners=value.steps.filter(s=>s.taskId).map(s=>s.taskId);if(value.content.execution?.taskId)owners.push(value.content.execution.taskId);const revisions=value.steps.filter(s=>s.revisionId).map(s=>s.revisionId);if(value.content.execution?.taskDefinitionRevisionId)revisions.push(value.content.execution.taskDefinitionRevisionId);if(!obj(file)||!str(file.state)||typeof file.enabled!=='boolean'||!owners.includes(file.taskId)||!revisions.includes(file.taskDefinitionRevisionId)||file.aiSessionId&&file.aiSessionId!==value.aiSessionId||file.projectId&&file.projectId!==value.projectId)throw fail('CURRENT_FILE_IDENTITY_MISMATCH');const workflows=value.steps.filter(s=>s.workflowId).map(s=>s.workflowId);if(workflows.length&&!workflows.includes(file.workflowId))throw fail('CURRENT_FILE_WORKFLOW_MISMATCH');if(file.protocolVersion===2&&(!str(file.runtimeEpoch)||!Number.isSafeInteger(file.grantGeneration)||file.grantGeneration<1||!Array.isArray(file.repositoryTargets)||!file.repositoryTargets.length||file.repositoryTargets.some(m=>!obj(m)||!str(m.repositoryId)||!str(m.memberId)||!Number.isSafeInteger(m.memberVersion)||m.memberVersion<1)))throw fail('CURRENT_FILE_MEMBER_SET_INVALID');}
+  if(upper){const target=upper.target;if(!obj(upper)||!obj(target)||target.aiSessionId!==value.aiSessionId||!value.steps.some(s=>s.reviewId===target.reviewId&&s.runId===target.runId)||!str(upper.state))throw fail('CURRENT_REVIEW_IDENTITY_MISMATCH');}
+}
+function renderCurrentAccess(parent){if(entry.purpose==='TASK'&&!taskReviewSelected())return;const variant=selectedVariant();if(!intent.commit||!variant||variant.executorKind!=='UPPER_LLM'&&variant.implementationMode!=='DIRECT_FILE')return;const box=el('section',undefined,'outcome');box.append(el('h2','当前访问状态'));if(intent.currentAccessReadError)box.append(el('p','当前访问资格无法确认：'+intent.currentAccessReadError,'error'));const file=intent.currentDirectFile,upper=intent.currentUpperReview;if(file){box.append(el('p',file.state==='ACTIVE'&&file.enabled===true&&!intent.currentAccessReadError?'文件权限已就绪，等待你在对话中继续；GPT 尚未因此开始操作。':'文件权限尚未就绪或已关闭，历史确认不会恢复权限。'));if(file.protocolVersion===2)facts(box,[['协议版本','v2'],['运行 epoch',file.runtimeEpoch],['授权代数',String(file.grantGeneration)]]);if(Array.isArray(file.repositoryTargets)&&file.repositoryTargets.length){const members=el('ul');for(const member of file.repositoryTargets)members.append(el('li',(member.repositoryId||'—')+' · '+(member.memberId||'—')+' · v'+(member.memberVersion||'—')+' · '+(member.write?.kind||'NONE')));box.append(members);}if(file.failureReason)box.append(el('p',file.failureReason,'error'));}if(upper&&['ACTIVE','AWAITING_REPORT'].includes(upper.state)){const last=upper.lastObservedAt?Date.parse(upper.lastObservedAt):Date.parse(upper.reviewCreatedAt);if(Number.isFinite(last)&&Date.now()-last>=300000)box.append(el('p','已至少 5 分钟没有新的 Bridge 文件审查活动。请回到发起对话继续；刷新不会自动执行审查。','notice'));}
+ if(upper){box.append(el('p',intent.currentUpperReadAvailable===true&&!intent.currentAccessReadError?'审查只读权限已就绪，等待你在对话中继续；GPT 尚未因此开始读取。':'当前审查文件读取不可用或尚未确认。'));if(upper.blocker)box.append(el('p',upper.blocker,'error'));}if(!file&&!upper&&!intent.currentAccessReadError)box.append(el('p','当前访问状态尚不可确认，不能从历史回执推断权限。'));parent.append(box);}
+function originalSubmission(saved){const chosen={};if(saved.selection.reviewMode)chosen.reviewMode=saved.selection.reviewMode;if(typeof saved.selection.startReview==='boolean')chosen.startReview=saved.selection.startReview;if(saved.selection.developmentContexts)chosen.developmentContexts=structuredClone(saved.selection.developmentContexts);if(saved.selection.verificationWaiver)chosen.verificationWaiver=structuredClone(saved.selection.verificationWaiver);for(const key of ['projectId','repositoryId','developmentRef'])if(saved.selection[key])chosen[key]=saved.selection[key];const backend=saved.selection.backend;if(backend)chosen.backend={configId:backend.configId,configFingerprint:backend.configFingerprint};const config=saved.selection.runtimeConfig;if(config)chosen.runtimeConfig={model:config.model,reasoningEffort:config.reasoningEffort,codexFastMode:config.codexFastMode};return {...readInput(),action:saved.action,requestId:saved.requestId,contentHash:saved.contentHash,variantId:saved.variantId,selection:chosen};}
+async function resumeConfirmation(){
+ if(window.devBridgeHistoryReadOnly===true||flight||fatal||renderFailed||!resumeReadback||intent?.canResume!==true||!intent.commit||intent.submission?.recorded!==true||intent.submission.outcome!=='CONSUMED')return;
+ const saved=originalSubmission(intent.submission.request);
+ pendingCommit=saved;pendingHash='';resumeReadback=false;flight=true;recordFailure(null);rememberPending();const mine=generation,seq=++sequence;safeRender();
+ try{const hash=await requestHash(saved);if(!current(mine,seq))return;pendingHash=hash;rememberPending();const value=decode(await rpc('confirmation_commit',saved));if(!current(mine,seq)||pendingCommit!==saved)return;applyEnvelope(value);notice='已回读原确认步骤的继续结果；没有更换请求或工程内容。';}
+ catch(e){if(current(mine,seq)){caught(e,'RESUME_OUTCOME_UNKNOWN');notice='继续步骤结果须回读；已有消费事实保持不变。';}}
+ finally{if(current(mine,seq)){flight=false;safeRender();}}
+}
+
+
+// Presentation controllers are private to this script; the diagnostic hash covers them.
+const readerUI=(()=>{const global=window;
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = String(text);
+    return node;
+  }
+
+  function button(className, text, label) {
+    const node = element('button', className, text);
+    node.type = 'button';
+    if (label) node.setAttribute('aria-label', label);
+    return node;
+  }
+
+  function viewportBox() {
+    // These coordinates describe this document's viewport, not parent ChatGPT.
+    const visual = global.visualViewport;
+    const left = visual ? visual.offsetLeft : 0;
+    const top = visual ? visual.offsetTop : 0;
+    const width = visual ? visual.width : document.documentElement.clientWidth;
+    const height = visual ? visual.height : document.documentElement.clientHeight;
+    return { left, top, right: left + width, bottom: top + height };
+  }
+
+  function rememberStyle(node, property, value) {
+    const oldValue = node.style.getPropertyValue(property);
+    const priority = node.style.getPropertyPriority(property);
+    node.style.setProperty(property, value);
+    return function restore() {
+      if (oldValue) node.style.setProperty(property, oldValue, priority);
+      else node.style.removeProperty(property);
+    };
+  }
+
+  /**
+   * Measure only the normal-flow card. Never use document/body/plan scrollHeight.
+   * Use onHeight to call the existing, already initialized size notification.
+   * @param {{anchor:HTMLElement, onHeight:(height:number)=>void, isReady?:()=>boolean}} options
+   */
+  function createCardSizer({ anchor, onHeight, isReady = () => true }) {
+    if (!(anchor instanceof HTMLElement) || typeof onHeight !== 'function') {
+      throw new TypeError('Card sizer requires an element and a callback.');
+    }
+    let disposed = false;
+    let frame = 0;
+    let lastHeight = -1;
+    function report() {
+      frame = 0;
+      if (disposed || !anchor.isConnected || !isReady()) return;
+      const bounds = anchor.getBoundingClientRect();
+      const paddingBottom = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+      // The viewport height must not be a minimum: that creates auto-resize loops.
+      const height = Math.ceil(bounds.bottom + global.scrollY + paddingBottom);
+      if (!Number.isFinite(height) || height < 1 || height === lastHeight) return;
+      try {
+        onHeight(height);
+        lastHeight = height;
+      } catch (_) {
+        // Presentation delivery failure never changes workflow or authorization.
+      }
+    }
+    function schedule() {
+      if (!disposed && !frame) frame = global.requestAnimationFrame(report);
+    }
+    let observer=null;try{if(typeof ResizeObserver==='function'){observer=new ResizeObserver(schedule);observer.observe(anchor);}}catch(_){observer?.disconnect();observer=null;}
+    global.addEventListener('resize', schedule, { passive: true });
+    return Object.freeze({
+      schedule,
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        if (frame) global.cancelAnimationFrame(frame);
+        observer?.disconnect();
+        global.removeEventListener('resize', schedule);
+      }
+    });
+  }
+
+  /**
+   * One native modal, bounded to the card intersected with the local viewport.
+   * Header/footer never belong to the scrolling body. Native showModal supplies
+   * document-local inertness and focus containment; it cannot escape an iframe.
+   * @param {{anchor:HTMLElement, restoreFocus?:()=>HTMLElement|null,
+   *          maxWidth?:number, maxHeight?:number, onIssue?:(code:string)=>void}} options
+   */
+  function createPlanReader({ anchor, restoreFocus, maxWidth = 720, maxHeight = 560, onIssue = () => {} }) {
+    if (!(anchor instanceof HTMLElement)) throw new TypeError('Plan reader requires a card element.');
+    if (!Number.isFinite(maxWidth) || !Number.isFinite(maxHeight) || maxWidth < 160 || maxHeight < 140) {
+      throw new TypeError('Plan reader dimensions are invalid.');
+    }
+
+    const dialog = element('dialog', 'db-plan-dialog');
+    const headingID = 'db-plan-heading-' + (++createPlanReader.sequence);
+    dialog.setAttribute('aria-labelledby', headingID);
+    const header = element('header', 'db-plan-header');
+    const titleGroup = element('div', 'db-plan-heading-group');
+    const heading = element('h2', 'db-plan-title', '完整实施方案');
+    heading.id = headingID;
+    const subtitle = element('p', 'db-plan-subtitle');
+    const notice = element('p', 'db-plan-notice');
+    notice.setAttribute('role', 'status');
+    notice.setAttribute('aria-live', 'polite');
+    notice.hidden = true;
+    titleGroup.append(heading, subtitle, notice);
+    const topClose = button('db-icon-button db-plan-top-close', '×', '关闭完整方案');
+    header.append(titleGroup, topClose);
+
+    const body = element('div', 'db-plan-body');
+    body.tabIndex = 0;
+    body.setAttribute('role', 'region');
+    body.setAttribute('aria-label', '完整方案正文，可独立滚动');
+    const feedback = element('section', 'db-plan-feedback');
+    feedback.hidden = true;
+    body.id=headingID+'-panel';body.setAttribute('role','tabpanel');const content=element('article','db-plan-content');content.id=headingID+'-content';
+    const manual=element('section','reader-manual');manual.hidden=true;
+    body.append(feedback,content,manual);
+    const tabList=element('nav','reader-tabs');tabList.setAttribute('role','tablist');tabList.setAttribute('aria-label','完整方案内容用途');
+    const toolbar=element('div','reader-toolbar');
+    const copyFeedback=element('p','reader-copy-feedback');copyFeedback.setAttribute('role','status');
+
+    const footer = element('footer', 'db-plan-footer');
+    footer.append(element('span', 'db-plan-help', '仅正文滚动 · Esc 关闭'));
+    const bottomClose = button('db-button db-button-secondary', '关闭方案');
+    footer.append(bottomClose);
+    dialog.append(header,tabList,toolbar,body,footer);
+    // Keep the modal outside #root. Existing safeRender replaces root children.
+    document.body.append(dialog);
+
+    let disposed = false;
+    let activeKey = '';
+    let opener = null;
+    let closeReason = '';
+    let broken=false;
+    let restoreLocks = [];
+    let restoreScrollBehavior=null,documentLocked=false;
+    let frame = 0;
+    let touchPoint = null;
+    let pagePosition = { x: 0, y: 0 };
+    const positions=new Map();
+    let buildSections=null,currentModel={sections:[],defaultTab:''},readingState=null,renderedPromptToken=null,openEpoch=0,copySequence=0;
+    const listeners = [];
+
+    function listen(target, event, callback, options) {
+      target.addEventListener(event, callback, options);
+      listeners.push(() => target.removeEventListener(event, callback, options));
+    }
+    function issue(code) {
+      try { onIssue(code); } catch (_) { /* A diagnostic must not recurse into business state. */ }
+      return { ok: false, code };
+    }
+    function sectionModel(){return typeof buildSections==='function'?buildSections():{sections:[],defaultTab:''};}
+    function selectedSection(){return currentModel.sections.find(item=>item.id===readingState?.tabId)||null;}
+    function tabPreference(){const id=readingState.tabId;return readingState.preferences[id]||(readingState.preferences[id]={mode:'READ',sourcePath:''});}
+    function activeInstruction(){const section=selectedSection();if(section?.kind!=='prompt')return null;const instruction=section.instruction,pref=tabPreference();if(pref.mode==='SOURCES'){const source=instruction.alternativeSources.find(item=>item.sourcePath===pref.sourcePath);return source&&typeof source.rawText==='string'?{rawText:source.rawText,sourcePath:source.sourcePath,fieldOnly:true}:null;}return instruction.availability==='AVAILABLE'&&typeof instruction.rawText==='string'?{rawText:instruction.rawText,sourcePath:instruction.sourcePath,fieldOnly:false}:null;}
+    function viewPositionKey(){const pref=tabPreference(),selection=activeInstruction();return JSON.stringify([readingState.tabId,pref.mode,selection?.sourcePath||pref.sourcePath||'']);}
+    function savePosition(){if(!activeKey||!readingState)return;const view=viewPositionKey();readingState.positions.delete(view);readingState.positions.set(view,{top:body.scrollTop,left:body.scrollLeft});if(readingState.positions.size>32)readingState.positions.delete(readingState.positions.keys().next().value);positions.delete(activeKey);positions.set(activeKey,readingState);if(positions.size>16)positions.delete(positions.keys().next().value);}
+    function restorePosition(){const position=readingState.positions.get(viewPositionKey())||{top:0,left:0};body.scrollTo(position.left,position.top);}
+    function clearCopyFeedback(){content.hidden=false;copySequence++;copyFeedback.textContent='';manual.replaceChildren();manual.hidden=true;}
+    function modeButton(text,mode){const control=button('reader-mode',text);control.dataset.readerMode=mode;control.setAttribute('aria-pressed',String(tabPreference().mode===mode));control.addEventListener('click',()=>changeReadingView(()=>{tabPreference().mode=mode;}));return control;}
+    function renderTabs(){
+      tabList.replaceChildren();
+      for(const section of currentModel.sections){const tab=button('reader-tab',section.label);tab.id=headingID+'-tab-'+section.id;tab.setAttribute('role','tab');tab.setAttribute('aria-controls',body.id);tab.setAttribute('aria-selected',String(section.id===readingState.tabId));tab.tabIndex=section.id===readingState.tabId?0:-1;
+        tab.addEventListener('click',()=>changeReadingView(()=>{readingState.tabId=section.id;}));
+        tab.addEventListener('keydown',event=>{const index=currentModel.sections.findIndex(item=>item.id===readingState.tabId);let next;if(event.key==='ArrowRight')next=(index+1)%currentModel.sections.length;else if(event.key==='ArrowLeft')next=(index+currentModel.sections.length-1)%currentModel.sections.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=currentModel.sections.length-1;else return;event.preventDefault();changeReadingView(()=>{readingState.tabId=currentModel.sections[next].id;});tabList.querySelector('[aria-selected="true"]')?.focus({preventScroll:true});});tabList.append(tab);}
+    }
+    function renderToolbar(){
+      toolbar.replaceChildren();const section=selectedSection();if(!section)return;
+      const meta=element('div','reader-toolbar-meta'),type=element('strong','reader-content-type',section.kind==='prompt'?preparedInstructionLabel(section.id):section.label);meta.append(type);
+      if(section.kind==='prompt'){
+        const instruction=section.instruction,pref=tabPreference(),selection=activeInstruction();
+        const source=element('code','reader-source-path',selection?.sourcePath||instruction.sourcePath||'来源尚不能唯一确定');source.title=source.textContent;source.tabIndex=0;source.setAttribute('aria-label','完整来源字段：'+source.textContent);meta.append(source);
+        const actions=element('div','reader-toolbar-actions');actions.setAttribute('role','group');actions.setAttribute('aria-label','指令显示与复制');actions.append(modeButton('阅读','READ'),modeButton('原文','RAW'),modeButton('来源对照','SOURCES'));
+        const copy=button('reader-copy',selection?.fieldOnly?'复制此字段原文':'复制指令');copy.disabled=!selection||!selection.rawText.length;copy.addEventListener('click',()=>copyInstruction(copy));actions.append(copy);toolbar.append(meta,actions);
+        if(pref.mode==='SOURCES'){const label=element('label','reader-source-choice','选择来源字段');const select=element('select','reader-source-select');const empty=element('option','','请选择准确字段');empty.value='';select.append(empty);for(const item of instruction.alternativeSources){const option=element('option','',item.sourcePath+' · '+item.presence);option.value=item.sourcePath;option.disabled=typeof item.rawText!=='string';select.append(option);}select.value=instruction.alternativeSources.some(item=>item.sourcePath===pref.sourcePath)?pref.sourcePath:'';select.addEventListener('change',()=>changeReadingView(()=>{tabPreference().sourcePath=select.value;}));label.append(select);toolbar.append(label);}
+      }else toolbar.append(meta);
+      toolbar.append(copyFeedback);
+    }
+    function renderActiveBody(force=false){
+      const section=selectedSection();if(!section)return;
+      body.setAttribute('aria-labelledby',headingID+'-tab-'+section.id);
+      const pref=tabPreference(),selection=activeInstruction();
+      const token=section.kind==='prompt'?{id:section.id,mode:pref.mode,path:pref.sourcePath,availability:section.instruction.availability,source:section.instruction.sourcePath,basis:section.instruction.selectionBasis,rawText:selection?.rawText,sources:section.instruction.alternativeSources}:null;
+      // Immutable instruction strings are not replaced by a same-content status/config readback.
+      if(!force&&section.kind==='prompt'&&renderedPromptToken&&['id','mode','path','availability','source','basis','rawText'].every(key=>token[key]===renderedPromptToken[key])&&token.sources.length===renderedPromptToken.sources.length&&token.sources.every((source,index)=>{const old=renderedPromptToken.sources[index];return source.sourcePath===old.sourcePath&&source.presence===old.presence&&source.type===old.type&&source.rawText===old.rawText&&source.value===old.value;}))return;
+      clearCopyFeedback();
+      checkedRender(content,target=>{
+        if(section.kind==='overview')renderOverview(target);
+        else if(section.kind==='definition')renderStructuredDefinition(target);
+        else if(pref.mode==='SOURCES')renderSourceDetails(target,section.instruction,pref.sourcePath);
+        else if(selection)renderPrompt(target,selection.rawText,pref.mode);
+        else target.append(element('p','reader-empty',section.instruction.selectionBasis));
+      },'PLAN_CONTENT_NOT_READ_ONLY');
+      renderedPromptToken=token;
+    }
+    function captureControlFocus(){const focused=document.activeElement;return {tab:focused?.getAttribute('role')==='tab',mode:focused?.dataset?.readerMode,source:focused?.classList?.contains('reader-source-select'),copy:focused?.classList?.contains('reader-copy')};}
+    function revealActiveTab(){const active=tabList.querySelector('[aria-selected="true"]');if(!active)return;const item=active.getBoundingClientRect(),strip=tabList.getBoundingClientRect();if(item.left<strip.left)tabList.scrollLeft-=strip.left-item.left;else if(item.right>strip.right)tabList.scrollLeft+=item.right-strip.right;}
+    function restoreControlFocus(saved){if(disposed||!dialog.open)return;let target;if(saved.tab)target=tabList.querySelector('[aria-selected="true"]');else if(saved.mode)target=toolbar.querySelector('[data-reader-mode="'+saved.mode+'"]');else if(saved.source)target=toolbar.querySelector('.reader-source-select');else if(saved.copy)target=toolbar.querySelector('.reader-copy');target?.focus({preventScroll:true});if(saved.tab)revealActiveTab();}
+    function changeReadingView(change){
+      if(disposed||!dialog.open||!readingState)return;
+      try{const focused=captureControlFocus();savePosition();change();clearCopyFeedback();renderTabs();renderToolbar();renderActiveBody(true);restorePosition();restoreControlFocus(focused);revealActiveTab();scheduleFit();}catch(_){issue('PLAN_READER_VIEW_FAILED');close('reader-error');}
+    }
+    async function copyInstruction(copyButton){
+      const selection=activeInstruction();if(disposed||!dialog.open||!selection||!selection.rawText.length)return;
+      const captured={key:activeKey,tab:readingState.tabId,mode:tabPreference().mode,source:selection.sourcePath,rawText:selection.rawText,epoch:openEpoch,id:++copySequence};
+      const matchingCapture=()=>{const selected=activeInstruction();return !disposed&&dialog.open&&activeKey===captured.key&&openEpoch===captured.epoch&&copySequence===captured.id&&readingState?.tabId===captured.tab&&tabPreference().mode===captured.mode&&selected?.sourcePath===captured.source&&selected?.rawText===captured.rawText;};const current=()=>matchingCapture()&&copyButton.isConnected;
+      try{if(!navigator.clipboard?.writeText)throw new Error('CLIPBOARD_UNAVAILABLE');await navigator.clipboard.writeText(captured.rawText);if(current())copyFeedback.textContent='已复制';}
+      catch(_){if(!current())return;copyFeedback.textContent='自动复制未完成，请手动复制原文。';manual.replaceChildren();const raw=element('pre','raw-prompt',captured.rawText);raw.tabIndex=0;raw.setAttribute('aria-label','手动复制的准确原文');const choose=button('reader-select-raw','选择原文');choose.addEventListener('click',()=>{if(!matchingCapture()||!raw.isConnected)return;const range=document.createRange();range.selectNodeContents(raw);const selected=global.getSelection();selected?.removeAllRanges();selected?.addRange(range);raw.focus({preventScroll:true});});manual.append(element('p','reader-meta','手动复制原文（未自动复制成功）'),choose,raw);manual.hidden=false;content.hidden=true;body.scrollTo(0,0);}
+    }
+    function geometry() {
+      const card = anchor.getBoundingClientRect();
+      const viewport = viewportBox();
+      const left = Math.max(viewport.left, card.left);
+      const right = Math.min(viewport.right, card.right);
+      const top = Math.max(viewport.top, card.top);
+      const bottom = Math.min(viewport.bottom, card.bottom);
+      const gap = Math.min(12, Math.max(6, (right - left) * 0.018));
+      const width = Math.floor(Math.min(maxWidth, right - left - gap * 2));
+      const height = Math.floor(Math.min(maxHeight, bottom - top - gap * 2));
+      // Fail safely rather than extend a long document outside an undersized frame.
+      if (width < 160 || height < 140) return null;
+      return { width, height, left: left + (right - left - width) / 2, top: top + (bottom - top - height) / 2 };
+    }
+    function applyGeometry(box) {
+      dialog.style.setProperty('--db-reader-width', box.width + 'px');
+      dialog.style.setProperty('--db-reader-height', box.height + 'px');
+      dialog.style.setProperty('--db-reader-left', box.left + 'px');
+      dialog.style.setProperty('--db-reader-top', box.top + 'px');
+      dialog.dataset.compact = box.height < 280 ? 'true' : 'false';
+    }
+    function hasReadingSpace(){const style=getComputedStyle(body);return body.clientHeight-(parseFloat(style.paddingTop)||0)-(parseFloat(style.paddingBottom)||0)>=32;}
+    function scheduleFit() {
+      if (disposed || !dialog.open || frame) return;
+      frame = global.requestAnimationFrame(() => {
+        frame = 0;
+        if (disposed || !dialog.open) return;
+        let box;
+        try { box=geometry(); } catch (_) { close('geometry-error'); issue('PLAN_READER_GEOMETRY_FAILED'); return; }
+        if (!box) {
+          close('insufficient-space');
+          issue('PLAN_READER_SPACE_TOO_SMALL');
+          return;
+        }
+        try{applyGeometry(box);if(!hasReadingSpace()){close('insufficient-space');issue('PLAN_READER_SPACE_TOO_SMALL');}}catch(_){close('geometry-error');issue('PLAN_READER_GEOMETRY_FAILED');}
+      });
+    }
+    function lockDocument() {
+      pagePosition = { x: global.scrollX, y: global.scrollY };documentLocked=true;
+      for (const node of [document.documentElement, document.body]) {
+        // Preserve each affected longhand and its priority; shorthand snapshots can lose mixed x/y declarations.
+        for(const property of ['overflow-x','overflow-y'])restoreLocks.push(rememberStyle(node,property,'hidden'));
+        for(const property of ['overscroll-behavior-x','overscroll-behavior-y'])restoreLocks.push(rememberStyle(node,property,'none'));
+      }
+      restoreScrollBehavior=rememberStyle(document.documentElement,'scroll-behavior','auto');
+    }
+    function unlockDocument() {
+      while(restoreLocks.length){const restore=restoreLocks.pop();try{restore();}catch(_){issue('PLAN_READER_STYLE_RESTORE_FAILED');}}
+    }
+    function restoreEntryFocus() {
+      let target = null;
+      if (!target) {
+        try { target = typeof restoreFocus === 'function' ? restoreFocus(activeKey) : null; } catch (_) { /* optional */ }
+      }
+      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]') && !target.disabled) {
+        try { target.focus({ preventScroll: true }); } catch (_) { /* Presentation only. */ }
+      }
+    }
+    function finishClose() {
+      if(!activeKey&&!restoreLocks.length&&!restoreScrollBehavior)return;
+      try{savePosition();}catch(_){}
+      openEpoch++;clearCopyFeedback();
+      if (frame) global.cancelAnimationFrame(frame);
+      frame = 0;
+      touchPoint = null;
+      unlockDocument();
+      // Release our exact local lock/position even during teardown; never focus after it.
+      // Keep our local auto behavior through position restoration, then restore the exact prior behavior.
+      try{if(documentLocked)global.scrollTo(pagePosition.x,pagePosition.y);}catch(_){issue('PLAN_READER_POSITION_RESTORE_FAILED');}finally{if(restoreScrollBehavior){const restore=restoreScrollBehavior;restoreScrollBehavior=null;try{restore();}catch(_){issue('PLAN_READER_STYLE_RESTORE_FAILED');}}}
+      if (!disposed && !['identity-changed','render-error','dispose','invalid-context'].includes(closeReason)) restoreEntryFocus();
+      documentLocked=false;activeKey='';readingState=null;currentModel={sections:[],defaultTab:''};renderedPromptToken=null;buildSections=null;content.replaceChildren();
+      opener = null;
+      closeReason = '';
+    }
+    function close(reason = 'user') {
+      closeReason=reason;
+      if(!dialog.open){finishClose();return;}
+      try{dialog.close();}catch(_){broken=true;dialog.remove();issue('PLAN_READER_CLOSE_FAILED');}finally{finishClose();}
+    }
+
+    function checkedRender(target, render, code) {
+      target.replaceChildren();
+      if (typeof render !== 'function') return;
+      render(target);
+      // A plan renderer may create text, lists, safe links and code. No commands.
+      if (target.querySelector('script, iframe, form, input, select, textarea, button, object, embed')) {
+        target.replaceChildren();
+        throw new Error(code);
+      }
+    }
+    function replaceFeedback(renderFeedback) {
+      const position = { top: body.scrollTop, left: body.scrollLeft };
+      try {
+        checkedRender(feedback, renderFeedback, 'PLAN_FEEDBACK_NOT_READ_ONLY');
+        feedback.hidden = !feedback.childNodes.length;
+      } catch (_) {
+        feedback.replaceChildren(element('p', 'error', '当前状态说明暂不可显示；关闭方案后查看原确认状态。'));
+        feedback.hidden = false;
+        issue('PLAN_FEEDBACK_RENDER_FAILED');
+      }
+      body.scrollTo(position.left, position.top);
+    }
+    function setNotice(value) {
+      // Keep this header message short. Full typed errors belong in feedback.
+      const text = typeof value === 'string' ? value : '';
+      notice.textContent = Array.from(text).length <= 120 ? text : '当前状态有更新，请查看正文顶部说明或关闭方案查看原卡片。';
+      notice.hidden = !notice.textContent;
+    }
+
+    function open({ key, title = '完整实施方案', subtitle: secondary = '', buildSections: sectionsBuilder,
+                    renderFeedback, notice: message = '', opener: source = document.activeElement }) {
+      if(disposed||broken)return issue('PLAN_READER_DISPOSED');
+      if (typeof dialog.showModal !== 'function') return issue('PLAN_READER_MODAL_UNSUPPORTED');
+      if (typeof key !== 'string' || !key || key.length > 4096 || typeof sectionsBuilder !== 'function') {
+        return issue('PLAN_READER_INPUT_INVALID');
+      }
+      if (dialog.open) {
+        if (activeKey !== key) return issue('PLAN_READER_IDENTITY_CHANGED');
+        try{const focused=captureControlFocus(),position={top:body.scrollTop,left:body.scrollLeft};setNotice(message);replaceFeedback(renderFeedback);currentModel=sectionModel();renderTabs();renderToolbar();renderActiveBody(false);body.scrollTo(position.left,position.top);restoreControlFocus(focused);scheduleFit();return {ok:true};}catch(_){close('reader-error');return issue('PLAN_READER_VIEW_FAILED');}
+      }
+      if (document.querySelector('dialog[open]')) return issue('PLAN_READER_OTHER_MODAL_OPEN');
+      if (!anchor.isConnected) return issue('PLAN_READER_ANCHOR_UNAVAILABLE');
+      const box = geometry();
+      if (!box) return issue('PLAN_READER_SPACE_TOO_SMALL');
+      heading.textContent = title;
+      subtitle.textContent = secondary;
+      subtitle.hidden = !secondary;
+      setNotice(message);
+      buildSections=sectionsBuilder;currentModel=sectionModel();if(!currentModel.sections.length)return issue('PLAN_READER_CONTENT_MISSING');
+      activeKey=key;openEpoch++;readingState=positions.get(key)||{tabId:currentModel.defaultTab,preferences:{},positions:new Map()};
+      if(!currentModel.sections.some(item=>item.id===readingState.tabId))readingState.tabId=currentModel.defaultTab;
+      try{renderTabs();renderToolbar();renderActiveBody(true);}catch(_){close('reader-error');return issue('PLAN_READER_CONTENT_RENDER_FAILED');}
+      replaceFeedback(renderFeedback);
+      opener = source instanceof HTMLElement ? source : null;
+      closeReason = '';
+      try {
+        lockDocument();
+        applyGeometry(box);
+        dialog.showModal();
+        if(!hasReadingSpace()){close('insufficient-space');return issue('PLAN_READER_SPACE_TOO_SMALL');}
+        restorePosition();
+        topClose.focus({ preventScroll: true });
+        // Scrollbar removal may have changed card width. Refit, but never resize
+        // the iframe using this long document's scrollHeight.
+        scheduleFit();
+        return { ok: true };
+      } catch (_) {
+        close('open-error');
+        finishClose();
+        return issue('PLAN_READER_OPEN_FAILED');
+      }
+    }
+
+    // Scoped boundary fallback. CSS handles normal scrolling. This only cancels
+    // a local gesture if no reader/inner code scroller can consume it. Pinch and
+    // browser zoom gestures are untouched; there is no global wheel trap.
+    function selectingText(){const selection=global.getSelection?.();return !!selection&&!selection.isCollapsed;}
+    function canScroll(target, delta, axis) {
+      if(!delta||!(target instanceof Element)||!body.contains(target)&&!(axis==='x'&&tabList.contains(target)))return false;
+      let node = target;
+      while(node&&(body.contains(node)||axis==='x'&&tabList.contains(node))){
+        const style = getComputedStyle(node);
+        const overflow = axis === 'x' ? style.overflowX : style.overflowY;
+        if (/(auto|scroll)/.test(overflow)) {
+          const size = axis === 'x' ? node.scrollWidth - node.clientWidth : node.scrollHeight - node.clientHeight;
+          const position = axis === 'x' ? node.scrollLeft : node.scrollTop;
+          if (size > 1 && (delta < 0 ? position > 1 : position < size - 1)) return true;
+        }
+        if(node===body||node===tabList)break;
+        node = node.parentElement;
+      }
+      return false;
+    }
+    listen(dialog, 'wheel', event => {
+      if (!dialog.open || event.ctrlKey || event.metaKey || selectingText() || !event.cancelable) return;
+      if (canScroll(event.target, event.deltaY, 'y') || canScroll(event.target, event.deltaX, 'x')) return;
+      event.preventDefault();
+    }, { passive: false });
+    listen(dialog, 'touchstart', event => {
+      touchPoint = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+    }, { passive: true });
+    listen(dialog, 'touchmove', event => {
+      if (!dialog.open || selectingText() || !touchPoint || event.touches.length !== 1) { touchPoint = null; return; }
+      const point = event.touches[0];
+      const dx = touchPoint.x - point.clientX;
+      const dy = touchPoint.y - point.clientY;
+      touchPoint = { x: point.clientX, y: point.clientY };
+      if (Math.abs(dx) + Math.abs(dy) < 2) return;
+      if (!canScroll(event.target, dy, 'y') && !canScroll(event.target, dx, 'x') && event.cancelable) event.preventDefault();
+    }, { passive: false });
+    listen(dialog, 'touchend', () => { touchPoint = null; }, { passive: true });
+    listen(dialog, 'touchcancel', () => { touchPoint = null; }, { passive: true });
+    listen(topClose, 'click', () => close());
+    listen(bottomClose, 'click', () => close());
+    listen(dialog, 'cancel', event => { event.preventDefault(); close('escape'); });
+    listen(dialog, 'close', () => { if (!dialog.open) finishClose(); });
+    listen(global, 'resize', scheduleFit, { passive: true });
+    listen(global, 'scroll', scheduleFit, { passive: true });
+    if (global.visualViewport) {
+      listen(global.visualViewport, 'resize', scheduleFit, { passive: true });
+      listen(global.visualViewport, 'scroll', scheduleFit, { passive: true });
+    }
+    let observer=null;try{if(typeof ResizeObserver==='function'){observer=new ResizeObserver(scheduleFit);observer.observe(anchor);}}catch(_){observer?.disconnect();observer=null;issue('PLAN_READER_OBSERVER_UNAVAILABLE');}
+
+    return Object.freeze({
+      open,
+      close,
+      get isOpen() { return dialog.open; },
+      get key() { return activeKey; },
+      /** Call only after the existing authority/identity validators have run. */
+      syncIdentity(key) {
+        if (dialog.open && key !== activeKey) close('identity-changed');
+      },
+      /** Refresh lightweight status, not immutable plan DOM or its scroll. */
+      updateStatus({ notice: text = '', renderFeedback } = {}) {
+        if (!dialog.open) return;
+        const focused=captureControlFocus(),position={top:body.scrollTop,left:body.scrollLeft};setNotice(text);replaceFeedback(renderFeedback);currentModel=sectionModel();if(!currentModel.sections.some(item=>item.id===readingState.tabId)){close('identity-changed');return;}renderTabs();renderToolbar();renderActiveBody(false);body.scrollTo(position.left,position.top);restoreControlFocus(focused);scheduleFit();
+      },
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        if (dialog.open) close('dispose');
+        else finishClose();
+        if (frame) global.cancelAnimationFrame(frame);
+        observer?.disconnect();
+        while (listeners.length) listeners.pop()();
+        positions.clear();
+        dialog.remove();
+      }
+    });
+  }
+  createPlanReader.sequence = 0;
+  return Object.freeze({createPlanReader,createCardSizer});
+})();
+const source=document.currentScript?.textContent;if(source&&crypto.subtle)crypto.subtle.digest('SHA-256',new TextEncoder().encode(source)).then(bytes=>{scriptSHA=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');note('SCRIPT_HASHED');}).catch(()=>note('SCRIPT_HASH_UNAVAILABLE'));
+initializeReadingPresentation();addEventListener('message',receive);addEventListener('beforeunload',dispose);initialize();
+
+})();
+</script>
+</body>
+</html>

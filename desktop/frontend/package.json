@@ -1,0 +1,15 @@
+{
+  "name": "devbridge-desktop-frontend",
+  "version": "0.1.0-dev",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "check": "vite build",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "devDependencies": {
+    "vite": "6.1.0"
+  },
+  "type": "module"
+}

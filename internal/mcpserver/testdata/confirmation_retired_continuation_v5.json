@@ -1,0 +1,445 @@
+{
+  "_meta": {
+    "capturedBy": "internal/controlapi/continuation_rejection_recovery_test.go",
+    "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+    "singleSourceOfTruth": "Actual MCP wire after original REQUEST_CHANGES rollback and retired worker readback. Never hand-edit an envelope."
+  },
+  "entry": {
+    "display": {
+      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+      "featureAreaName": "Lifecycle area",
+      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "projectName": "Upper lifecycle",
+      "purpose": "EXECUTION",
+      "repositoryCount": 3,
+      "status": "AVAILABLE",
+      "taskId": "task_b55a7980beb6e685047fe1a471bc4678",
+      "taskName": "Lifecycle intent",
+      "topologyRevision": 4,
+      "version": 1
+    },
+    "intent": {
+      "action": "REQUEST_CHANGES",
+      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "canResume": false,
+      "commit": {
+        "action": "REQUEST_CHANGES",
+        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "backendSelection": {
+          "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+          "configId": "codex_config_default",
+          "configName": "Default Codex configuration",
+          "source": "SESSION_INVENTORY"
+        },
+        "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+        "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+        "purpose": "EXECUTION",
+        "requestId": "historical-change-commit",
+        "selection": {
+          "backend": {
+            "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+            "configId": "codex_config_default"
+          },
+          "runtimeConfig": {
+            "codexFastMode": false,
+            "model": "gpt-5.6-luna",
+            "reasoningEffort": "low",
+            "serviceTier": ""
+          }
+        },
+        "variantId": "revised",
+        "version": 1
+      },
+      "content": {
+        "action": "REQUEST_CHANGES",
+        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "execution": {
+          "action": "REQUEST_CHANGES",
+          "decisionId": "TASK_ACCEPTANCE:execution_approved_43a215da11ce46a43cbe432dc67545e1",
+          "executionId": "execution_approved_43a215da11ce46a43cbe432dc67545e1",
+          "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+          "reviewId": "review_e7506bcd9cbc7e2751ff3bbfd11d0be3",
+          "taskDefinitionRevisionId": "task_definition_task_b55a7980beb6e685047fe1a471bc4678_2_5c3d56cd016b415c",
+          "taskId": "task_b55a7980beb6e685047fe1a471bc4678"
+        },
+        "purpose": "EXECUTION",
+        "requestId": "historical-change-prepare",
+        "variants": [
+          {
+            "id": "revised",
+            "implementationMode": "CODING_AGENT",
+            "label": "",
+            "primaryMemberId": "member_ba039ed949dfb8f83350c580993b7f02",
+            "repositoryTargets": [
+              {
+                "memberId": "member_ba039ed949dfb8f83350c580993b7f02",
+                "memberVersion": 1,
+                "originCommit": "36192be2df95dd10a247b1712d27763b3324e42d",
+                "originRef": "refs/heads/sdk-development",
+                "read": true,
+                "readScope": {
+                  "kind": ""
+                },
+                "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                "write": {
+                  "kind": "PATHS",
+                  "paths": [
+                    "same.txt"
+                  ]
+                }
+              },
+              {
+                "memberId": "member_af4450a8f42e34b4f8b96eff197b0884",
+                "memberVersion": 1,
+                "originCommit": "1caf3c66b55ab5944bbbd2962a7f0e075d60cc47",
+                "originRef": "refs/heads/app-development",
+                "read": true,
+                "readScope": {
+                  "kind": ""
+                },
+                "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                "write": {
+                  "kind": "PATHS",
+                  "paths": [
+                    "same.txt"
+                  ]
+                }
+              }
+            ],
+            "summary": "Explicit revised scope after stop",
+            "verificationSpec": {
+              "acceptanceCriteria": [
+                "Both repositories pass"
+              ],
+              "checks": [
+                {
+                  "command": "test -f same.txt",
+                  "kind": "TEST_COMMAND",
+                  "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                  "repositoryIds": [
+                    "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f"
+                  ],
+                  "required": true,
+                  "workingDirectory": "."
+                },
+                {
+                  "command": "test -f same.txt",
+                  "kind": "TEST_COMMAND",
+                  "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                  "repositoryIds": [
+                    "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f"
+                  ],
+                  "required": true,
+                  "workingDirectory": "."
+                }
+              ],
+              "codexInstruction": "Run both checks",
+              "mode": "RUN",
+              "scope": "Both repositories"
+            },
+            "workSpec": {
+              "codexInstruction": "Apply revised user scope to both same.txt files.",
+              "constraints": [
+                "preserve compatibility"
+              ],
+              "executionScope": {
+                "kind": "REPOSITORY_TARGETS"
+              },
+              "goal": "Revised explicit user goal",
+              "implementationMode": "CODING_AGENT"
+            }
+          }
+        ]
+      },
+      "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+      "createdAt": "2026-10-25T17:52:10.573645Z",
+      "currentUpperReadAvailable": false,
+      "expiresAt": "2026-10-26T17:52:10.573645Z",
+      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "purpose": "EXECUTION",
+      "state": "REJECTED",
+      "steps": [
+        {
+          "code": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+          "effect": "NO_EFFECT_PROVEN",
+          "failure": {
+            "code": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+            "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
+            "nextAction": "READ_CURRENT_TARGET",
+            "reasonCode": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+            "source": "CORE",
+            "stage": "RECEIPT_READBACK"
+          },
+          "kind": "RESOLVE_CONTINUATION",
+          "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
+          "requestId": "confirmation_8f674fddd9e2da7b6a657d5550c55cbf",
+          "state": "REJECTED"
+        },
+        {
+          "kind": "START_IMPLEMENTATION",
+          "requestId": "confirmation_cd50e55fb999ccd19dec278c5e935a42",
+          "state": "PENDING"
+        }
+      ],
+      "submission": {
+        "businessOutcome": "REJECTED_NO_EFFECT",
+        "consumed": true,
+        "consumptionDisposition": "CONSUMED",
+        "nextAction": "READ_CURRENT_TARGET",
+        "outcome": "CONSUMED",
+        "payloadSHA256": "b53b15286ceee490cbc1035a49b830041caea75c4416c36ccf3e9b34df8181bf",
+        "receiptRequestId": "historical-change-commit",
+        "recorded": true,
+        "redispatchSameIntent": false,
+        "reprepareAllowed": false,
+        "request": {
+          "action": "REQUEST_CHANGES",
+          "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+          "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+          "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+          "purpose": "EXECUTION",
+          "requestId": "historical-change-commit",
+          "selection": {
+            "backend": {
+              "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+              "configId": "codex_config_default"
+            },
+            "runtimeConfig": {
+              "codexFastMode": false,
+              "model": "gpt-5.6-luna",
+              "reasoningEffort": "low",
+              "serviceTier": ""
+            }
+          },
+          "variantId": "revised",
+          "version": 1
+        },
+        "retryDisposition": "NONE"
+      },
+      "version": 1
+    }
+  },
+  "read": {
+    "display": {
+      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+      "featureAreaName": "Lifecycle area",
+      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "projectName": "Upper lifecycle",
+      "purpose": "EXECUTION",
+      "repositoryCount": 3,
+      "status": "AVAILABLE",
+      "taskId": "task_b55a7980beb6e685047fe1a471bc4678",
+      "taskName": "Lifecycle intent",
+      "topologyRevision": 4,
+      "version": 1
+    },
+    "intent": {
+      "action": "REQUEST_CHANGES",
+      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "canResume": false,
+      "commit": {
+        "action": "REQUEST_CHANGES",
+        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "backendSelection": {
+          "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+          "configId": "codex_config_default",
+          "configName": "Default Codex configuration",
+          "source": "SESSION_INVENTORY"
+        },
+        "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+        "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+        "purpose": "EXECUTION",
+        "requestId": "historical-change-commit",
+        "selection": {
+          "backend": {
+            "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+            "configId": "codex_config_default"
+          },
+          "runtimeConfig": {
+            "codexFastMode": false,
+            "model": "gpt-5.6-luna",
+            "reasoningEffort": "low",
+            "serviceTier": ""
+          }
+        },
+        "variantId": "revised",
+        "version": 1
+      },
+      "content": {
+        "action": "REQUEST_CHANGES",
+        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "execution": {
+          "action": "REQUEST_CHANGES",
+          "decisionId": "TASK_ACCEPTANCE:execution_approved_43a215da11ce46a43cbe432dc67545e1",
+          "executionId": "execution_approved_43a215da11ce46a43cbe432dc67545e1",
+          "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+          "reviewId": "review_e7506bcd9cbc7e2751ff3bbfd11d0be3",
+          "taskDefinitionRevisionId": "task_definition_task_b55a7980beb6e685047fe1a471bc4678_2_5c3d56cd016b415c",
+          "taskId": "task_b55a7980beb6e685047fe1a471bc4678"
+        },
+        "purpose": "EXECUTION",
+        "requestId": "historical-change-prepare",
+        "variants": [
+          {
+            "id": "revised",
+            "implementationMode": "CODING_AGENT",
+            "label": "",
+            "primaryMemberId": "member_ba039ed949dfb8f83350c580993b7f02",
+            "repositoryTargets": [
+              {
+                "memberId": "member_ba039ed949dfb8f83350c580993b7f02",
+                "memberVersion": 1,
+                "originCommit": "36192be2df95dd10a247b1712d27763b3324e42d",
+                "originRef": "refs/heads/sdk-development",
+                "read": true,
+                "readScope": {
+                  "kind": ""
+                },
+                "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                "write": {
+                  "kind": "PATHS",
+                  "paths": [
+                    "same.txt"
+                  ]
+                }
+              },
+              {
+                "memberId": "member_af4450a8f42e34b4f8b96eff197b0884",
+                "memberVersion": 1,
+                "originCommit": "1caf3c66b55ab5944bbbd2962a7f0e075d60cc47",
+                "originRef": "refs/heads/app-development",
+                "read": true,
+                "readScope": {
+                  "kind": ""
+                },
+                "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                "write": {
+                  "kind": "PATHS",
+                  "paths": [
+                    "same.txt"
+                  ]
+                }
+              }
+            ],
+            "summary": "Explicit revised scope after stop",
+            "verificationSpec": {
+              "acceptanceCriteria": [
+                "Both repositories pass"
+              ],
+              "checks": [
+                {
+                  "command": "test -f same.txt",
+                  "kind": "TEST_COMMAND",
+                  "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                  "repositoryIds": [
+                    "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f"
+                  ],
+                  "required": true,
+                  "workingDirectory": "."
+                },
+                {
+                  "command": "test -f same.txt",
+                  "kind": "TEST_COMMAND",
+                  "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                  "repositoryIds": [
+                    "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f"
+                  ],
+                  "required": true,
+                  "workingDirectory": "."
+                }
+              ],
+              "codexInstruction": "Run both checks",
+              "mode": "RUN",
+              "scope": "Both repositories"
+            },
+            "workSpec": {
+              "codexInstruction": "Apply revised user scope to both same.txt files.",
+              "constraints": [
+                "preserve compatibility"
+              ],
+              "executionScope": {
+                "kind": "REPOSITORY_TARGETS"
+              },
+              "goal": "Revised explicit user goal",
+              "implementationMode": "CODING_AGENT"
+            }
+          }
+        ]
+      },
+      "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+      "createdAt": "2026-10-25T17:52:10.573645Z",
+      "currentUpperReadAvailable": false,
+      "expiresAt": "2026-10-26T17:52:10.573645Z",
+      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "purpose": "EXECUTION",
+      "state": "REJECTED",
+      "steps": [
+        {
+          "code": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+          "effect": "NO_EFFECT_PROVEN",
+          "failure": {
+            "code": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+            "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
+            "nextAction": "READ_CURRENT_TARGET",
+            "reasonCode": "REQUEST_CHANGES_REQUIRES_FORMAL_REVIEW",
+            "source": "CORE",
+            "stage": "RECEIPT_READBACK"
+          },
+          "kind": "RESOLVE_CONTINUATION",
+          "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
+          "requestId": "confirmation_8f674fddd9e2da7b6a657d5550c55cbf",
+          "state": "REJECTED"
+        },
+        {
+          "kind": "START_IMPLEMENTATION",
+          "requestId": "confirmation_cd50e55fb999ccd19dec278c5e935a42",
+          "state": "PENDING"
+        }
+      ],
+      "submission": {
+        "businessOutcome": "REJECTED_NO_EFFECT",
+        "consumed": true,
+        "consumptionDisposition": "CONSUMED",
+        "nextAction": "READ_CURRENT_TARGET",
+        "outcome": "CONSUMED",
+        "payloadSHA256": "b53b15286ceee490cbc1035a49b830041caea75c4416c36ccf3e9b34df8181bf",
+        "receiptRequestId": "historical-change-commit",
+        "recorded": true,
+        "redispatchSameIntent": false,
+        "reprepareAllowed": false,
+        "request": {
+          "action": "REQUEST_CHANGES",
+          "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+          "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
+          "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+          "purpose": "EXECUTION",
+          "requestId": "historical-change-commit",
+          "selection": {
+            "backend": {
+              "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
+              "configId": "codex_config_default"
+            },
+            "runtimeConfig": {
+              "codexFastMode": false,
+              "model": "gpt-5.6-luna",
+              "reasoningEffort": "low",
+              "serviceTier": ""
+            }
+          },
+          "variantId": "revised",
+          "version": 1
+        },
+        "retryDisposition": "NONE"
+      },
+      "version": 1
+    }
+  }
+}

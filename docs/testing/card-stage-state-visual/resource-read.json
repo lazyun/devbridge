@@ -1,0 +1,10 @@
+{
+  "resource": {
+    "uri": "ui://devbridge/card",
+    "sha256": "9d3874b1689aacc16a9a2d4f62ad4ab6cf3f52f3c11b332519b70e1bbc595e1d",
+    "bytes": 52405,
+    "matchesProductionSource": true
+  },
+  "schemaVersion": 41,
+  "isolated": true
+}

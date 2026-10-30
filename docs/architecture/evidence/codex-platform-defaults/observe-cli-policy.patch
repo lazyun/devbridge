@@ -1,0 +1,54 @@
+--- a/codex-rs/cli/src/debug_sandbox.rs
++++ b/codex-rs/cli/src/debug_sandbox.rs
+@@ -337,6 +337,16 @@
+         }
+     }
+ 
++    // Observation mode is only for an isolated, offline fixture configuration.
++    // Reject proxy setup BEFORE any proxy or denial logger can be started.
++    #[cfg(target_os = "macos")]
++    if std::env::var_os("CODEX_OFFLINE_POLICY_EXPORT").is_some() {
++        anyhow::ensure!(matches!(sandbox_type, SandboxType::Seatbelt), "Seatbelt export only");
++        anyhow::ensure!(config.permissions.network.is_none(), "offline export forbids network proxy configuration");
++        anyhow::ensure!(!permission_profile.network_sandbox_policy().is_enabled(), "offline export requires network disabled");
++        anyhow::ensure!(!log_denials, "offline export forbids denial logger");
++    }
++
+     #[cfg(target_os = "macos")]
+     let mut denial_logger = log_denials.then(DenialLogger::new).flatten();
+     #[cfg(not(target_os = "macos"))]
+@@ -392,6 +402,34 @@
+                 extra_allow_unix_sockets: allow_unix_sockets,
+             })
+             .map_err(|err| anyhow::anyhow!(err))?;
++            // Test-only observation of the original CLI parser/generator output.
++            // No policy mutation, child spawn, or installed-binary replacement.
++            if let Some(destination) = std::env::var_os("CODEX_OFFLINE_POLICY_EXPORT") {
++                anyhow::ensure!(network.is_none(), "offline export requires no network proxy");
++                anyhow::ensure!(!network_sandbox_policy.is_enabled(), "offline export requires network disabled");
++                let mut child_env = env.clone();
++                child_env.remove("CODEX_OFFLINE_POLICY_EXPORT");
++                child_env.insert(CODEX_SANDBOX_ENV_VAR.to_string(), "seatbelt".to_string());
++                child_env.insert(CODEX_SANDBOX_NETWORK_DISABLED_ENV_VAR.to_string(), "1".to_string());
++                let value = serde_json::json!({
++                    "source": "observation-build-generator-output",
++                    "sourceCommit": "758ef40f50c1a458425c7cfbf1eb12cbc07af0b0",
++                    "profile": "Process",
++                    "sandboxExecutable": "/usr/bin/sandbox-exec",
++                    "argv": &args,
++                    "cwd": cwd,
++                    "sandboxPolicyCwd": sandbox_policy_cwd.as_path(),
++                    "environment": child_env,
++                    "networkEnabled": network_sandbox_policy.is_enabled(),
++                    "managedNetwork": enforce_managed_network,
++                    "filesystemDebug": format!("{file_system_sandbox_policy:?}"),
++                });
++                use std::os::unix::fs::OpenOptionsExt;
++                let file = std::fs::OpenOptions::new()
++                    .write(true).create_new(true).mode(0o600).open(destination)?;
++                serde_json::to_writer_pretty(file, &value)?;
++                return Ok(());
++            }
+             spawn_debug_sandbox_child(
+                 PathBuf::from("/usr/bin/sandbox-exec"),
+                 args,

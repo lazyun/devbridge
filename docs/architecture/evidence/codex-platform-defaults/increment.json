@@ -1,0 +1,102 @@
+{
+  "baselineDirectory": "/private/tmp/devbridge-platform-baseline-s6h091e5",
+  "baseline": {
+    "branch": "dev_20260908_1913",
+    "head": "fd8a6afeb213972e8aed00ff23f090ae058b8530",
+    "dirty": 191,
+    "indexEmpty": true,
+    "files": 1754
+  },
+  "end": {
+    "branch": "dev_20260908_1913",
+    "head": "fd8a6afeb213972e8aed00ff23f090ae058b8530",
+    "dirty": 202,
+    "indexEmpty": true,
+    "schema": "v76 (unchanged; no migration/Go source changed)"
+  },
+  "comparison": "starting byte hashes, not HEAD",
+  "changedFiles": 15,
+  "newFiles": 11,
+  "modifiedExistingFiles": 4,
+  "deletedFiles": 0,
+  "files": {
+    "docs/architecture/codex-offline-isolation-diagnosis.md": {
+      "beforeSha256": "e06541c23f8705bf7540977477dd84f2338e290c0efd0afa20cee2e688197c51",
+      "afterSha256": "cb3d9b56291eb302a7fdfe57723c6a90b3effbc0d76d5b8bf857044270a462bb",
+      "kind": "modified"
+    },
+    "docs/architecture/coding-runtime-capability-evidence.md": {
+      "beforeSha256": "97ea829a70fea5bac145255dd17cea6dfa8e32bf3a6ebbff1e645414d205435a",
+      "afterSha256": "25b677014678ea78ef150d70409c7921b086c11b0ddb35b3ca812d89d4a93062",
+      "kind": "modified"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/README.md": {
+      "beforeSha256": null,
+      "afterSha256": "1420856a107b582423d7086cfa722ca9ea249faf1fcd27e221cb6f474b3f8fe8",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/fixed-source-evidence.json": {
+      "beforeSha256": null,
+      "afterSha256": "90977f87e426d32eed7d08aa345e54a49e477d1ff81eb474da52e1307aff8e04",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/increment.json": {
+      "beforeSha256": null,
+      "afterSha256": null,
+      "kind": "new",
+      "note": "Self hash excluded to avoid recursive manifest; file included in count."
+    },
+    "docs/architecture/evidence/codex-platform-defaults/independent-evidence.json": {
+      "beforeSha256": null,
+      "afterSha256": "ce6e5bee818d6ac2e555aaa5a49325299f38408d0ca150f5d50d084bed01ade6",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/installed-baseline-evidence.json": {
+      "beforeSha256": null,
+      "afterSha256": "8b88851f712dc218cdd250761951eb151d42a043e7c0a3fab9c7c558a7faec6e",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/observe-cli-policy.patch": {
+      "beforeSha256": null,
+      "afterSha256": "3ee12653953cfbfbf7c486db04924ba9c5240e438f3b1b8efd7464bfba922c8d",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/policy-provenance.json": {
+      "beforeSha256": null,
+      "afterSha256": "841f52e2677509f3c97fb6ebef66b568ef12b46a5c06e1d3efe3574dab953141",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/remove-implicit-temp-grants.patch": {
+      "beforeSha256": null,
+      "afterSha256": "bcf9ffe5789016e475cf5e4a96eeb05e2e5fc91bea619fb8c055fedcc0837262",
+      "kind": "new"
+    },
+    "docs/architecture/evidence/codex-platform-defaults/verification.json": {
+      "beforeSha256": null,
+      "afterSha256": "3a20b8c58b8a9b2ef4f82de68340d7787087462dbada6cfa60a0ee456c3f6be5",
+      "kind": "new"
+    },
+    "docs/architecture/project-centric-multi-repository-execution-report.md": {
+      "beforeSha256": "ab3165c7f8a95d125e0271d9456b767a082db63363ca610c1f2951ba12bc2d35",
+      "afterSha256": "06507e81ee37b820a675ca6ba9065bfacc7d565e9036cb8a81001eaa0ad8677f",
+      "kind": "modified"
+    },
+    "scripts/probe_codex_platform_defaults.py": {
+      "beforeSha256": null,
+      "afterSha256": "6123805df9b7314e9a34d0f27947a1544fdf0399eaff123a26f65b4bb9cf0b35",
+      "kind": "new"
+    },
+    "scripts/probe_codex_workset.py": {
+      "beforeSha256": "e2482e3affa86ceed8beba7bc44ecefa7871a13c025b667416e78b095dc54c00",
+      "afterSha256": "39e38ca83901ad7390639bdc15885c0ab7029e414f8c6410e487596156f4f6e7",
+      "kind": "modified"
+    },
+    "scripts/test_probe_codex_platform_defaults.py": {
+      "beforeSha256": null,
+      "afterSha256": "717165f38018cc2bf039349f8f35f332253c0487934fb4c98333fc8e70570445",
+      "kind": "new"
+    }
+  },
+  "statusPorcelain": " M desktop/frontend/src/i18n.js\n M desktop/frontend/src/main.js\n M desktop/frontend/src/project-registration.js\n M desktop/frontend/src/views.js\n M desktop/frontend/test/project-registration.test.js\n M desktop/frontend/test/views.test.js\n M desktop/projects.go\n M desktop/projects_test.go\n M docs/architecture/development-cycle-work-model.md\n M docs/architecture/direct-file-capability.md\n M docs/architecture/feature-area-continuation.md\n M docs/architecture/feature-area-ownership.md\n M docs/architecture/purpose-scoped-confirmation.md\n M docs/architecture/task-execution-v0.1.md\n M docs/interfaces.md\n M docs/user-guide/getting-started.md\n M internal/aicontext/session_initialization.go\n M internal/bridgehttp/project_registration.go\n M internal/bridgehttp/project_registration_test.go\n M internal/bridgehttp/ui/product-app.js\n M internal/confirmation/contract.go\n M internal/controlapi/api.go\n M internal/controlapi/confirmation.go\n M internal/controlapi/confirmation_creation.go\n M internal/controlapi/confirmation_display.go\n M internal/controlapi/confirmation_validation.go\n M internal/controlapi/conversation_model_default.go\n M internal/controlapi/errors.go\n M internal/controlapi/upper_review_access.go\n M internal/controlplane/bootstrap.go\n M internal/developmentcycle/service.go\n M internal/directfile/contract.go\n M internal/directfile/implementation_result.go\n M internal/directfile/service.go\n M internal/execution/conversation_failure_test.go\n M internal/execution/conversation_runtime_test.go\n M internal/execution/coordinator.go\n M internal/execution/coordinator_test.go\n M internal/execution/direct_file_workspace.go\n M internal/execution/runtime_supervisor_sqlite_integration_test.go\n M internal/execution/runtime_supervisor_test.go\n M internal/execution/work_verification_plan_test.go\n M internal/featurearea/commit_facts.go\n M internal/featurearea/service.go\n M internal/git/commit.go\n M internal/git/commit_test.go\n M internal/mcpserver/adapter_core.go\n M internal/mcpserver/confirmation_schema.go\n M internal/mcpserver/confirmation_tools.go\n M internal/mcpserver/confirmation_ui.html\n M internal/mcpserver/context_tools.go\n M internal/mcpserver/dev_bridge_ui.html\n M internal/mcpserver/direct_file_tools.go\n M internal/mcpserver/direct_file_tools_test.go\n M internal/mcpserver/external_projection.go\n M internal/mcpserver/external_schema.go\n M internal/mcpserver/file_implementation_results.go\n M internal/mcpserver/session_initialize.go\n M internal/mcpserver/spec_schemas.go\n M internal/mcpserver/upper_review_tools.go\n M internal/projectregistration/service.go\n M internal/repository/memory_store.go\n M internal/repository/service.go\n M internal/repository/service_test.go\n M internal/review/depth_contract_test.go\n M internal/review/implementation_result.go\n M internal/review/report.go\n M internal/review/report_test.go\n M internal/review/review.go\n M internal/review/review_test.go\n M internal/review/upper_evidence.go\n M internal/run/service.go\n M internal/scopereview/service.go\n M internal/storage/sqlite/agent_recovery_store.go\n M internal/storage/sqlite/commit_presentation.go\n M internal/storage/sqlite/confirmation_approval.go\n M internal/storage/sqlite/confirmation_recovery.go\n M internal/storage/sqlite/confirmation_upper_read.go\n M internal/storage/sqlite/direct_file_authority.go\n M internal/storage/sqlite/direct_file_authority_test.go\n M internal/storage/sqlite/direct_file_result_store.go\n M internal/storage/sqlite/direct_file_task_authority.go\n M internal/storage/sqlite/feature_area_store.go\n M internal/storage/sqlite/git_commit_store.go\n M internal/storage/sqlite/migrate.go\n M internal/storage/sqlite/review_approval_store.go\n M internal/storage/sqlite/review_approval_store_test.go\n M internal/storage/sqlite/review_store.go\n M internal/storage/sqlite/runtime_authority.go\n M internal/storage/sqlite/specs.go\n M internal/storage/sqlite/task_acceptance_store.go\n M internal/storage/sqlite/task_acceptance_store_test.go\n M internal/storage/sqlite/task_definition_revision_store.go\n M internal/storage/sqlite/task_owned_workflow_test.go\n M internal/storage/sqlite/task_review_request_store.go\n M internal/storage/sqlite/task_store.go\n M internal/storage/sqlite/upper_review_access.go\n M internal/storage/sqlite/upper_review_cancel_eligibility.go\n M internal/storage/sqlite/upper_review_lifecycle.go\n M internal/storage/sqlite/upper_review_recovery_eligibility.go\n M internal/storage/sqlite/upper_review_result.go\n M internal/storage/sqlite/workspace_store.go\n M internal/task/memory_store.go\n M internal/task/revision.go\n M internal/task/service.go\n M internal/task/spec.go\n M internal/task/task.go\n M internal/workflowpresentation/text.go\n M internal/workspace/memory_store.go\n M internal/workspace/service.go\n M internal/workspace/workspace.go\n M internal/worktree/durable_manager.go\n M internal/worktree/manager.go\n M internal/worktree/worktree.go\n?? desktop/project_repositories.go\n?? docs/architecture/codex-offline-isolation-diagnosis.md\n?? docs/architecture/coding-runtime-capability-evidence.md\n?? docs/architecture/evidence/codex-offline-isolation-v2.json\n?? docs/architecture/evidence/codex-platform-defaults/README.md\n?? docs/architecture/evidence/codex-platform-defaults/fixed-source-evidence.json\n?? docs/architecture/evidence/codex-platform-defaults/increment.json\n?? docs/architecture/evidence/codex-platform-defaults/independent-evidence.json\n?? docs/architecture/evidence/codex-platform-defaults/installed-baseline-evidence.json\n?? docs/architecture/evidence/codex-platform-defaults/observe-cli-policy.patch\n?? docs/architecture/evidence/codex-platform-defaults/policy-provenance.json\n?? docs/architecture/evidence/codex-platform-defaults/remove-implicit-temp-grants.patch\n?? docs/architecture/evidence/codex-platform-defaults/verification.json\n?? docs/architecture/evidence/execution-fixture-repair-results.json\n?? docs/architecture/project-centric-multi-repository-closure.md\n?? docs/architecture/project-centric-multi-repository-execution-report.md\n?? internal/codex/experimental_permission_profile.go\n?? internal/codex/experimental_permission_profile_test.go\n?? internal/codex/wire/experimental_permissions.go\n?? internal/codex/wire/testdata/experimental-0.149.0-permission-contract.json\n?? internal/codex/wire/testdata/generated-0.149.0/ThreadResumeParams.json\n?? internal/codex/wire/testdata/generated-0.149.0/ThreadStartParams.json\n?? internal/codex/wire/testdata/generated-0.149.0/TurnStartParams.json\n?? internal/codex/workset_capability.go\n?? internal/codex/workset_capability_test.go\n?? internal/codexruntime/evidence_identity.go\n?? internal/codexruntime/evidence_identity_test.go\n?? internal/controlapi/confirmation_delivery.go\n?? internal/controlapi/confirmation_project_integration_test.go\n?? internal/controlapi/confirmation_project_selection.go\n?? internal/controlapi/confirmation_project_selection_test.go\n?? internal/controlapi/multi_repository_coding_admission_test.go\n?? internal/controlapi/multi_repository_direct_authorization_test.go\n?? internal/controlapi/multi_repository_direct_delivery_test.go\n?? internal/controlapi/multi_repository_direct_evidence_test.go\n?? internal/controlapi/multi_repository_direct_fault_delivery_test.go\n?? internal/controlapi/multi_repository_direct_independent_test.go\n?? internal/controlapi/multi_repository_direct_mutation_fault_test.go\n?? internal/controlapi/multi_repository_direct_nochange_test.go\n?? internal/controlapi/multi_repository_direct_v1_test.go\n?? internal/controlapi/multi_repository_review.go\n?? internal/controlapi/multi_repository_upper_active_access_test.go\n?? internal/controlapi/multi_repository_upper_independent_review_test.go\n?? internal/controlapi/multi_repository_upper_integration_test.go\n?? internal/controlapi/multi_repository_upper_lifecycle_test.go\n?? internal/controlapi/multi_repository_upper_preparation_test.go\n?? internal/controlapi/multi_repository_upper_v1_compatibility_test.go\n?? internal/delivery/contract.go\n?? internal/delivery/contract_test.go\n?? internal/directfile/multi_contract.go\n?? internal/execution/workset_admission_test.go\n?? internal/mcpserver/confirmation_project_schema_test.go\n?? internal/mcpserver/confirmation_project_ui_test.js\n?? internal/mcpserver/direct_file_members_test.go\n?? internal/mcpserver/workset_schema.go\n?? internal/projectregistration/aggregate.go\n?? internal/run/repository_binding.go\n?? internal/storage/sqlite/delivery_repository.go\n?? internal/storage/sqlite/delivery_repository_test.go\n?? internal/storage/sqlite/direct_file_confirmation.go\n?? internal/storage/sqlite/multi_delivery.go\n?? internal/storage/sqlite/multi_delivery_test.go\n?? internal/storage/sqlite/multi_repository_direct_migration.go\n?? internal/storage/sqlite/multi_repository_upper_migration.go\n?? internal/storage/sqlite/multi_repository_upper_v75_historical_test.go\n?? internal/storage/sqlite/project_centric_migration.go\n?? internal/storage/sqlite/project_centric_migration_test.go\n?? internal/storage/sqlite/project_registration_store.go\n?? internal/storage/sqlite/project_registration_store_test.go\n?? internal/storage/sqlite/run_repository_binding_store.go\n?? internal/storage/sqlite/specs_test.go\n?? internal/storage/sqlite/task_project_intent_migration.go\n?? internal/storage/sqlite/task_project_intent_test.go\n?? internal/storage/sqlite/upper_review_access_v2.go\n?? internal/storage/sqlite/upper_review_access_v2_test.go\n?? internal/storage/sqlite/workspace_members_test.go\n?? internal/task/targets.go\n?? internal/task/targets_test.go\n?? internal/workset/contract.go\n?? internal/workset/contract_test.go\n?? internal/workspace/member.go\n?? internal/workspace/members.go\n?? internal/workspace/members_test.go\n?? internal/worktree/multi_member_test.go\n?? scripts/probe_codex_platform_defaults.py\n?? scripts/probe_codex_workset.py\n?? scripts/test_probe_codex_platform_defaults.py\n?? scripts/test_probe_codex_workset.py\n",
+  "productionCoding": "BLOCKED"
+}

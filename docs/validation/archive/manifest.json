@@ -1,0 +1,2620 @@
+{
+  "formatVersion": 1,
+  "archivedOn": "2026-10-21",
+  "description": "Original historical validation bundles, captured before report navigation edits. Member paths are repository-relative; hashes attest original bytes, not current validation.",
+  "bundles": [
+    {
+      "name": "chatgpt-card-presentation-flow-closure",
+      "archive": "docs/validation/archive/chatgpt-card-presentation-flow-closure.tar.gz",
+      "bytes": 11311,
+      "sha256": "85e858a9688dd4d308100a7e6a69d08631ce48972091df9943a803509a878506",
+      "members": [
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/catalog-summary.json",
+          "bytes": 2539,
+          "mode": 420,
+          "sha256": "3099b93b838b92cace2569f9125efb4863eec42eee1c5decaa2fa5a7a1eead60",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/catalog-test.log",
+          "bytes": 337,
+          "mode": 420,
+          "sha256": "f3bc4fc56a07de2fec21bf793f4d4c7844c38f1b5968bd04147e9c481ac69831",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/desktop-bootstrap.log",
+          "bytes": 65,
+          "mode": 420,
+          "sha256": "baeba6f48d8f56054ddb23601ea81350959fb3fe9cba18974b3d620b269f369a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/final-component-go.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "38d88119a20d4d74dd5aebc96e42fcedeec7985870045ebde9f3e8e0a13ac43c",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/go-build.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/go-test-first-pass.log",
+          "bytes": 4731,
+          "mode": 420,
+          "sha256": "fa932d9ab4c0d79d8f6892200f3c09029f63d655bea627da4715bfea3eca9bda",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/go-test.log",
+          "bytes": 4564,
+          "mode": 420,
+          "sha256": "36c6502e39f24e3a709b504e1f61777c119076537dd5eccdd6069c98a1b374c6",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/node-tests.log",
+          "bytes": 22081,
+          "mode": 420,
+          "sha256": "bbc5ab6c48394718d5dd4b7de2ee7b31fbe9f67b9baa7a48587ddded9ba2cc0b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/pending-read-fixture-response.json",
+          "bytes": 6110,
+          "mode": 420,
+          "sha256": "bd4404408fa7ead8a6fc9396ccc2e94c2b517d33e2bc7a5b9d6a8c054135d24e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/preview-check.log",
+          "bytes": 90,
+          "mode": 420,
+          "sha256": "26045b27aa4a70122a7151b26eb9c85f156fa1e36e1632f709af21c2a0fcd501",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/wire-tests.log",
+          "bytes": 1292,
+          "mode": 420,
+          "sha256": "a2fba4673371106c4288286cdeddc9dfa8b7f613e87c977e5a2c2172ea7d4fae",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/working-tree.txt",
+          "bytes": 4322,
+          "mode": 420,
+          "sha256": "160334ee00f451263b7c6b887436bebc3d31f5bc89e89af739c540abb643940f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure/workspace-show-fixture-response.json",
+          "bytes": 9077,
+          "mode": 420,
+          "sha256": "82c73137ece6f38ccd2522ea5fc70b867e14b4f51c1f6906e7be636ec572d5f0",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "chatgpt-host-capability-diagnostics",
+      "archive": "docs/validation/archive/chatgpt-host-capability-diagnostics.tar.gz",
+      "bytes": 13876,
+      "sha256": "1a9c18f4d481f41df0df01c784bf34f6b97467ff758678af1d0eb47fb31b69ad",
+      "members": [
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics/build-vet.log",
+          "bytes": 95,
+          "mode": 420,
+          "sha256": "76db29169477e0bf334472b7a92f34a83d3d5cd743c0d500b326593d00e5bcd3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics/go-focused.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "66d8ec274b8eb895ddbe49ae54fd0965268aca9c1923a7947104575213e5e7aa",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics/go-test.log",
+          "bytes": 4670,
+          "mode": 420,
+          "sha256": "63d794a4c65bc99df1722f2c1dcb4560d30f44a8ad1a876c0119141e7fac2419",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics/mock-extension-available.json",
+          "bytes": 1148,
+          "mode": 420,
+          "sha256": "15ac3bf3d7e665374d0f1d370c5353837e1d04422856f9fee2d368f44e9a3eff",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics/node.log",
+          "bytes": 81640,
+          "mode": 420,
+          "sha256": "19ca36508a3c32680b4ca6e9e10e08fea64121977087c91ffdafb73b35a7d682",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "chatgpt-review-wakeup-context-optionality",
+      "archive": "docs/validation/archive/chatgpt-review-wakeup-context-optionality.tar.gz",
+      "bytes": 14758,
+      "sha256": "da21a55d4bf483622d13e3c88279c012358b468d8cf96142ca258e7371998375",
+      "members": [
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/build-vet.log",
+          "bytes": 95,
+          "mode": 420,
+          "sha256": "76db29169477e0bf334472b7a92f34a83d3d5cd743c0d500b326593d00e5bcd3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/go-focused.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "cf84e10214483adf61f417dd0d1d1c545c82983cb7ff83aa6edeef9a3156afb6",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/go-test.log",
+          "bytes": 4671,
+          "mode": 420,
+          "sha256": "c6c6bac5906f7cd44961a07e6ca2d311e5d5d965a4e92af97f8bbd704a31d987",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/mock-context-unsupported.json",
+          "bytes": 1178,
+          "mode": 420,
+          "sha256": "431d15fbb75869ac617333ae56e275405f2baf18e498a79aa0720201ae3dde74",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/node.log",
+          "bytes": 83886,
+          "mode": 420,
+          "sha256": "f606fddb251e569b2604c804dd365b6b91ebea80a81819d92622b46f36b08077",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality/working-tree.txt",
+          "bytes": 1600,
+          "mode": 420,
+          "sha256": "6bcc0611efd994509c217c8628c45741ee9e8b2373f74f44e1239bc17b99c8ad",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "chatgpt-review-wakeup-fallback",
+      "archive": "docs/validation/archive/chatgpt-review-wakeup-fallback.tar.gz",
+      "bytes": 14385,
+      "sha256": "57339d173f522d369ace3788e9d49944c93ddeac52bea3def9677cb4c0a5ea9d",
+      "members": [
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/build-vet.log",
+          "bytes": 95,
+          "mode": 420,
+          "sha256": "76db29169477e0bf334472b7a92f34a83d3d5cd743c0d500b326593d00e5bcd3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/go-focused.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "3906c14c2093592c699de23ed79025f45a2c2c40a3beff8e74c2724982e99139",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/go-test.log",
+          "bytes": 4670,
+          "mode": 420,
+          "sha256": "e2b8928d239a62c49b14fca6106c77bdf9378c1f975745a29d080f90dcd08828",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/mock-extension.json",
+          "bytes": 1047,
+          "mode": 420,
+          "sha256": "bb63b5c7603c687ddbd001af3995e1345fdd9523bf6de6afdeb439c51f4fb4b8",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/node.log",
+          "bytes": 82593,
+          "mode": 420,
+          "sha256": "063ad97257483de730ab12cbde30d393c90c3a6df5ca666addc7d69b9785f3bc",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback/working-tree.txt",
+          "bytes": 1073,
+          "mode": 420,
+          "sha256": "37ef8b39c9130287811d33e271429ac2c492149daf45cbca5d4c16fc7aad0831",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "chatgpt-task-centric-card",
+      "archive": "docs/validation/archive/chatgpt-task-centric-card.tar.gz",
+      "bytes": 19123,
+      "sha256": "3e00dcff714f81e1de0f281ce6f9815deee52d93705ac14241434ea3f94ebc64",
+      "members": [
+        {
+          "path": "docs/validation/chatgpt-task-centric-card/go-mcp-tests.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "e8dff25e71193ef7e093a24a0284caa38678945d8c120359072b66eb35ccb934",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-task-centric-card/node-tests.log",
+          "bytes": 98614,
+          "mode": 420,
+          "sha256": "0194892657fb69f440f5816b3eaa7366b3bbfc55665166ad1e96a5a8662c6f27",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-task-centric-card/preserved-contracts.json",
+          "bytes": 1510,
+          "mode": 420,
+          "sha256": "899d55dee71d8809b63c62c50a4c1c80c2211681da984d7f8e2f31a9f4c84fec",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/chatgpt-task-centric-card/targeted-tests.log",
+          "bytes": 34480,
+          "mode": 420,
+          "sha256": "3c78388f546feaeed5c094dc30a91e45f393aa8d4e1111bd93b9b3268483fea0",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "current-decision-authority",
+      "archive": "docs/validation/archive/current-decision-authority.tar.gz",
+      "bytes": 18254,
+      "sha256": "1787d0a02954d96ce77d77b1173c781276155348918b4261647bce0bcf563cfe",
+      "members": [
+        {
+          "path": "docs/validation/current-decision-authority/go-before.log",
+          "bytes": 939,
+          "mode": 420,
+          "sha256": "9a3cd08706f8fdc9ce7f7ebc179be159cce807a5c45227df811529f73b116baa",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/current-decision-authority/go-mcp-tests.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "71c5d3cb30f67e8bc7485a237eb1d2cf3b4fcb6dcd04ca731f9ca5cf1b59a21e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/current-decision-authority/node-before.log",
+          "bytes": 17046,
+          "mode": 420,
+          "sha256": "fe576e5de09ee32c9b20a19414ec92018e77346eae6643051e1d119f511a2b2e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/current-decision-authority/node-tests.log",
+          "bytes": 85306,
+          "mode": 420,
+          "sha256": "a5881cdba0511488856ed1192c8c26f169b8b28d865190170b8db0126059c546",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/current-decision-authority/scope-tests.log",
+          "bytes": 11964,
+          "mode": 420,
+          "sha256": "a0cd8349e4fbb8e1296c71483b8d17af25efe2b0405d907e6ba9c4e66f872611",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/current-decision-authority/ui-tests.log",
+          "bytes": 10399,
+          "mode": 420,
+          "sha256": "e22abc75cf2932742c055d04c05f576298ead07212593e199bf28850cf19db87",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "direct-file-capability",
+      "archive": "docs/validation/archive/direct-file-capability.tar.gz",
+      "bytes": 11111,
+      "sha256": "a0f0993b2e0952e3e9a6ca4e1e108a31f6790f8bcf932b3c9f15c1d4204c105a",
+      "members": [
+        {
+          "path": "docs/validation/direct-file-capability/controlplane-tests.log",
+          "bytes": 62,
+          "mode": 420,
+          "sha256": "9e5de4a8f1ec480497ee9d229dfe6b039df7f466ee66774736d3578a55e04ef0",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/diff-check.txt",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/direct-file-integration.log",
+          "bytes": 64,
+          "mode": 420,
+          "sha256": "e8cd96a58ef93c7dfec8325588ebfb356d4a44c5687d9aa9c0ea10b1e83f3a40",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/file-race-tests.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "d0c430f1f9586cdf299ca2ca00e4924172056613901a6a47da48be657a5a1d08",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/final-go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/git-status.txt",
+          "bytes": 1860,
+          "mode": 420,
+          "sha256": "328d433bb573c1ded4b1e86ae851d89e44627d4d332ab0474dcd62f75b04e2ee",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/go-tests.log",
+          "bytes": 806,
+          "mode": 420,
+          "sha256": "0109928d5dfc7d4ef5745eb6918bb6b9c7d06c3e7deac640c794704e768a552e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/mcp-tests.log",
+          "bytes": 119,
+          "mode": 420,
+          "sha256": "c4d82a4f60430dcd57cb2988898ae4ea097eab9edd82e9ad82f8d232eb39984b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/modified-files.txt",
+          "bytes": 2912,
+          "mode": 420,
+          "sha256": "7916151e80483ab4d6d6c5c2eecb527173211402e6b61ddda0e82dae2e976feb",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/node-tests.log",
+          "bytes": 14299,
+          "mode": 420,
+          "sha256": "f2380fd8c68c7f768d227eac0995ac00716a3d2b91118ef23c44c643b97268d2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/race-tests.log",
+          "bytes": 185,
+          "mode": 420,
+          "sha256": "04fa4d6cdaaa256e6c4e1871540bfe33a67ac39549f17843c06a39342acbb49f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/direct-file-capability/report.md",
+          "bytes": 7585,
+          "mode": 420,
+          "sha256": "07a04aff9fbfb6a998e8deead0d1cb23730c3dd2110399be32ab485338685992",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/direct-file-capability/static-audit.txt",
+          "bytes": 342,
+          "mode": 420,
+          "sha256": "ea0fb15d9e355e81610bfc1fd570d2b2f62ec61f5f1b5af0a044defb2ad0ea3f",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "feature-area-continuation-v0.1",
+      "archive": "docs/validation/archive/feature-area-continuation-v0.1.tar.gz",
+      "bytes": 30669,
+      "sha256": "09ca15ca09662c803905c8eb9ffebecb490e234166950ac03e963b7901e90c8e",
+      "members": [
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/architecture.log",
+          "bytes": 2715,
+          "mode": 420,
+          "sha256": "3826a141712da66a81f720637b2819b16c09ad222caaade626c4c7a56826b659",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/changed-vs-head.txt",
+          "bytes": 16532,
+          "mode": 420,
+          "sha256": "8e82ad6daa8b9192cb54eae6112de397f43ec5cbee0a4081bf1e5d3e548fd410",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/commands.txt",
+          "bytes": 1936,
+          "mode": 420,
+          "sha256": "941866284aeb617f324e82dd2456794235f5474df40e5947058abf835d0e03ac",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/desktop-build.log",
+          "bytes": 324,
+          "mode": 420,
+          "sha256": "df73f2eb6706e75f7aedd62555135744d536a025d1a5dd57ace7869ab6a2e477",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/desktop-frontend.log",
+          "bytes": 3470,
+          "mode": 420,
+          "sha256": "53759e124fd112a2c4d0464c584450feba73726fca03c97e8987c14b0e2cbc37",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/desktop-go.log",
+          "bytes": 518,
+          "mode": 420,
+          "sha256": "a88c03760cbb74ef96beef3caf55cd3c369a6f9586ee198c9aa5907f8804dda4",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/final-checks.txt",
+          "bytes": 332,
+          "mode": 420,
+          "sha256": "c7e8204e253c285a46499bdebc1f1094f24b58f9c30bce953e17f7bf67ab6a15",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/frontend.log",
+          "bytes": 25049,
+          "mode": 420,
+          "sha256": "9c7b5e2192566dfc28f5d23911681c128d4e6cf5aeabc50286e90e074241fa22",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/go-test.log",
+          "bytes": 4372,
+          "mode": 420,
+          "sha256": "66e5b46af477d7200ec66d93a8475b6dfb7c70a9ce2a0243b84598e3f2d99ec2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/incremental-files.txt",
+          "bytes": 5527,
+          "mode": 420,
+          "sha256": "eafba0154cae017404b61b8f7e37e47eee9eaaf080db0e0e00c5e7f70ec26824",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/preparation-audit.txt",
+          "bytes": 119122,
+          "mode": 420,
+          "sha256": "da89fea49ef486f78496e1c14d64857c45cc423b26e47b82c35b93b1fa9448a9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/projection.log",
+          "bytes": 238,
+          "mode": 420,
+          "sha256": "6000c7eaa077123f7b8cf2bef28f6a50cd9081167efad4c464539b0e3d443719",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/race-broad-original.log",
+          "bytes": 8412,
+          "mode": 420,
+          "sha256": "f5c78ec48318d077e0d606725e553c50edaf22699b73470020bfd39822e82327",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/race-finalization.log",
+          "bytes": 183,
+          "mode": 420,
+          "sha256": "32b4d8af18982dceb3d9bd86df1427bc1a3ddfd13fe4f359f4ce98ed0872b386",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/race-sqlite.log",
+          "bytes": 65,
+          "mode": 420,
+          "sha256": "cf2a08c7c53d5456a59dc8602fc8260846f96d36e76c34b47c48831ba29928e6",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/race-terminal-admission.log",
+          "bytes": 64,
+          "mode": 420,
+          "sha256": "b8649cc19d24eeec9c03f063d373722208c91614f8929811ed7ebe9119681dc3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/working-tree.txt",
+          "bytes": 14921,
+          "mode": 420,
+          "sha256": "3c69205ddddb74c3e0c9eb1891bcac391e04004262fa335adddd8e6b45550533",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1/workspace-terminal-string-audit.txt",
+          "bytes": 14621,
+          "mode": 420,
+          "sha256": "09c81743c51ff6d4df4ec32ff1b54a45c88d2349af4e43278911088baef85e2c",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "feature-area-create-and-review-composition",
+      "archive": "docs/validation/archive/feature-area-create-and-review-composition.tar.gz",
+      "bytes": 19391,
+      "sha256": "95d91bde40d0eac9b2e17251abd4f81edebded3577134bda7648dff420415d75",
+      "members": [
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/build-vet.log",
+          "bytes": 95,
+          "mode": 420,
+          "sha256": "76db29169477e0bf334472b7a92f34a83d3d5cd743c0d500b326593d00e5bcd3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/create-only.json",
+          "bytes": 2434,
+          "mode": 420,
+          "sha256": "5da915c21bf3a796ef18451c828ebe005d1aa9e72ce90318f426866c2d2ff96b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/feature-area-create-schema.json",
+          "bytes": 26637,
+          "mode": 420,
+          "sha256": "4c27138b1d8600e2975108ce16372084901643a5fcf3eee66863c5ab365170bb",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/focused.log",
+          "bytes": 4751,
+          "mode": 420,
+          "sha256": "e59aa3a2556b516f85a27963138a340fc9f0336b31fb0c9953f89916325a6318",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/go-test.log",
+          "bytes": 4669,
+          "mode": 420,
+          "sha256": "fe117fc4e8e5568f99b1b255344d0f73cf19d0d679b89c392fba59d46d5b023e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/node.log",
+          "bytes": 70329,
+          "mode": 420,
+          "sha256": "47375224bf1b905c975156cf6816eb35e106faa9882b6a5c60a96ba24bf2f7bd",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/normal.json",
+          "bytes": 4466,
+          "mode": 420,
+          "sha256": "4615a5956ef82fbebdea968e316131a930faf7ec997b14bc362a90eef034e096",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/partial-task-failure.json",
+          "bytes": 4098,
+          "mode": 420,
+          "sha256": "f128f5aa2b0bc166742926e0dc00584a21f9f6ec9337693e58c3b9dfc1b31f8b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/partial-task-resumed.json",
+          "bytes": 4434,
+          "mode": 420,
+          "sha256": "168c1eb37d7567dc895789086b9667b0aed377cd787e9c34a6561693c2f31291",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/race.log",
+          "bytes": 124,
+          "mode": 420,
+          "sha256": "2efc9824110acf61ec978e8305eaa8f518d7cfc51031abf394347d2468848a3c",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/response-loss-retry.json",
+          "bytes": 4466,
+          "mode": 420,
+          "sha256": "4615a5956ef82fbebdea968e316131a930faf7ec997b14bc362a90eef034e096",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition/working-tree.txt",
+          "bytes": 3219,
+          "mode": 420,
+          "sha256": "670eea9d6ca3099e2657731c6081a91a982807963196d9200fcce626e8ccdecc",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "pending-decisions-scope-isolation",
+      "archive": "docs/validation/archive/pending-decisions-scope-isolation.tar.gz",
+      "bytes": 12245,
+      "sha256": "b9cd45aa9cf3a85fa5e33dab1499b394435cdd10e54ac33270b9d8a95264b24d",
+      "members": [
+        {
+          "path": "docs/validation/pending-decisions-scope-isolation/go-final.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "ff33ce5dd131359f3c3be4fddb27eee0e858fc8631103b7647380b7a4262fa77",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/pending-decisions-scope-isolation/go-tests.log",
+          "bytes": 4568,
+          "mode": 420,
+          "sha256": "1baf60289b045ff8da0e01a184e587be0878c2538c27c804e12efd3b07b48bcf",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/pending-decisions-scope-isolation/node-tests.log",
+          "bytes": 70176,
+          "mode": 420,
+          "sha256": "161df4a67a39619d92546348e91adff7f9c7d69164dea9f846079652ec6e067e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/pending-decisions-scope-isolation/wire-tests.log",
+          "bytes": 59,
+          "mode": 420,
+          "sha256": "daee8cf042063a0765566dc69bacfb2a925291f48a5c94f327bf18af625e972c",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "post-orphan-recovery-closure",
+      "archive": "docs/validation/archive/post-orphan-recovery-closure.tar.gz",
+      "bytes": 114275,
+      "sha256": "04d0d1d005e50b109d9f3c65b9c8e7a7881a0b847f03f88d96af16fea7c72560",
+      "members": [
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/acceptance-parity.log",
+          "bytes": 2714,
+          "mode": 420,
+          "sha256": "6cd57e71235f6ae0143a70d7fe678a750610a820cffe82ed71555b0fd689de4a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/baseline.txt",
+          "bytes": 1187,
+          "mode": 420,
+          "sha256": "30cd1ed7cfeddcdcb45988b106cb105c4e6a8de94d8ac5c26c72d5f0b2976695",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/canonical-doc-audit.txt",
+          "bytes": 8158,
+          "mode": 420,
+          "sha256": "722fe0de28a8648fb2cbd69f2ea9474ded79d32a166699f665943c62f58d2fc2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/desktop-config-regression.log",
+          "bytes": 5143,
+          "mode": 420,
+          "sha256": "367b51d8a60b7a8691630611adfc74c5c1c65398aae1ac2c655539d9535de13e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/diagnostics/initial-sandbox-go-tests.log",
+          "bytes": 317025,
+          "mode": 420,
+          "sha256": "549ea05ad048837bc5441a78f935f2a8b500efdfad95154334a7dd2156842ed9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/diff-check.txt",
+          "bytes": 245,
+          "mode": 420,
+          "sha256": "6910e8dbb3088e5092b7a84cdb7fda5be993465d55eee36e5b670633e712c9ad",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/final-git-status.txt",
+          "bytes": 1120,
+          "mode": 420,
+          "sha256": "3de53be749a33b83e4b5283d808065ef44c599c020a4f4f28bd8eb89d59656d2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/final-report.md",
+          "bytes": 13645,
+          "mode": 420,
+          "sha256": "71e17d6c7008781265a4ed87a24dc294a269e9e3da846e946c49ffe45c99ebd2",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/focused-recovery-acceptance.log",
+          "bytes": 7422,
+          "mode": 420,
+          "sha256": "a2487009b0a36e1cb5213d3dab10534537f20186de853ac4dde0245d43d98af2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/git-delivery.log",
+          "bytes": 3660,
+          "mode": 420,
+          "sha256": "b943ff0a3ece70388eda848b3f7aa61a3680ed7a94452e7feda1aecaecb72cfe",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/go-tests.log",
+          "bytes": 312491,
+          "mode": 420,
+          "sha256": "fe80a097c14a50e85e4885ab33925e752a9e870c1ec999889174fd277f4f434b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/go-vet.txt",
+          "bytes": 573,
+          "mode": 420,
+          "sha256": "6bd0fbc2460a228cf56400bcaa5719fed070d53e44ef5fc4dd49c01d31b420e9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/migration-tests.log",
+          "bytes": 6930,
+          "mode": 420,
+          "sha256": "074cfd2cd7c5e6ab20684a7e111eabbd00dbc48e24737773a249923858319f55",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/modified-files.txt",
+          "bytes": 2458,
+          "mode": 420,
+          "sha256": "b5977e8a2783fac16621781a9e4a2fcc732ea24fc0f0ce082acf4b46bde792e1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/node-tests.log",
+          "bytes": 42866,
+          "mode": 420,
+          "sha256": "bcf09a7d4c797b9abef2bba8678eb94439294faaf22ecc23175e968fcca126a9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/prompt-byte-identity.log",
+          "bytes": 9606,
+          "mode": 420,
+          "sha256": "679155cfe2df18ccef53b507184284bd5bbd61b175d1f0b19461b1d2fada58bd",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/race-tests.log",
+          "bytes": 9393,
+          "mode": 420,
+          "sha256": "08b3e8a46fd77e2b1f27c0c244abd0127b6d1b9855490d7f5eae1bfe214c93df",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/runtime-config-regression.log",
+          "bytes": 8528,
+          "mode": 420,
+          "sha256": "db1204e479c1f74a57267ebf785ba183bc5020ef699327c865d45b5144ac201e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/static-audit.txt",
+          "bytes": 108587,
+          "mode": 420,
+          "sha256": "5d84792be9c8d14310fb9f9f73d94005d3576fc2e66d90e28876093f1a4e7518",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/test-summary.json",
+          "bytes": 6121,
+          "mode": 420,
+          "sha256": "91b312ad4b8be565c9141882cb46bfafceb4d9ef38cca2a77f6262e61c8b295e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/tested-source-sha256.json",
+          "bytes": 1567,
+          "mode": 420,
+          "sha256": "3ffc1c96bfd04132294b22cabe112abada24ffe47180fcef2f2b1ead9f9b58ff",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/post-orphan-recovery-closure/validation-manifest.md",
+          "bytes": 4067,
+          "mode": 420,
+          "sha256": "f5095e6a2051418e9571e7589f983c7004b27449047719ca00a3caf875489388",
+          "retained": true
+        }
+      ]
+    },
+    {
+      "name": "prompt-neutrality",
+      "archive": "docs/validation/archive/prompt-neutrality.tar.gz",
+      "bytes": 13250,
+      "sha256": "44d01516a8cde7d7874dc231951086d4c5be3a537232e151338ad0b815288cd5",
+      "members": [
+        {
+          "path": "docs/validation/prompt-neutrality/final-audit.txt",
+          "bytes": 561,
+          "mode": 420,
+          "sha256": "c461a0929c1e10db84b4ae13b8316b0000fd66d3500e2c8cd209007cd78ac0e0",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/focused.log",
+          "bytes": 558,
+          "mode": 420,
+          "sha256": "fb497378ca6c6a1027d8c4bdf6f849cf90020f0c2c2a798864791a5338a00d14",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/git-status.txt",
+          "bytes": 2701,
+          "mode": 420,
+          "sha256": "54826b348312dd2224102d5dca538918869d0979ca71d2e9a0ff9071e8961d3d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/modified-files.txt",
+          "bytes": 2527,
+          "mode": 420,
+          "sha256": "302738b0a17c7a88a640d31a2486024622721e399fde242d6830f0430c996c1d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/packages.log",
+          "bytes": 722,
+          "mode": 420,
+          "sha256": "755a17aa2d032165499cc3f0e4abcdb9e448a4d5466678930cb10618faeadeb4",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/production-audit.txt",
+          "bytes": 62355,
+          "mode": 420,
+          "sha256": "e956031db3f2e4969213c46eb1b3c47286abe341b6b3f3e76bced39c0c88f63a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/race.log",
+          "bytes": 305,
+          "mode": 420,
+          "sha256": "efaeff6a49aa1269e74abd74b533e07d2d22ab3c362000c8a2551d238938d21a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/prompt-neutrality/vet.log",
+          "bytes": 14,
+          "mode": 420,
+          "sha256": "649ab049430edca48ab459776467fa05d87035645d51f7efe9b929c1576b6a76",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "remove-task-preparation-v0.1",
+      "archive": "docs/validation/archive/remove-task-preparation-v0.1.tar.gz",
+      "bytes": 23194,
+      "sha256": "d1262b0a5b14eb90cc831e8a9c216a2be3b5887eed67f367bb987a6cff3ee577",
+      "members": [
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/changed-files.txt",
+          "bytes": 13714,
+          "mode": 420,
+          "sha256": "009fc248dac9ad2a0b433536b668fbd84f8f42fa23a2b386f0be06dccd902ed4",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/commands.txt",
+          "bytes": 1721,
+          "mode": 420,
+          "sha256": "6994cc5f1035ced9e497b17c4851e26df4e3a73bd3623934125bf766725b2444",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/desktop-build.log",
+          "bytes": 324,
+          "mode": 420,
+          "sha256": "b189c540c14c3adf01c47065468d9bc8d29d71de80dc991f4bcfbcf7bea26a1f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/desktop-frontend.log",
+          "bytes": 3469,
+          "mode": 420,
+          "sha256": "c31a4c03b51c987aa9bb38d3b4c6eef474a320182cce7d05946f6f7215eacd2f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/desktop-go.log",
+          "bytes": 518,
+          "mode": 420,
+          "sha256": "bcbc60b7993cead35993424166ff4c84e1f146454196dbf82662295ed3edc1d5",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/frontend.log",
+          "bytes": 25028,
+          "mode": 420,
+          "sha256": "f617d6161dc0c8dd74d7d8cd0076f604cfb14a36609ce937c96b0679585d788d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/go-test.log",
+          "bytes": 4373,
+          "mode": 420,
+          "sha256": "219b3e3aa1ef4973fd711afc0d14df6929e94aa453ec4e820ebb73b367140fa5",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/packaged-candidates.log",
+          "bytes": 59,
+          "mode": 420,
+          "sha256": "b96a98b9f78901977974c1111485c7dd5fe8e5500926a223176cee51012836bf",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/race.log",
+          "bytes": 183,
+          "mode": 420,
+          "sha256": "edb326ad431ba9fb42221a2d66ca87c80089dcdd83e9ebeac777c0420b360e7a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/schema-contract.log",
+          "bytes": 183,
+          "mode": 420,
+          "sha256": "177c522a33041c2c805a180ffcf352aeabc6c0f5532551e51f238f68a9332a88",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/string-audit.txt",
+          "bytes": 102705,
+          "mode": 420,
+          "sha256": "5b5c997c89c83dced88c9a869a02779ae659b31d48d30b8ad256cfc14756226c",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1/webui-overlap.txt",
+          "bytes": 3629,
+          "mode": 420,
+          "sha256": "0e4d103e2ca490e286bbbfd60e674d705cef531ce8b80114f05a4060f3967ee1",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "review-approval-minimal-authorization",
+      "archive": "docs/validation/archive/review-approval-minimal-authorization.tar.gz",
+      "bytes": 16041,
+      "sha256": "b71a36e8443f5bd0e3548a20fbcd3597b6c100687ded97ad3ed7f6d21493c5bb",
+      "members": [
+        {
+          "path": "docs/validation/review-approval-minimal-authorization/go-mcp-tests.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "1c257bb1e51ef4296fd78f0b0836b11fc5d8aa04574cfb22419694356266f1dd",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-approval-minimal-authorization/node-tests.log",
+          "bytes": 86906,
+          "mode": 420,
+          "sha256": "4b8e89fa5e427440f906b8f90d15f993036da82e313fc5f8a09b32016708260a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-approval-minimal-authorization/targeted-tests.log",
+          "bytes": 22773,
+          "mode": 420,
+          "sha256": "82992b1c05c1d134b95bbf8f5193dfe7a2fea9ec84d6638c56867c550c080031",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "review-fast-deep",
+      "archive": "docs/validation/archive/review-fast-deep.tar.gz",
+      "bytes": 194567,
+      "sha256": "f971594097106bc5cafc89c6e19142f32390240d29f696a0fbdc66b7d5c04822",
+      "members": [
+        {
+          "path": "docs/validation/review-fast-deep/320-light-deep-required.png",
+          "bytes": 69354,
+          "mode": 420,
+          "sha256": "428b69bb9dc1941900d3925b0e15ae1a076b428462423a2a497c4d06535d70f9",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-fast-deep/850-dark-initial.png",
+          "bytes": 114972,
+          "mode": 420,
+          "sha256": "29ae6f17c74ed81651b15709bdded3d52c7907f890b568a5054763cd84bc18b2",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-fast-deep/commands.txt",
+          "bytes": 1828,
+          "mode": 420,
+          "sha256": "20f6000067b63f326f84984637cdff41b2c5dce1fe79fedb4e952fc1b75c0eb3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/diff-check.txt",
+          "bytes": 47,
+          "mode": 420,
+          "sha256": "f1b12df300936382cb8ec36d1f20102931d9c154208fcd36bebd483c5560e44e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/git-status.txt",
+          "bytes": 4050,
+          "mode": 420,
+          "sha256": "0f10d99d70d30da8501a453c98bf75bcc2ff4e4ed8b69a89483f5235358d9427",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/go-tests.log",
+          "bytes": 749,
+          "mode": 420,
+          "sha256": "a40f3485f21418aa869cb5ba2d885f8afeea0e3ba06f8fa81dee16b8071a755d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/go-vet.log",
+          "bytes": 370,
+          "mode": 420,
+          "sha256": "31edcf06cebf74f4820760044c5cf4e4fb5eb0fd699eca1426bb79e4f4e4efc9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/mcp-replay-continuity.log",
+          "bytes": 59,
+          "mode": 420,
+          "sha256": "9586c40f54bf4f29c8477a58a1228b2018d8335d120e46f0634d49311d733f67",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/migration-tests.log",
+          "bytes": 3593,
+          "mode": 420,
+          "sha256": "aa904471eab82dc372735c3cb1288c1bfd99259c373a35eebbb18c7a810ac713",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/modified-files.txt",
+          "bytes": 4624,
+          "mode": 420,
+          "sha256": "67986a7e5449c3e16543c5e57d181ae0c77dbc4bf8c9c1904b75cad0fa382cf3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/node-tests.log",
+          "bytes": 31516,
+          "mode": 420,
+          "sha256": "35aee6bf5757b67afced9ecf1649b99cddc8384a1b396898535a7c04be471662",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/prompt-byte-identity.log",
+          "bytes": 11486,
+          "mode": 420,
+          "sha256": "dbc0400c11d5c5c18f6a274e62c459da0110d58617a24b6e1ea59cc57895b35a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/report.md",
+          "bytes": 7950,
+          "mode": 420,
+          "sha256": "908678b8ff3e7a7fe2580979250c112e4ff59c2998c777a0d6c263c1b59a8aa7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-fast-deep/responsive-results.json",
+          "bytes": 1025,
+          "mode": 420,
+          "sha256": "c9004a015935bb326f9d2311755d92af865dcb07e63307b41659a7f4d43610ea",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/responsive.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "5abe9d8635e4b226993e67c16d7e2d294ae40247c69e2d8912f72fc9eb1a8392",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/static-audit.txt",
+          "bytes": 3894,
+          "mode": 420,
+          "sha256": "7ecba5d3b1e51bcd6305a0ec371779dd70e4b506c67f5826321fa4ad2f62e8f8",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-fast-deep/targeted-race.log",
+          "bytes": 65,
+          "mode": 420,
+          "sha256": "2c47514099b79a25f19f29ee8877ebd5a2acc10ca01477a9c9462c87a7559990",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "review-wakeup-late-claim",
+      "archive": "docs/validation/archive/review-wakeup-late-claim.tar.gz",
+      "bytes": 15010,
+      "sha256": "b3a91e919de559347137693b35f8150b4f88853e819a42ca29c18e637a1d2dfd",
+      "members": [
+        {
+          "path": "docs/validation/review-wakeup-late-claim/build-vet.log",
+          "bytes": 95,
+          "mode": 420,
+          "sha256": "76db29169477e0bf334472b7a92f34a83d3d5cd743c0d500b326593d00e5bcd3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim/event-sequence.json",
+          "bytes": 747,
+          "mode": 420,
+          "sha256": "141640630772f829bfe3bea788ed494ae23261a6660ce9a340ade055cd3ef409",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim/go-focused.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "44de72676af5c0cd6f6a5606aef5f3f462fa62dcc2068f2686c5401b1dc6d357",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim/go-test.log",
+          "bytes": 4670,
+          "mode": 420,
+          "sha256": "58b341dfb69ba6490f0edaadc617e60607f76c8f18aff8fcb6822cd47e216ad6",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim/node.log",
+          "bytes": 84981,
+          "mode": 420,
+          "sha256": "0d98d78dd1d2d0b59854607436ee88554efec55a9d83249fe3dad44a10ed7d3b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim/working-tree.txt",
+          "bytes": 2147,
+          "mode": 420,
+          "sha256": "8776119b115c71cf541755b8295f47cfb8b1be62461ee7b944c1296900402142",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "runtime-config-card-worktree-closure",
+      "archive": "docs/validation/archive/runtime-config-card-worktree-closure.tar.gz",
+      "bytes": 24870,
+      "sha256": "4d2be4c8a26b95111381c43a9605ed18af7dd00737db79eb1a490a1d1eef7822",
+      "members": [
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/desktop-build.log",
+          "bytes": 384,
+          "mode": 420,
+          "sha256": "9302bc542c442abda598df726576d988a5feb45f1478aec681fb90e80ea3b28a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/desktop-go-test.log",
+          "bytes": 530,
+          "mode": 420,
+          "sha256": "f75dec1bbf7b30fa2f13481168d27fa8d061c4406f3eacf559024c16676aa7da",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/desktop-go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/desktop-node-tests.log",
+          "bytes": 3703,
+          "mode": 420,
+          "sha256": "68c488d11f2aa1cfaf2abe080c23075d1f154f20166db09ded90281989fe3b6b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/diff-check.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/diff-check.txt",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/git-status.txt",
+          "bytes": 5271,
+          "mode": 420,
+          "sha256": "5eed5f389d18416c05e3d1eeea83c1aee23448064dcc545baf29769a90cac4ee",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/modified-files.txt",
+          "bytes": 4947,
+          "mode": 420,
+          "sha256": "00dcadda7a1f1075fe1dd4f66d8ce006093fcc055a078ea44665b780434269f1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/node-tests.log",
+          "bytes": 39375,
+          "mode": 420,
+          "sha256": "d5a9249c5aa9d928ac9a86d6db6abb6d8804e2b401747403105c4addaf29382f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/report.md",
+          "bytes": 14921,
+          "mode": 420,
+          "sha256": "7b1a757b73c2338c8a3678215ecfd36551a9f7227d1744a74cab8181df3ec5f3",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/root-go-race.log",
+          "bytes": 256,
+          "mode": 420,
+          "sha256": "6b6eff36589526c1f2a1b2600df372f14ec29223543b13c335fa499199665fb7",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/root-go-test.log",
+          "bytes": 4672,
+          "mode": 420,
+          "sha256": "feb546cea55d600d006e060ce829dd69c0a158c45291fc016c8a88a1c879a312",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/root-go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/runtime-capability.json",
+          "bytes": 1690,
+          "mode": 420,
+          "sha256": "3653ba63f2e1116ccec1abbfb48566e1dc2f69ef2145b9c0f7964341192715b2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/static-audit.txt",
+          "bytes": 9817,
+          "mode": 420,
+          "sha256": "9e25739c09dfcd25a78e4feea05c525db6aab8be8463f566e57387f96555e592",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/verification-summary.json",
+          "bytes": 1402,
+          "mode": 420,
+          "sha256": "b22ecf7fc08d164a03d818935addef4d1d7acd6c258da2bcd96e414a270c1fc0",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/worktreeinventory-go-test.log",
+          "bytes": 67,
+          "mode": 420,
+          "sha256": "5f512597ebb85e5aafe3b8214bda573cb2819d56f7fc3016b22334896cb78475",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/runtime-config-card-worktree-closure/worktrees.txt",
+          "bytes": 695,
+          "mode": 420,
+          "sha256": "9cb0c247049be06b56fd7fe25468b94675bb639a206628f675c6fcf3f30ecb0b",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "task-first-webui-card-v0.1",
+      "archive": "docs/validation/archive/task-first-webui-card-v0.1.tar.gz",
+      "bytes": 299248,
+      "sha256": "93fd46ead1d7732aea19762295cda5d2b6ce8fc632b8a56c6846813488c55c9a",
+      "members": [
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/card-dark-narrow.png",
+          "bytes": 96052,
+          "mode": 420,
+          "sha256": "5f9f08662ec6d44695537a7483fa31a320e76ead919445841112a53037414972",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/card-idle.png",
+          "bytes": 61683,
+          "mode": 420,
+          "sha256": "3ac6f7eb8bd5841d8c58b3b46d4dc977dd5ba6695c6de6c1c2b91c6da7161087",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/card-light.png",
+          "bytes": 93684,
+          "mode": 420,
+          "sha256": "668c1311d0c4405e01a88b14c6c4ceca1bc8c5db47b056dad4bd20ec53037860",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/card-permission-dark.png",
+          "bytes": 93371,
+          "mode": 420,
+          "sha256": "bffacf4e6a744892dc757d274027ed6fadcbb46824f3970ae8b0c0840404b90f",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/changed-files.txt",
+          "bytes": 2691,
+          "mode": 420,
+          "sha256": "9e4c4463c1d94764ef30ba27d43a7fab66ebf2e22107b9928fa815c6334bc4b5",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/continuation-race.log",
+          "bytes": 123,
+          "mode": 420,
+          "sha256": "6f07eed831b755aae206c2fcfe35703381bf36bf8febc4b3e401279d9603b1c9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/continuation.log",
+          "bytes": 58,
+          "mode": 420,
+          "sha256": "57dbc83db2b724d574db42b22db5d9a5b4fa2e298b78ddfee40dd19b1c0ccdee",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/desktop-build.log",
+          "bytes": 383,
+          "mode": 420,
+          "sha256": "27721562559aabfacbc1951ccd3cfc233419c22680a95c8bf77bf97bb5250f49",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/desktop-check.log",
+          "bytes": 384,
+          "mode": 420,
+          "sha256": "594145417520a51984e375816f86fe51a9d41e5d301668cf18b0007cccba68ee",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/desktop-frontend.log",
+          "bytes": 3470,
+          "mode": 420,
+          "sha256": "7583eec66ba3bdf42282f286bac743c7ab3d9a2172fcac652c0f73a14dafabac",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/desktop-go.log",
+          "bytes": 518,
+          "mode": 420,
+          "sha256": "3a0ec468af3b581170dad95dde5a124d1dee1da1e2569382a258bb3a8d374057",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/go-full.log",
+          "bytes": 4373,
+          "mode": 420,
+          "sha256": "953f29cfb9f4d0f6ee1ec4282a4e2df73b72634c70af08dc7f2efd4485176f99",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/go-vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/mcp-race-final.log",
+          "bytes": 60,
+          "mode": 420,
+          "sha256": "f59dd2814a0b84ecfd8f54250eeaa63ce062e72351dd38f135fd29ef2591279a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/race-parallel.log",
+          "bytes": 601,
+          "mode": 420,
+          "sha256": "0f10ec25ea04bad385a2f87102cdadc97dd69b3a553fe727fc0052617c1fa68d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/residue-and-boundary-audit.json",
+          "bytes": 616,
+          "mode": 420,
+          "sha256": "039046842c0bd945f5c740cba9fde7323bc421d12c89886e7f9cb3a6b09b4212",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/visual-checks.json",
+          "bytes": 2137,
+          "mode": 420,
+          "sha256": "8dacaf716ae7fc43646d124aecc80c65f68afe57627da58d81f62987728d2099",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/web-card-tests.log",
+          "bytes": 22914,
+          "mode": 420,
+          "sha256": "701d11bfe2cd84b6b42120c939c059df43ab0f3e9eab238864a1c95c998792d1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/web-task-detail.png",
+          "bytes": 16057,
+          "mode": 420,
+          "sha256": "6f81964b7c63c1cee28a84e0bf3bac3701abca9cb905a1c9a4bce8ed973cf6b4",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/web-task-list.png",
+          "bytes": 15981,
+          "mode": 420,
+          "sha256": "ca9133f5374893b7b7deb8ca8ba83ffa15a20f660cfa3138223242ec6065f090",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1/web-task-result.png",
+          "bytes": 16057,
+          "mode": 420,
+          "sha256": "6f81964b7c63c1cee28a84e0bf3bac3701abca9cb905a1c9a4bce8ed973cf6b4",
+          "retained": true
+        }
+      ]
+    },
+    {
+      "name": "unified-review-executor",
+      "archive": "docs/validation/archive/unified-review-executor.tar.gz",
+      "bytes": 17896,
+      "sha256": "24a5f1db6b5984e6000c74889367b7dc93f2eab15f1badb3aa9140c7b15b6a65",
+      "members": [
+        {
+          "path": "docs/validation/unified-review-executor/build.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/cancel-final.log",
+          "bytes": 122,
+          "mode": 420,
+          "sha256": "0ab04d8a0d2718b470606f598dc21e4ebff37e7f175867e4e09e4f53dd5af29a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/changed-files.md",
+          "bytes": 8622,
+          "mode": 420,
+          "sha256": "cc9040ea861761024a82e009c44faedd3dec4b43f41a06c916328d1bbead93a3",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/unified-review-executor/commands.txt",
+          "bytes": 899,
+          "mode": 420,
+          "sha256": "cde87d063653876f6ca4229149001c8922688339ea9cb1b4807032de4903b90a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/contract.log",
+          "bytes": 603,
+          "mode": 420,
+          "sha256": "96b3f69abc92c952829b7f3c9d635082df6c60b86af2eb74c8a906340fc3a6db",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/diff-check.log",
+          "bytes": 29,
+          "mode": 420,
+          "sha256": "c991f60cf596f0774ca3b612a99e1a7355597a215af207de3a87d5539222ed7b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/fault-injection.log",
+          "bytes": 120,
+          "mode": 420,
+          "sha256": "cff899e01e34830324019f35501636e54bf5702cfe8bad3ae6d460a4e1d7c1cd",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/go-test.log",
+          "bytes": 4646,
+          "mode": 420,
+          "sha256": "d4f2eb8420a9c680ea46f17eeaedd23870aabfb8be8b6464421d15f8a2fe60ff",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/node.log",
+          "bytes": 38426,
+          "mode": 420,
+          "sha256": "e7c790f0fda7e9bd4a97d2c2bedd66a9cae92316afe57f5fca8971dadbd7dc76",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/projection.log",
+          "bytes": 59,
+          "mode": 420,
+          "sha256": "eab1131fff9a5b33b30b5f56f3814b0ec279de14043e544e076516879870b000",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/race.log",
+          "bytes": 185,
+          "mode": 420,
+          "sha256": "0f25ce53b84bfb742c505a923c135536f74483134cf9bf50b8d58cf6479cfc73",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/report.md",
+          "bytes": 11507,
+          "mode": 420,
+          "sha256": "3d64268ab3557a99471803cf1e09265de1fe227afff21f73b8a17b58f31020ae",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/unified-review-executor/upper-e2e.log",
+          "bytes": 793,
+          "mode": 420,
+          "sha256": "1eb0954298ffd78985855dd197a6d17d5e9375916846c74af33778032dd72ad9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/vet.log",
+          "bytes": 0,
+          "mode": 420,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/unified-review-executor/working-tree.txt",
+          "bytes": 3424,
+          "mode": 420,
+          "sha256": "1999645ac83b34c6c07652d3cf4a28623d3938f7fee1b5efa9b8bba1eeb72c9f",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "v0.1-final-remaining-closure",
+      "archive": "docs/validation/archive/v0.1-final-remaining-closure.tar.gz",
+      "bytes": 693821,
+      "sha256": "896f7c01593450a27b40e7dc6cae12177293fbbe4ab380d918e8021345d17dd5",
+      "members": [
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/acceptance-focused-result.json",
+          "bytes": 455,
+          "mode": 420,
+          "sha256": "57287874444825b68c8b4a092f6e4aef5448dd7d7aabe875e92b3641cc26d7ba",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/acceptance-focused.log",
+          "bytes": 33319,
+          "mode": 420,
+          "sha256": "83f80493c5265a698272e5127cb4d43bc3bb16632ba59f104837b4c1aad57618",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/baseline.txt",
+          "bytes": 1223,
+          "mode": 420,
+          "sha256": "617274d75d2b88981a5b32ec16baa715e288701ab238215a1daa422ec8287386",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/catalogs/gpt-tools-list.json",
+          "bytes": 2423929,
+          "mode": 420,
+          "sha256": "ef7628453b0c5fc760615ad812a39b7181eb9a2fe47ae907b29c69dee1d5b56e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/catalogs/local-tools-list.json",
+          "bytes": 1371404,
+          "mode": 420,
+          "sha256": "249c0c7488a1df695e506d95e69da255aa7cc6832c30ba90cffae24ec89fc062",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/go-tests-result.json",
+          "bytes": 690,
+          "mode": 420,
+          "sha256": "745f1d603e64202cfaee2bf8581018530b7e6d54176857260497ae6a5d418a9c",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/go-tests.log",
+          "bytes": 1638441,
+          "mode": 420,
+          "sha256": "f6a1ccfb547abf357470dca7c3f9fe18b7ea448b1b320607a76d1f09a7989965",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/go-vet-result.json",
+          "bytes": 660,
+          "mode": 420,
+          "sha256": "c741d2193c775f6c1b63dd9e50133a37a45ce11ec090421606afe498b1117bc9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/go-vet.txt",
+          "bytes": 602,
+          "mode": 420,
+          "sha256": "39e0f80583b97a74a75ffbecc054a3d2978c63fd6e3cb799ea5985cd9833a007",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/migration-tests-result.json",
+          "bytes": 387,
+          "mode": 420,
+          "sha256": "7e9b73142b8218c81dc32019482234a25a98173d68d59226ad433e8c50ef8944",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/migration-tests.log",
+          "bytes": 41830,
+          "mode": 420,
+          "sha256": "d98bc2cab08f0988fe8c223aea236aa58e4d9d1a5883d1cc97be3df375d4b6f1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/node-tests-result.json",
+          "bytes": 839,
+          "mode": 420,
+          "sha256": "4e8c61ffb130de5f0b4d6cbd6f414b34a63c46267dc19093f408e31d1a886e32",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/node-tests.log",
+          "bytes": 37165,
+          "mode": 420,
+          "sha256": "8d135e582f1ffb9c8bff3029db56ee1845c68685149e731fdd33783f73ce50cc",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/prompt-byte-identity-result.json",
+          "bytes": 581,
+          "mode": 420,
+          "sha256": "02485ed15f99fdce6f09679ebe410c642285ac2d569161f77c841f449a0b5f77",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/prompt-byte-identity.log",
+          "bytes": 57351,
+          "mode": 420,
+          "sha256": "b74e3f3e4b62adce2f515988363f79976049e6e76e2e78763a6d14e979e9b519",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/race-tests-result.json",
+          "bytes": 668,
+          "mode": 420,
+          "sha256": "2d81bd9488398d944752f50580cc6274864ed07395df8bbf49d7e392fe043898",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/race-tests.log",
+          "bytes": 28981,
+          "mode": 420,
+          "sha256": "697e5d52e4292363f5e5bf76707e039da8f21f00f4b20d467705fc41d6c537c2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/source-before.json",
+          "bytes": 255895,
+          "mode": 420,
+          "sha256": "91826e6887ce5bce1b4186af7e54bb649059e25027d98d282bf3a1b7d2a5528f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/tool-catalog-result.json",
+          "bytes": 366,
+          "mode": 420,
+          "sha256": "e38f1b27cdd38feaf83e07286b2447d2e864d0377c3b817480102099296aed23",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diagnostics/first-combined/tool-catalog.txt",
+          "bytes": 677,
+          "mode": 420,
+          "sha256": "cfddb33d830556cc4403ef3321d69994bbb8d8f94f72f07e531b92e0e70a65ea",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diff-check-result.json",
+          "bytes": 281,
+          "mode": 420,
+          "sha256": "e1ee198ffedf3d036e99c67866b2da37f259c855cc69236f05e57f7447d889d4",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/diff-check.txt",
+          "bytes": 271,
+          "mode": 420,
+          "sha256": "1395799e3bb68b38685f8b836f06124d4850ee8de403af1fbddd2a4bec7ca456",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/final-report.md",
+          "bytes": 15862,
+          "mode": 420,
+          "sha256": "9775ef39a84da5da6b67ad7c1033759381a56e285f95b1a8e7eeb3c2e83450dc",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/final-state.txt",
+          "bytes": 5001,
+          "mode": 420,
+          "sha256": "81ccfec7d66087c088e0099452be6f569c3f6388c35912183ac52f289d5d17e1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/git-status.txt",
+          "bytes": 6701,
+          "mode": 420,
+          "sha256": "8416f038b03b3e3e228346a7963be3255e88c1bcaf8475bf435155ce1374808b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/go-tests-result.json",
+          "bytes": 690,
+          "mode": 420,
+          "sha256": "a7ca99cf0b8106c3fd9e989502ceb70ad7bcdb371f9c372bb3babc073729d2dc",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/go-tests.log",
+          "bytes": 1636207,
+          "mode": 420,
+          "sha256": "03db8fb1fa2f05c1b696be353ca201c9faa193caaa3d06e26efae405cfe32048",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/go-vet-result.json",
+          "bytes": 660,
+          "mode": 420,
+          "sha256": "cec8aac4951735043efa7b0ed861e3101c6ab1ffbbd2e7a6289e60e04f706979",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/go-vet.txt",
+          "bytes": 602,
+          "mode": 420,
+          "sha256": "1758e8864943e997b9ec6c45d12bba09afa22eca4762e6180c97f7339563d945",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/migration-tests-result.json",
+          "bytes": 387,
+          "mode": 420,
+          "sha256": "cc75d75e2f73986694198b3601cce5bc273d43986b6a48119407acb599ec87ac",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/migration-tests.log",
+          "bytes": 41832,
+          "mode": 420,
+          "sha256": "b467f6f743eb0283d7e0de7b4393480312be21cd53465a13db9633dbdbadd9df",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/modified-files.txt",
+          "bytes": 6818,
+          "mode": 420,
+          "sha256": "503830be1f3722710ceb88d5ab1636621b56dc917b10b406f8de6378d4900726",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/node-tests-result.json",
+          "bytes": 839,
+          "mode": 420,
+          "sha256": "ba5cf65d4d0e043f5998e4c56696c5c1c4e56e4f9f7e10722f16ac5f6e98a4d8",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/node-tests.log",
+          "bytes": 37273,
+          "mode": 420,
+          "sha256": "01d3fba523641948cee4edba97bd5a7e41df9601af02e82150871093efa20b4f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/prompt-byte-identity-result.json",
+          "bytes": 581,
+          "mode": 420,
+          "sha256": "297848e6c95a10dbecd8af365d2da7f765ac306b64e1ec394fde68de7b6791f9",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/prompt-byte-identity.log",
+          "bytes": 57349,
+          "mode": 420,
+          "sha256": "a196b73920a1fb3ca19acf587fb0a900b45d885cd092e718d39fc2c5e7df5e21",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/race-tests-result.json",
+          "bytes": 668,
+          "mode": 420,
+          "sha256": "70cfca8c48cc0f95149e923ae5d7c774f0b59b124769539a25a3abbcd548741f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/race-tests.log",
+          "bytes": 28984,
+          "mode": 420,
+          "sha256": "f6b822295a24cba0c193366a8b45f86779785765307dc5aebdbbe0365996cf30",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/run-validation.py",
+          "bytes": 4252,
+          "mode": 420,
+          "sha256": "589ce154a4de853db458953f20c4a35c8ebe29b90a091320299671d6e58c51d4",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/seal-content.py",
+          "bytes": 2807,
+          "mode": 420,
+          "sha256": "f85364ea34a45e092b1a26d709ffc88fff80057dbf98be40ead27ddb85b87203",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/source-after.json",
+          "bytes": 255895,
+          "mode": 420,
+          "sha256": "05bbcf8367a0ceec6f3920a69107c389fa18b66068d6f8cf82879cb6a5a23ec3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/source-before.json",
+          "bytes": 255895,
+          "mode": 420,
+          "sha256": "05bbcf8367a0ceec6f3920a69107c389fa18b66068d6f8cf82879cb6a5a23ec3",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/static-audit.txt",
+          "bytes": 9650,
+          "mode": 420,
+          "sha256": "70b225f138c85637dee857b96ee9627da9b7591a71705983ab5af7202948ce5b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/test-summary.json",
+          "bytes": 8776,
+          "mode": 420,
+          "sha256": "1887f517cacc16561eb319849c863ddcefae43a29ceddfda891ca65322d2b991",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/tool-catalog-result.json",
+          "bytes": 366,
+          "mode": 420,
+          "sha256": "aac7f545282201978c1673f1b8e12530e3e22719297e2f3b4d224d7e4a33f2b0",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/tool-catalog.txt",
+          "bytes": 677,
+          "mode": 420,
+          "sha256": "fa5f3889478d65a758eef15b7ef9eee5115d3c823e020e31050a9569669b67b0",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/validation-manifest.md",
+          "bytes": 6568,
+          "mode": 420,
+          "sha256": "27336edfe1eedbb7a810f02315b5d32309dfa3d69281c7133b5aa520b82a30e8",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/v0.1-final-remaining-closure/working-tree.patch",
+          "bytes": 217702,
+          "mode": 420,
+          "sha256": "05462f78985085c299b5d2d3dfb03004fdbdf16f7579125df7bebe61ce83123c",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "webui-task-centric-workbench",
+      "archive": "docs/validation/archive/webui-task-centric-workbench.tar.gz",
+      "bytes": 23233,
+      "sha256": "ae9a05eaa1df72ac3866cfd88f5daddf0f16bf427bc93327827acf98325fdbee",
+      "members": [
+        {
+          "path": "docs/validation/webui-task-centric-workbench/affected-go.log",
+          "bytes": 251,
+          "mode": 420,
+          "sha256": "f785c377d8cbe9b63cc252ddada8fcfd0f5843179586588564b926fa81add60f",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/all-go.log",
+          "bytes": 21799,
+          "mode": 420,
+          "sha256": "aacd523f1e0d342bdfb59e36419ec641a49fb91d25e1e05d8b2c9ec44bed6c56",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/build-metadata.txt",
+          "bytes": 2477,
+          "mode": 420,
+          "sha256": "b767bcbc1ebb1460dd45ad2fcf698fd46f95a0ccf2e2c979b7d583ba4df978b8",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/build.log",
+          "bytes": 192,
+          "mode": 420,
+          "sha256": "537a3547bc7acb71eb251fd9d596b8f1fc0f7e966bb2c193ff334e8d35e51264",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/candidate-build.log",
+          "bytes": 192,
+          "mode": 420,
+          "sha256": "dea9b410cbaddb96c79ae682e6f8607117813b92f1d76a2f63b643ac9aae6829",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/desktop.log",
+          "bytes": 3627,
+          "mode": 420,
+          "sha256": "a1787fd9dcd320f4be7c6dc523cefd38a86c47309ead35d0f690dde4121b86e5",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/detail-adjust-build.log",
+          "bytes": 179,
+          "mode": 420,
+          "sha256": "d41f7054c1a9e463aa06a2a5dfa14503874db6bd32475e7730b1232f1a6212a8",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/detail-adjust-go.log",
+          "bytes": 61,
+          "mode": 420,
+          "sha256": "d80e5ddb721da8812f31d67a219d047aaaebb2dd889a89e24718d143f19f6874",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/detail-adjust-node.log",
+          "bytes": 24031,
+          "mode": 420,
+          "sha256": "48fb9e695ed14defdd074c25d454171a36fe4ec8df45d9c61502f53f1495fe53",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/git-status.txt",
+          "bytes": 1811,
+          "mode": 420,
+          "sha256": "7f23f8e9038fc36e0ebc07a312a869da3880dda98c263a459222d7a7124be87d",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/identity.json",
+          "bytes": 11885,
+          "mode": 420,
+          "sha256": "217b8740f3049b523cdbe76d07132c9c738ea609e1bbb82065730795da4f7d05",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/node.log",
+          "bytes": 10160,
+          "mode": 420,
+          "sha256": "5bb2d927b87affd368d6452d27e0e06bcaaa16519045b3b0fe89c2a529cd1601",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/payload-sizes.log",
+          "bytes": 306,
+          "mode": 420,
+          "sha256": "90cdf968145c9af03b57e4d3d3fca87d06264328cc8b2f33772e028547f89816",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/result-preview-build.log",
+          "bytes": 179,
+          "mode": 420,
+          "sha256": "1baf4d692139c5273d4ccfd4071b2c820fd986be884fcde183807c44d53d0be1",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/result-preview-go.log",
+          "bytes": 61,
+          "mode": 420,
+          "sha256": "bd76d4a080d29c480b5bda5362271a353021153efbbf9c08aea8f534ce5c3bf7",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/result-preview-node.log",
+          "bytes": 23335,
+          "mode": 420,
+          "sha256": "38d7ce0ceb81d3137db200b368773ebc9b05f8b25f472b613bd87c68863127b2",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/run-list-build.log",
+          "bytes": 179,
+          "mode": 420,
+          "sha256": "4c2dd60576cbc9eb416c8fceef905be83e70bd8d810d49d3d2b76d337bfc78bc",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/run-list-go.log",
+          "bytes": 61,
+          "mode": 420,
+          "sha256": "3ebfb6a5d3bb2704b9b8be92b813e4336f478770211f91f440f90d4378ab6d86",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/run-list-node.log",
+          "bytes": 24137,
+          "mode": 420,
+          "sha256": "d67447687160bee5767bb4a219137f6c4e2cf26f48dec6bbf5ab3d11c9ef0510",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/schema.log",
+          "bytes": 59,
+          "mode": 420,
+          "sha256": "61273fc7d0190337d4d6cd7fce8f3424f6790d58488c50baedf73d6459d44a5b",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench/vet.log",
+          "bytes": 13,
+          "mode": 420,
+          "sha256": "9fa3b6ead7afc298499f30c5b70014c78b6686a8269611537606fa5a7c02b6a2",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "webui-task-owned",
+      "archive": "docs/validation/archive/webui-task-owned.tar.gz",
+      "bytes": 314111,
+      "sha256": "0573720df6e111ad34e2519aa703092ad5e5a5cb6fe44d91fe1a521bbc99dbe3",
+      "members": [
+        {
+          "path": "docs/validation/webui-task-owned/1440-light-tasks.png",
+          "bytes": 109659,
+          "mode": 420,
+          "sha256": "9a5320a0ea866534959382f08f873b4f6fc6de3c3493cda1a4d2bd8235cc4585",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/webui-task-owned/320-light-retire.png",
+          "bytes": 70592,
+          "mode": 420,
+          "sha256": "cdd1b200af33eaad756ceb56a811a354b81966cb0268c8df7881ed2b40465838",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/webui-task-owned/850-dark-task-detail.png",
+          "bytes": 141029,
+          "mode": 420,
+          "sha256": "a9260fdb2d0c9825a905e292cc6521fe20eba827097590f4e04bef15001cd503",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/webui-task-owned/diff-check.txt",
+          "bytes": 12,
+          "mode": 420,
+          "sha256": "bde294368bfed77c2cddf8cec271d398aee9cdbab3b26e1059281bd33adb0120",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/git-status.txt",
+          "bytes": 2021,
+          "mode": 420,
+          "sha256": "b19bb12c3407be5ef799b6fc7bb60fc5b6f484658f57e463e3878b628620232a",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/go-tests.txt",
+          "bytes": 311,
+          "mode": 420,
+          "sha256": "d2b7397ffd62f06c3af4e863535de51fb191b6781484c6a9248f116bd723f40e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/go-vet.txt",
+          "bytes": 154,
+          "mode": 420,
+          "sha256": "53cfbf078a332a12a99dfe039288a89e1c81c80684e88f887e591805db5e5bba",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/modified-files.txt",
+          "bytes": 2486,
+          "mode": 420,
+          "sha256": "defd3460d431d134dbc2750a10b339b39cb747c04a46225c6b2abbc9915a96d5",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/node-tests.txt",
+          "bytes": 7137,
+          "mode": 420,
+          "sha256": "3ac2a2770da304754f01f7b675e767d044d666229107dba6e159ec6c29d3b105",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/protected-scope.txt",
+          "bytes": 357,
+          "mode": 420,
+          "sha256": "daf1be0389a350bec19e81c14e0d4ab799aff9dbad55846313aa6d64b87c2599",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/responsive.txt",
+          "bytes": 606,
+          "mode": 420,
+          "sha256": "55ee2a4237236a39bb78e89a43699d187c8c37ecc93be6ef710548f05b6a8814",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/results.json",
+          "bytes": 992,
+          "mode": 420,
+          "sha256": "2ae5533f17b80fc4c4ed3cff374d1218aea629303e6c36d93826f49c6d0d4494",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/webui-task-owned/static-audit.txt",
+          "bytes": 468,
+          "mode": 420,
+          "sha256": "631e0286b078cab105b620179f29c7d2fe827a29784d4229dc5dc62dd088b576",
+          "retained": false
+        }
+      ]
+    },
+    {
+      "name": "historical-reports",
+      "archive": "docs/validation/archive/historical-reports.tar.gz",
+      "bytes": 207367,
+      "sha256": "9a28c5935cbebaab5d0ee726b74c24a09da9701d3f165a2d25e757cc62981dbe",
+      "members": [
+        {
+          "path": "docs/validation/agent-execution-ownership-closure.md",
+          "bytes": 42644,
+          "mode": 420,
+          "sha256": "b1d2ab2bd4a2f649a434bb0a73e6b251c3dc47c4958032e962b86e47b45e1b30",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/agent-execution-ownership-upgrade.md",
+          "bytes": 11280,
+          "mode": 420,
+          "sha256": "1d1367ec2b47208095241147bd96fd44fd43ce8fa7e055232ebd348cf1d98586",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/approval-to-preparation-automatic-continuation.md",
+          "bytes": 5473,
+          "mode": 420,
+          "sha256": "9a23d53a46b5bcb39da63aacf51eee88a1b302deb32933045d98d5f3ea5846d1",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/card-and-details-product-polish-closure.md",
+          "bytes": 3660,
+          "mode": 420,
+          "sha256": "44171fcdbdce1545c03ecd4ca6ba1f582161f0c692df3bd7827efa4801d2cd2e",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-flow-closure.md",
+          "bytes": 10902,
+          "mode": 420,
+          "sha256": "af9804b66987c63a5aa0184299931bdb35f2f7bfd6f4eb13ae4dccf2d42cc56c",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-card-presentation-manual-evaluation.md",
+          "bytes": 2729,
+          "mode": 420,
+          "sha256": "2fb0daf01065b90e91cfd971f6faa0cb2c412ab24f6cf28c57cbb2322333cf49",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-host-capability-diagnostics.md",
+          "bytes": 9050,
+          "mode": 420,
+          "sha256": "a1c36f668b734bf08efeb293890be69c4c005c84647409599655ba0e44e4ba65",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-context-optionality.md",
+          "bytes": 8170,
+          "mode": 420,
+          "sha256": "eb12dcca16d2636b4496cd0a5325b5bbe7b781c4726ccc51a7a76348c62526e7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback-signature-gap.md",
+          "bytes": 5115,
+          "mode": 420,
+          "sha256": "a48b52d0cda6c7ef70138f845ea524972f5e5420ec4cde01dbe1a29df6675f6c",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-review-wakeup-fallback.md",
+          "bytes": 9436,
+          "mode": 420,
+          "sha256": "7b1c8c7b4222c9c50ccdfdc42d4c351e5dc9a7a096c1e4536c01afb2f6c4e2c6",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/chatgpt-task-centric-card.md",
+          "bytes": 9310,
+          "mode": 420,
+          "sha256": "2c789520a274b9c0af7980748919172a0728ba4bccb2a188c2cdef5865358f45",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/codex-01592-active-turn-continuity-2026-10-02.md",
+          "bytes": 7398,
+          "mode": 420,
+          "sha256": "070f7fc3458ff5b37767a1cf8bfa1727343931d018d9a51471901e0c136fd84c",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/coding-review-structured-output-schema-closure.md",
+          "bytes": 2695,
+          "mode": 420,
+          "sha256": "da20740eb5284b03f538374a999d99958e5bbd7e5b80da64fb64045d8c229d58",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/confirmation-new-intent-card-instance-identity-closure.md",
+          "bytes": 37008,
+          "mode": 420,
+          "sha256": "c387fcd0d349078d9bcb2c96a8823b3ac628c483ec5e023b20d841ba1d07f76b",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/confirmation-prepare-atomicity-and-host-mount-gate-final-closure.md",
+          "bytes": 18369,
+          "mode": 420,
+          "sha256": "e242a987f51a86bd927b0d7e9ddf6e56ba49cdc391be06b5626674d88159d705",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/confirmation-rejected-not-consumed-retry-and-read-identity-closure.md",
+          "bytes": 51842,
+          "mode": 420,
+          "sha256": "21196fbd3dcf156d874c274aee248eac1ba1b3b441b8499d87db4a6e3ebad33e",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/confirmation-typed-rejection-readback-stale-intent-closure.md",
+          "bytes": 4982,
+          "mode": 420,
+          "sha256": "38531ce6ddb1d3e726114949aeb6775e664f825a8a0aeeb6dba86d43ed76b905",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/current-decision-authority-presentation-closure.md",
+          "bytes": 5629,
+          "mode": 420,
+          "sha256": "8c98369d1d88c7e47af5211e7d6fcb2936857ff65f85c81feaeaf63c25de4451",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/dev-bridge-card-visual-design-polish.md",
+          "bytes": 6302,
+          "mode": 420,
+          "sha256": "6c26975ab5c9fc84cc5da8fc63388105f39a3b4761d5ea4d7822b078eea5ba30",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/dev-bridge-card-visual-template-integration.md",
+          "bytes": 8228,
+          "mode": 420,
+          "sha256": "865c94701359022c3446e3c825a33e64be8d1fde908c1b83e81698506ebb2595",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/dev-bridge-modern-workspace-card.md",
+          "bytes": 2431,
+          "mode": 420,
+          "sha256": "2d11177f78c4aa4fd5eba07f65223c5ee8815f97c9a9375089a8b3aa4c11a6c0",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/dogfood-workflow-closure.md",
+          "bytes": 6147,
+          "mode": 420,
+          "sha256": "bc34cc5eb964068ac3d6a671ac4af58bfdcc47d410922bf4035b458a1a7bf21e",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/feature-area-continuation-v0.1.md",
+          "bytes": 9840,
+          "mode": 420,
+          "sha256": "ce5b8607506c1eec8f4c51625db0b7862d2850008a57c3a1fe8ed9dc75580b7b",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-composition.md",
+          "bytes": 13337,
+          "mode": 420,
+          "sha256": "5143d54de20ef56ef4bf63d229005a177c4618c74e8df966baceea63ca7f0607",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/feature-area-create-and-review-manual.md",
+          "bytes": 2107,
+          "mode": 420,
+          "sha256": "afb11c018301307cfe12e358d5ae4934f0c8c6a107a03bfea133521d0bd13d7a",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/gpt-surface-consolidation-v1.md",
+          "bytes": 14192,
+          "mode": 420,
+          "sha256": "7db274f146dfeeda591d0f069e01e1bcaab90a92576f66742b1eb13cd90b1bc7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/invalid-review-result-decision-consumption-and-confirmation-reprepare-parity-closure.md",
+          "bytes": 28992,
+          "mode": 420,
+          "sha256": "a0c852fb72308ec37a8d68a7ab12912f4424085fe2e4336058257180cd3416f1",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/invalid-review-result-resolution-target-identity-closure.md",
+          "bytes": 1574,
+          "mode": 420,
+          "sha256": "f68551afa3bc1b389d577588e91ff0e41eb956b3034bef103b48628337f9162b",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/legacy-go-broad-fixture-final-closure.md",
+          "bytes": 11747,
+          "mode": 420,
+          "sha256": "17dc1c4899dafcb9a6266f2b7addb082b4443ea47dba07ef3b7b0c24113b8a5d",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/legacy-javascript-card-fixture-closure.md",
+          "bytes": 4313,
+          "mode": 420,
+          "sha256": "30118f426098aa37a12127df57f23cc660bdb734f93af9efe34256dac4d9652a",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/mounted-card-review-completion-gpt-wakeup.md",
+          "bytes": 13273,
+          "mode": 420,
+          "sha256": "afe00496f61a3576a684744ac193dae5fe014e2c0b2b446503f1e0e32dd8d288",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/pending-decisions-scope-isolation.md",
+          "bytes": 7140,
+          "mode": 420,
+          "sha256": "42f590a78d0898ab22862327e8a8f61d796478b62a37f7a5a0f42faf83a737d7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/remove-task-preparation-v0.1.md",
+          "bytes": 8250,
+          "mode": 420,
+          "sha256": "d6125770df4c271d55511aa82fa1ee76d644c21f12970ebf472aae82952b205d",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-approval-minimal-authorization.md",
+          "bytes": 6000,
+          "mode": 420,
+          "sha256": "382e16a55660307c393d08f7562c1a296bf86e16dc39299e4bd9c2cdf7f2b02c",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-confirmation-stage-auto-execution-closure.md",
+          "bytes": 2157,
+          "mode": 420,
+          "sha256": "5585dcc4b201449738f61a21cf01988e77dca00ef1a42601e1e9ef365873030f",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-observability-and-card-live-update-closure.md",
+          "bytes": 8020,
+          "mode": 420,
+          "sha256": "db2352e2f82fefbbb6f2b5691f4a8d6dc9811a3006a9027147add29c62d0ba1d",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/review-observability-card-live-update-evidence.json",
+          "bytes": 4860,
+          "mode": 420,
+          "sha256": "45b3eda463eb83f6ff6089f29d8df74dd06afd5e0b7ed945932b7ee97c48043e",
+          "retained": false
+        },
+        {
+          "path": "docs/validation/review-wakeup-late-claim.md",
+          "bytes": 9394,
+          "mode": 420,
+          "sha256": "0ac75df1cc3324830f1d29dabf9d2a915adef30a6835ef837665f061ddcb0930",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/runtime-request-payload-schema.md",
+          "bytes": 6331,
+          "mode": 420,
+          "sha256": "d03d40ef765ffad958c369f2982220b7a18a7c173144f28ddbd5ba9b7469a953",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/same-task-re-review-auto-start-closure.md",
+          "bytes": 1598,
+          "mode": 420,
+          "sha256": "5a80ae85a3580953ec5686118264bf92fc3ddf0bc216ff0eb645c73ace335952",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-approval-selection-completion-2026-10-01.md",
+          "bytes": 13167,
+          "mode": 420,
+          "sha256": "c4c1365541b3778bf3f099adea5e9ae15279c8bd29c505a958bdda096a061643",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-definition-approval-archive-2026-10-02.md",
+          "bytes": 8377,
+          "mode": 420,
+          "sha256": "14b76bb2c33468e69a0aa95c1ef5610619c4a961ea73b393a762c9f5f49f6421",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-no-run-revision-2026-10-01.md",
+          "bytes": 10531,
+          "mode": 420,
+          "sha256": "96e8f74f17a7c4569ced4d5b135d40a6e2a1b9927b909932e423e1c2a93e48e2",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-production-recovery-2026-10-01.md",
+          "bytes": 11261,
+          "mode": 420,
+          "sha256": "72c7f79a4ca461656f8130708853c1ccdc077ec3fef79fe0eb4717f2fcd81bd7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-remaining-runtime-constraints-2026-10-02.md",
+          "bytes": 8328,
+          "mode": 420,
+          "sha256": "360003f71628c834b1412ff745ceca8d8974bbb40376e5f9afa44faf4d652793",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-runtime-followup-2026-10-02.md",
+          "bytes": 5156,
+          "mode": 420,
+          "sha256": "979e0b2f54690324470824070bc51e8fe3a588e410d5abfc30d77e841f48c534",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-runtime-gap-fixes-2026-10-02.md",
+          "bytes": 5483,
+          "mode": 420,
+          "sha256": "779323d4094877f7fe947912b902e8358da00da7d077ef5e991846ee213e3ef7",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/skeleton-frozen-runtime-platform-foundation-2026-10-01.md",
+          "bytes": 9636,
+          "mode": 420,
+          "sha256": "dd39188200e14baa41b39c9daa3d0d3f7f63dc27cac7962ea2bba4ada8df2c79",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/task-first-webui-card-v0.1.md",
+          "bytes": 11298,
+          "mode": 420,
+          "sha256": "de687b8efc2d7ebd6468249df142be9ab27b427c5d24b5b047e8819865022203",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/usable-project-public-workflow-2026-10-02.md",
+          "bytes": 8860,
+          "mode": 420,
+          "sha256": "0805532b9efa608d7f2963c8b3c64b7e74eb776b644c137b9241bdaf3fdad8bd",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/v0.1-current-workspace-inventory-delivery.md",
+          "bytes": 8349,
+          "mode": 420,
+          "sha256": "a605d3989e8029879ed395fd60006683555554e49f9302a24e531adc4b951f2d",
+          "retained": true
+        },
+        {
+          "path": "docs/validation/webui-task-centric-workbench.md",
+          "bytes": 21078,
+          "mode": 420,
+          "sha256": "759ba68c4b2055dd6a6ad6761f106d2d4e8a6b537504e93b60acc083c2759595",
+          "retained": true
+        }
+      ]
+    }
+  ]
+}

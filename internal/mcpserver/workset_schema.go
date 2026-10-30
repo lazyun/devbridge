@@ -1,0 +1,6 @@
+package mcpserver
+
+// Member identity is resolved and frozen by Core during proposal preparation.
+const repositoryTargetsJSONSchema = `{"type":"array","minItems":1,"maxItems":128,"items":{"type":"object","additionalProperties":false,"required":["repositoryId","originCommit","read","write"],"properties":{"repositoryId":{"type":"string","minLength":1,"maxLength":128},"memberId":{"type":"string","minLength":1,"maxLength":128},"memberVersion":{"type":"integer","minimum":1},"originCommit":{"type":"string","pattern":"^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},"originRef":{"type":"string","minLength":1,"maxLength":1024},"developmentCycleId":{"type":"string","minLength":1,"maxLength":128},"observedCommit":{"type":"string","pattern":"^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},"read":{"const":true},"readScope":{"type":"object","additionalProperties":false,"properties":{"kind":{"enum":["","PATHS","REPOSITORY"]},"paths":{"type":"array","maxItems":128,"items":{"type":"string","minLength":1,"maxLength":4096}}}},"write":{"type":"object","additionalProperties":false,"required":["kind"],"properties":{"kind":{"enum":["NONE","PATHS","REPOSITORY"]},"paths":{"type":"array","maxItems":128,"items":{"type":"string","minLength":1,"maxLength":4096}}}}}}}`
+
+func repositoryTargetsSchema() any { return confirmationRaw(repositoryTargetsJSONSchema) }

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>FeatureArea details</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px system-ui; margin: 0; padding: 12px; color: var(--color-text-primary, #172033); }
+  header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  h1 { flex: 1; font-size: 18px; margin: 0; }
+  section { border-top: 1px solid #8885; padding: 10px 0; }
+  h2 { font-size: 14px; margin: 0 0 7px; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #8882; padding: 8px; border-radius: 6px; margin: 0; }
+  button { padding: 7px 10px; }
+  .notice { padding: 10px; border-radius: 6px; background: #8882; }
+  .pager { display: flex; gap: 8px; align-items: center; }
+</style>
+<main id="root">Loading details…</main>
+<script>
+(() => {
+  'use strict';
+  const TOOL = 'feature_area_details_get';
+  const sections = [
+    ['reviews', 'Reviews'],
+    ['tasks', 'Tasks'],
+    ['taskPlans', 'Task plans'],
+    ['taskDefinitionRevisions', 'Task definition revisions'],
+    ['executions', 'Executions'],
+    ['runs', 'Runs and workspace/Git evidence'],
+    ['workspaces', 'Workspaces and quarantine state'],
+    ['approvals', 'Runtime approvals'],
+    ['taskDecisionReceipts', 'Task decision receipts'],
+    ['cancellationReceipts', 'Cancellation receipts'],
+    ['recoveryConversations', 'Recovery conversations'],
+    ['recoveryReceipts', 'Recovery receipts'],
+    ['scopeExpansions', 'Legacy scope expansions']
+  ];
+  const root = document.getElementById('root');
+  const pending = new Map();
+  let nextID = 1;
+  let initialized = false;
+  let identity = { aiSessionId: '', featureAreaId: '' };
+  let pageState = { limit: 20, offset: 0 };
+  let detailsLoaded = false;
+  let loadGeneration = 0;
+  let latestLoadSequence = 0;
+  const pendingLoads = new Set();
+
+  const text = value => value == null ? '' : String(value);
+  const element = (tag, value, className) => {
+    const node = document.createElement(tag);
+    node.textContent = text(value);
+    if (className) node.className = className;
+    return node;
+  };
+  const showNotice = message => {
+    root.textContent = '';
+    root.append(element('div', message, 'notice'));
+  };
+  const notify = (method, params) => parent.postMessage({ jsonrpc: '2.0', method, params }, '*');
+  const request = (method, params, timeoutMs = 10000) => new Promise((resolve, reject) => {
+    const id = nextID++;
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error('Request timed out'));
+    }, timeoutMs);
+    pending.set(id, { resolve, reject, timer });
+    parent.postMessage({ jsonrpc: '2.0', id, method, params }, '*');
+  });
+
+  function identityFrom(value, meta) {
+    value = value || {};
+    meta = meta || {};
+    const candidate = value.arguments || value.toolInput || value.params || value;
+    const nestedMeta = value._meta || meta;
+    return {
+      aiSessionId: candidate.aiSessionId || nestedMeta.aiSessionId || '',
+      featureAreaId: candidate.featureAreaId || nestedMeta.featureAreaId || ''
+    };
+  }
+  function rememberIdentity(value, meta) {
+    const found = identityFrom(value, meta);
+    let changed = false;
+    for (const key of ['aiSessionId', 'featureAreaId']) {
+      if (found[key] && found[key] !== identity[key]) {
+        identity[key] = found[key];
+        changed = true;
+      }
+    }
+    return changed;
+  }
+  function isDetailsPage(value) {
+    if (!value || typeof value !== 'object') return false;
+    return !!value.featureArea || sections.some(([key]) => Array.isArray(value[key]));
+  }
+  function resetDetailsForIdentity() {
+    detailsLoaded = false;
+    loadGeneration++;
+    latestLoadSequence++;
+  }
+  function render(value) {
+    if (!value || typeof value !== 'object') {
+      showNotice('Details are unavailable: the tool returned no structured content.');
+      return;
+    }
+    pageState.limit = Number(value.limit) || pageState.limit;
+    pageState.offset = Number(value.offset) || 0;
+    detailsLoaded = true;
+    const area = value.featureArea || {};
+    root.textContent = '';
+    const header = document.createElement('header');
+    const back = element('button', 'Back');
+    back.onclick = close;
+    header.append(back);
+    header.append(element('h1', area.title || area.Title || area.name || area.Name || area.id || area.ID || 'FeatureArea details'));
+    root.append(header);
+
+    const pager = document.createElement('div');
+    pager.className = 'pager';
+    const previous = element('button', 'Previous');
+    previous.disabled = !value.hasPrevious;
+    previous.onclick = () => load(Math.max(0, pageState.offset - pageState.limit));
+    const next = element('button', 'Next');
+    next.disabled = !value.hasNext;
+    next.onclick = () => load(pageState.offset + pageState.limit);
+    pager.append(previous);
+    pager.append(element('span', `Offset ${pageState.offset}, up to ${pageState.limit} per section`));
+    pager.append(next);
+    root.append(pager);
+
+    const totals = value.sectionTotals || {};
+    const sectionHasMore = value.sectionHasMore || {};
+    for (const [key, label] of sections) {
+      const values = Array.isArray(value[key]) ? value[key] : [];
+      const section = document.createElement('section');
+      const total = Number.isInteger(totals[key]) ? totals[key] : values.length;
+      section.append(element('h2', `${label} (${values.length} shown / ${total}${sectionHasMore[key] ? ', more available' : ''})`));
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(values, null, 2);
+      section.append(pre);
+      root.append(section);
+    }
+  }
+  async function load(offset = pageState.offset) {
+    if (!identity.aiSessionId || !identity.featureAreaId) {
+      showNotice('Waiting for FeatureArea identity from ChatGPT.');
+      return;
+    }
+    const requestedOffset = Math.max(0, Number(offset) || 0);
+    const argumentsValue = { ...identity, limit: pageState.limit, offset: requestedOffset };
+    const requestKey = `${loadGeneration}:${JSON.stringify(argumentsValue)}`;
+    if (pendingLoads.has(requestKey)) return;
+    const sequence = ++latestLoadSequence;
+    pendingLoads.add(requestKey);
+    pageState.offset = requestedOffset;
+    try {
+      const result = await request('tools/call', {
+        name: TOOL,
+        arguments: argumentsValue
+      });
+      if (!result || result.isError) throw new Error('Details tool failed');
+      if (sequence !== latestLoadSequence) return;
+      render(result.structuredContent);
+    } catch (error) {
+      if (sequence === latestLoadSequence) showNotice('Details are unavailable: ' + text(error && error.message || error));
+    } finally {
+      pendingLoads.delete(requestKey);
+    }
+  }
+  async function close() {
+    try {
+      if (window.openai && typeof window.openai.requestClose === 'function') {
+        await window.openai.requestClose();
+      } else {
+        await request('ui/request-close', {});
+      }
+    } catch (error) {
+      showNotice('Unable to close this view: ' + text(error && error.message || error));
+    }
+  }
+  addEventListener('message', event => {
+    if (event.source !== parent) return;
+    const data = event.data;
+    if (!data || data.jsonrpc !== '2.0') return;
+    if (data.id != null && pending.has(data.id)) {
+      const requestState = pending.get(data.id);
+      pending.delete(data.id);
+      clearTimeout(requestState.timer);
+      if (data.error) requestState.reject(new Error(data.error.message || 'Request failed'));
+      else requestState.resolve(data.result);
+      return;
+    }
+    const params = data.params || {};
+    if (data.method === 'ui/notifications/tool-input') {
+      if (rememberIdentity(params, params._meta)) {
+        resetDetailsForIdentity();
+        if (initialized) load(0);
+      }
+    } else if (data.method === 'ui/notifications/tool-result') {
+      const changed = rememberIdentity(params, params._meta);
+      if (changed) resetDetailsForIdentity();
+      if (isDetailsPage(params.structuredContent)) {
+        latestLoadSequence++;
+        render(params.structuredContent);
+      } else if (initialized && !detailsLoaded) {
+        // feature_area_details_show deliberately returns only its closed display
+        // contract. Its result metadata supplies identity; the hidden read is
+        // the sole complete, authoritative DetailsPage source.
+        load(0);
+      }
+    } else if (data.method === 'ui/notifications/host-context-changed') {
+      if (params.theme) document.documentElement.style.colorScheme = params.theme;
+      if (rememberIdentity(params, params._meta)) {
+        resetDetailsForIdentity();
+        if (initialized) load(0);
+      }
+    }
+  });
+
+  rememberIdentity(window.openai && window.openai.toolInput || {});
+  request('ui/initialize', {
+    protocolVersion: '2026-01-26',
+    appInfo: { name: 'devbridge-feature-area-details', version: '1.0.0' },
+    appCapabilities: { availableDisplayModes: ['inline', 'fullscreen'] }
+  }).then(result => {
+    initialized = true;
+    if (result && result.hostContext && result.hostContext.theme) document.documentElement.style.colorScheme = result.hostContext.theme;
+    if (result && result.hostContext) rememberIdentity(result.hostContext, result.hostContext._meta);
+    rememberIdentity(window.openai && window.openai.toolInput || {});
+    notify('ui/notifications/initialized', {});
+    load(0);
+  }).catch(error => showNotice('Interactive host initialization unavailable: ' + text(error && error.message || error)));
+  window.featureAreaDetails = { render, load, close, rememberIdentity };
+})();
+</script>
+</html>

@@ -1,0 +1,489 @@
+{
+  "_meta": {
+    "capturedBy": "internal/controlapi/confirmation_rejected_retry_lifecycle_test.go",
+    "cardCopy": "本次确认未被消费。请修改选择或重新确认。",
+    "componentVersion": "PURPOSE_CONFIRMATION_V14",
+    "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+    "rejectionTrigger": "A Review REVISE decision intent submitted with a Coding Agent backend selection the executor cannot accept; Core refuses in CONFIRMATION_PREFLIGHT before any canonical business command and records the refusal.",
+    "schema": "devbridge/confirmation-rejected-retry/v5",
+    "singleSourceOfTruth": "Every envelope here is the exact production structuredContent of confirmation_show, confirmation_options_get, confirmation_commit and confirmation_get, captured over the real Streamable HTTP MCP wire, the production middleware stack and the real SQLite store by internal/controlapi/confirmation_rejected_retry_lifecycle_test.go. The Go guard and the Card JavaScript replay load this SAME file. Never hand-edit an envelope; re-capture with DEVBRIDGE_REJECTED_RETRY_FIXTURE_DIR.",
+    "staticResourceUri": "ui://devbridge/confirmation/v14",
+    "unlockPredicate": "recorded \u0026\u0026 outcome==REJECTED_NOT_CONSUMED \u0026\u0026 businessOutcome==REJECTED_NOT_CONSUMED \u0026\u0026 consumptionDisposition==NOT_CONSUMED \u0026\u0026 consumed==false \u0026\u0026 nextAction==EDIT_SELECTION \u0026\u0026 retryDisposition==EDIT_SELECTION_AND_RESUBMIT \u0026\u0026 intent.state==PENDING \u0026\u0026 receipt identity matches the pending commit"
+  },
+  "pending": {
+    "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+    "entry": {
+      "display": {
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
+        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaName": "Lifecycle area",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectName": "Upper lifecycle",
+        "purpose": "REVIEW",
+        "related": {
+          "availability": "AVAILABLE",
+          "id": "review_397003ab14273f12a524471b1805d30e",
+          "kind": "REVIEW",
+          "outcome": "SUCCEEDED",
+          "reviewRun": {
+            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "status": "SUCCEEDED"
+          },
+          "state": "SUCCEEDED"
+        },
+        "repositoryCount": 3,
+        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewOrdinal": 1,
+        "status": "AVAILABLE",
+        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskName": "Lifecycle intent",
+        "topologyRevision": 4,
+        "version": 1
+      },
+      "intent": {
+        "action": "REVISE",
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "canResume": false,
+        "content": {
+          "action": "REVISE",
+          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "purpose": "REVIEW",
+          "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
+          "review": {
+            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
+            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "preparedTopologyRevision": 4,
+            "reviewDepth": "",
+            "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
+            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewPlan": {
+              "initialScope": {
+                "kind": ""
+              },
+              "mode": "",
+              "selectedModules": null
+            },
+            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+          },
+          "variants": [
+            {
+              "id": "revise",
+              "label": "同一任务重新审查",
+              "summary": "Re-review the same Task after the revised decision"
+            }
+          ]
+        },
+        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "currentUpperReadAvailable": false,
+        "expiresAt": "2026-10-26T17:52:08.872635Z",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "purpose": "REVIEW",
+        "state": "PENDING",
+        "steps": [],
+        "version": 1
+      }
+    },
+    "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+    "meta": {
+      "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+      "componentVersion": "PURPOSE_CONFIRMATION_V14",
+      "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+      "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "outputTemplate": "ui://devbridge/confirmation/v14",
+      "presentationInstanceId": "07b76874e2bb61f89d8c12e77024d54f29689e5972ae351a6ba4ece2cc0555ae",
+      "resourceUri": "ui://devbridge/confirmation/v14",
+      "version": 1
+    },
+    "options": {
+      "entry": {
+        "options": {
+          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "backendInventoryComplete": false,
+          "branches": [],
+          "conversationModelDefault": {
+            "state": "THREADLESS"
+          },
+          "developmentContexts": [],
+          "eligibility": {
+            "attemptState": "NOT_ATTEMPTED",
+            "available": true,
+            "currentDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
+            "currentGeneration": "ed09a437bff4711bd3e77737557c831ec17e02bd0015bcdb88156c705fb5db12",
+            "currentTopologyRevision": 4,
+            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
+            "preparedGeneration": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+            "preparedTopologyRevision": 4,
+            "receiptState": "NOT_OBSERVED",
+            "reprepareAllowed": false
+          },
+          "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+          "projectId": "",
+          "projects": [],
+          "purpose": "REVIEW",
+          "repositories": [],
+          "repositoryId": "",
+          "repositoryInventoryComplete": false,
+          "runtimeInventoryRevision": 1,
+          "runtimeInventorySource": "CORE_CODEX_RUNTIME_AUTHORITY",
+          "runtimeOptions": [
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-luna",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-terra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-5.6-sol",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            },
+            {
+              "codexFastModeSupported": true,
+              "enabled": true,
+              "modelId": "gpt-6-astra",
+              "supportedReasoningEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ]
+            }
+          ],
+          "variants": [
+            {
+              "available": true,
+              "id": "revise",
+              "label": "同一任务重新审查"
+            }
+          ],
+          "version": 1
+        }
+      }
+    },
+    "presentationInstanceId": "07b76874e2bb61f89d8c12e77024d54f29689e5972ae351a6ba4ece2cc0555ae",
+    "state": "PENDING",
+    "version": 1
+  },
+  "receiptReadback": {
+    "entry": {
+      "display": {
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
+        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaName": "Lifecycle area",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectName": "Upper lifecycle",
+        "purpose": "REVIEW",
+        "related": {
+          "availability": "AVAILABLE",
+          "id": "review_397003ab14273f12a524471b1805d30e",
+          "kind": "REVIEW",
+          "outcome": "SUCCEEDED",
+          "reviewRun": {
+            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "status": "SUCCEEDED"
+          },
+          "state": "SUCCEEDED"
+        },
+        "repositoryCount": 3,
+        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewOrdinal": 1,
+        "status": "AVAILABLE",
+        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskName": "Lifecycle intent",
+        "topologyRevision": 4,
+        "version": 1
+      },
+      "intent": {
+        "action": "REVISE",
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "canResume": false,
+        "content": {
+          "action": "REVISE",
+          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "purpose": "REVIEW",
+          "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
+          "review": {
+            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
+            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "preparedTopologyRevision": 4,
+            "reviewDepth": "",
+            "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
+            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewPlan": {
+              "initialScope": {
+                "kind": ""
+              },
+              "mode": "",
+              "selectedModules": null
+            },
+            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+          },
+          "variants": [
+            {
+              "id": "revise",
+              "label": "同一任务重新审查",
+              "summary": "Re-review the same Task after the revised decision"
+            }
+          ]
+        },
+        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "currentUpperReadAvailable": false,
+        "expiresAt": "2026-10-26T17:52:08.872635Z",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "purpose": "REVIEW",
+        "state": "PENDING",
+        "steps": [],
+        "submission": {
+          "businessOutcome": "REJECTED_NOT_CONSUMED",
+          "consumed": false,
+          "consumptionDisposition": "NOT_CONSUMED",
+          "failure": {
+            "code": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "message": "This executor does not accept Coding Agent backend selection.",
+            "nextAction": "EDIT_SELECTION",
+            "reasonCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "source": "CONFIRMATION",
+            "stage": "CONFIRMATION_PREFLIGHT"
+          },
+          "nextAction": "EDIT_SELECTION",
+          "outcome": "REJECTED_NOT_CONSUMED",
+          "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+          "receiptRequestId": "",
+          "recorded": true,
+          "redispatchSameIntent": false,
+          "reprepareAllowed": true,
+          "request": {
+            "action": "REVISE",
+            "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+            "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+            "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+            "purpose": "REVIEW",
+            "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
+            "selection": {
+              "backend": {
+                "configFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "configId": "fixture-coding-backend"
+              }
+            },
+            "variantId": "revise",
+            "version": 1
+          },
+          "retryDisposition": "EDIT_SELECTION_AND_RESUBMIT"
+        },
+        "version": 1
+      }
+    }
+  },
+  "rejection": {
+    "entry": {
+      "display": {
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
+        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaName": "Lifecycle area",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectName": "Upper lifecycle",
+        "purpose": "REVIEW",
+        "related": {
+          "availability": "AVAILABLE",
+          "id": "review_397003ab14273f12a524471b1805d30e",
+          "kind": "REVIEW",
+          "outcome": "SUCCEEDED",
+          "reviewRun": {
+            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "status": "SUCCEEDED"
+          },
+          "state": "SUCCEEDED"
+        },
+        "repositoryCount": 3,
+        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewOrdinal": 1,
+        "status": "AVAILABLE",
+        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskName": "Lifecycle intent",
+        "topologyRevision": 4,
+        "version": 1
+      },
+      "failure": {
+        "code": "BACKEND_SELECTION_NOT_APPLICABLE",
+        "message": "This executor does not accept Coding Agent backend selection.",
+        "nextAction": "EDIT_SELECTION",
+        "reasonCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+        "source": "CONFIRMATION",
+        "stage": "CONFIRMATION_PREFLIGHT"
+      },
+      "intent": {
+        "action": "REVISE",
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "canResume": false,
+        "content": {
+          "action": "REVISE",
+          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "purpose": "REVIEW",
+          "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
+          "review": {
+            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
+            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "preparedTopologyRevision": 4,
+            "reviewDepth": "",
+            "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
+            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewPlan": {
+              "initialScope": {
+                "kind": ""
+              },
+              "mode": "",
+              "selectedModules": null
+            },
+            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+          },
+          "variants": [
+            {
+              "id": "revise",
+              "label": "同一任务重新审查",
+              "summary": "Re-review the same Task after the revised decision"
+            }
+          ]
+        },
+        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "currentUpperReadAvailable": false,
+        "expiresAt": "2026-10-26T17:52:08.872635Z",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "purpose": "REVIEW",
+        "state": "PENDING",
+        "steps": [],
+        "submission": {
+          "businessOutcome": "REJECTED_NOT_CONSUMED",
+          "consumed": false,
+          "consumptionDisposition": "NOT_CONSUMED",
+          "failure": {
+            "code": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "message": "This executor does not accept Coding Agent backend selection.",
+            "nextAction": "EDIT_SELECTION",
+            "reasonCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+            "source": "CONFIRMATION",
+            "stage": "CONFIRMATION_PREFLIGHT"
+          },
+          "nextAction": "EDIT_SELECTION",
+          "outcome": "REJECTED_NOT_CONSUMED",
+          "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+          "receiptRequestId": "",
+          "recorded": true,
+          "redispatchSameIntent": false,
+          "reprepareAllowed": true,
+          "request": {
+            "action": "REVISE",
+            "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+            "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+            "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+            "purpose": "REVIEW",
+            "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
+            "selection": {
+              "backend": {
+                "configFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "configId": "fixture-coding-backend"
+              }
+            },
+            "variantId": "revise",
+            "version": 1
+          },
+          "retryDisposition": "EDIT_SELECTION_AND_RESUBMIT"
+        },
+        "version": 1
+      }
+    },
+    "facts": {
+      "request": {
+        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "version": 1,
+        "purpose": "REVIEW",
+        "action": "REVISE",
+        "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
+        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+        "variantId": "revise",
+        "selection": {
+          "backend": {
+            "configId": "fixture-coding-backend",
+            "configFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        }
+      },
+      "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+      "outcome": "REJECTED_NOT_CONSUMED",
+      "recorded": true,
+      "failure": {
+        "code": "BACKEND_SELECTION_NOT_APPLICABLE",
+        "reasonCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+        "source": "CONFIRMATION",
+        "stage": "CONFIRMATION_PREFLIGHT",
+        "message": "This executor does not accept Coding Agent backend selection.",
+        "nextAction": "EDIT_SELECTION"
+      },
+      "nextAction": "EDIT_SELECTION",
+      "receiptRequestId": "",
+      "businessOutcome": "REJECTED_NOT_CONSUMED",
+      "consumptionDisposition": "NOT_CONSUMED",
+      "consumed": false,
+      "redispatchSameIntent": false,
+      "reprepareAllowed": true,
+      "retryDisposition": "EDIT_SELECTION_AND_RESUBMIT"
+    },
+    "failureCode": "BACKEND_SELECTION_NOT_APPLICABLE",
+    "isError": true,
+    "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2"
+  }
+}

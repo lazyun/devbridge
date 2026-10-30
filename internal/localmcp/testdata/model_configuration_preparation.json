@@ -1,0 +1,94 @@
+{
+  "modificationPaths": [
+    "internal/codexruntime/allowlist.go — make the configured model set open but bounded; retain the three current IDs as defaults, keep reasoning efforts closed, add shared model-ID/list validation, and make invalid explicit CLI configuration fail instead of silently widening to defaults.",
+    "desktop/internal/settings/settings.go — remove its duplicate closed model universe and validate/default AllowedModels through codexruntime while preserving the existing []string JSON contract.",
+    "desktop/frontend/src/main.js — remove hardcoded model defaults and handle edits from a dynamic model-list control.",
+    "desktop/frontend/src/views.js — replace MODEL_OPTIONS/model checkboxes with an editable model list; retain reasoning-effort checkboxes.",
+    "desktop/frontend/src/settings-payload.js — normalize the model-list control into a trimmed, ordered, deduplicated string array and correctly reconcile it after save success/failure.",
+    "desktop/frontend/src/i18n.js — update model-entry instructions and validation wording in English and Chinese.",
+    "cmd/devbridge/main.go — consume strict codexruntime parsing and reject malformed -allowed-models startup values.",
+    "internal/controlplane/bootstrap.go — default only an entirely absent allowlist; reject malformed non-empty runtime configuration instead of silently replacing it.",
+    "internal/controlapi/api.go — retain runtime-authoritative membership validation, remove the redundant codexruntime.AllModels restriction, and apply the same configured-allowlist check to Review creation.",
+    "internal/mcpserver/external_schema.go — replace four hardcoded model enums in workflow/project/review output schemas with the shared bounded model-ID schema; keep availableModels as the authoritative runtime candidates.",
+    "internal/mcpserver/external_workflow.go — replace hardcoded model enums in Task output, task_create input, and featureArea_review_start input schemas with the same bounded model-ID schema.",
+    "internal/mcpserver/external_projection.go — reuse codexruntime.Allowlist validation for MCP preflight while preserving its runtime-candidate error reporting.",
+    "internal/task/service.go — REQUIRED PATH EXPANSION: replace closed-universe checks in Create and ClassifyExecutionSelection with shared syntactic model-ID validation; configured membership remains a control-boundary concern.",
+    "internal/review/review.go — REQUIRED PATH EXPANSION: replace the closed-universe model check with shared syntactic validation.",
+    "internal/storage/sqlite/migrate.go plus a new version-29 migration source — REQUIRED PATH EXPANSION: append, rather than rewrite, a migration that rebuilds Tasks and Reviews without the three-value model CHECK while preserving all rows, columns, foreign keys, indexes, and triggers.",
+    "internal/bridgehttp/ui/product-components.js — REQUIRED PATH EXPANSION: render an unknown valid model using its raw ID instead of hiding it as an em dash.",
+    "Tests to update/add: internal/codexruntime/allowlist_test.go, desktop/internal/settings/settings_test.go, desktop/frontend/test/settings-payload.test.js, desktop/frontend/test/views.test.js, desktop/app_test.go, cmd/devbridge/main_test.go, internal/controlapi/session_scope_test.go, internal/task/service_test.go, internal/review/review_test.go, internal/storage/sqlite/integration_test.go, internal/mcpserver/external_contract_test.go, internal/mcpserver/external_workflow_integration_test.go, internal/bridgehttp/product_ui_test.js, and focused forwarding coverage in internal/execution/coordinator_test.go/internal/codex/client_test.go."
+  ],
+  "readDependencies": [
+    "desktop/app.go:407,835 already compares and forwards AllowedModels generically via strings.Join; no production change is otherwise required.",
+    "desktop/internal/settings/settings.go:230-340 already serializes AllowedModels generically through JSON Store.Load/Save.",
+    "cmd/devbridge/main.go:42,80,148-152 owns flag definition and the Core startup handoff.",
+    "internal/controlplane/bootstrap.go:54,95,257-261 owns runtime allowlist fallback and projection into ControlPlane.",
+    "internal/controlapi/api.go:235-265,345-374 projects the allowlist into each session-scoped CurrentWorkflow; internal/aisession and internal/aicontext contain no separate model universe.",
+    "internal/mcpserver/service.go:184-202 forwards ExecutionAllowlist; adapter_core.go:244,368,394 validates selections before Review/Task persistence.",
+    "internal/mcpserver/external_projection.go:483,770-777,998-1002,1127-1143,1193,1408-1429 serializes available, Task, revision, and Review model values.",
+    "internal/mcpserver/adapter_core.go:244-301,368-401 forwards selected model IDs into durable Reviews and Tasks.",
+    "internal/storage/sqlite/task_store.go and review_store.go already bind and scan model values as unrestricted strings; their live table CHECK constraints are the blocker.",
+    "internal/task/revision.go:21-57 serializes and reapplies model IDs generically in immutable Task definition revisions.",
+    "internal/consoleapi/api.go and internal/consoleapi/product.go project model strings without validation.",
+    "internal/execution/coordinator.go:635-703,1474-1534 forwards frozen Task/Review selections into Codex sessions.",
+    "internal/codex/client.go and internal/codex/wire/thread.go/turn.go serialize model IDs generically to thread/start and turn/start.",
+    "internal/localmcp/tools.go consumes the exported MCP schemas, so correcting mcpserver schemas covers both adapters.",
+    "internal/storage/sqlite/migrate.go schemaV22 and ownership_closure_migration.go schemaV28 are already-applied historical migrations and must remain byte-stable."
+  ],
+  "interfacesToReuse": [
+    "codexruntime is already the shared Core/Desktop dependency and correct ownership package. Extend it with exported model-ID/list validation rather than creating a new package.",
+    "codexruntime.Allowlist.ValidateModel and ValidateReasoningEffort remain the runtime membership checks and candidate source.",
+    "codexruntime.Default remains the backward-compatible source of gpt-5.6-luna, gpt-5.6-terra, and gpt-5.6-sol defaults.",
+    "settings.Settings.AllowedModels remains []string with JSON key allowedModels; no persisted-settings format migration is needed.",
+    "controlapi.CurrentWorkflow.AvailableModels and mcpserver.externalWorkflowStateOutput.AvailableModels already provide the dynamic AI-session projection.",
+    "mcpserver.StaticService.ExecutionAllowlist already exposes runtime configuration before Project binding.",
+    "Existing generic identifier regexes are package-local and entity-ID-specific; there is no reusable shared model-syntax validator today."
+  ],
+  "callers": [
+    "Desktop settings UI → buildSettingsPayload → App.SaveSettings → settings.Store.Save.",
+    "Desktop supervisor construction → -allowed-models comma serialization → cmd/devbridge runServer.",
+    "runServer → codexruntime parser → controlplane.Open → ControlPlane.CodexRuntime.",
+    "controlapi.currentWorkflowForSession → mcpserver.buildWorkflowProjection → workflow_get/project_open availableModels.",
+    "featureArea_review_start/task_create → adapter_core validateModelSelection → controlapi/runtime membership validation → Review/Task persistence.",
+    "Task/Review → execution coordinator → codex.Client → Codex app-server thread/start and turn/start.",
+    "SQLite Task/Review stores and Task definition revisions preserve the selected string.",
+    "Console API → product-app.js → product-components.js modelLabel renders persisted selections."
+  ],
+  "doNotModify": [
+    "No files were modified during preparation.",
+    "Do not rewrite schemaV22 or schemaV28; add schemaV29 so existing installations migrate correctly.",
+    "Do not open reasoning-effort configuration; low/medium/high/xhigh remain the closed universe.",
+    "Do not change Settings JSON keys, CLI flag names, control API projection field names, or MCP payload field names.",
+    "Do not modify generated api/codex-schema artifacts; they describe the upstream Codex app-server protocol and contain no Dev Bridge model enum.",
+    "Do not change storage serializers, Task revision serialization, Console API projections, execution coordinator, or Codex wire structs unless verification exposes a forwarding defect.",
+    "Keep friendly translations for the three default models; only add raw-ID fallback for dynamically configured values."
+  ],
+  "risks": [
+    "Implementation cannot be complete within only the six named surface areas: Task/Review domain validators, live SQLite constraints, and Console rendering are genuine required expansions and need authorization before implementation.",
+    "Removing SQLite CHECK constraints requires a foreign-keys-off table rebuild with exact recreation of dependent indexes/triggers; incomplete recreation could weaken ownership or immutability guarantees.",
+    "Input MCP schemas cannot safely enumerate only the current allowlist because exported schemas are shared by both adapters, while output schemas must also describe historical selections no longer enabled. Use a generic bounded model-ID schema and enforce membership at runtime.",
+    "availableModels currently declares maxItems 8 while runtime/Desktop allow no count bound. The shared validator should enforce 1–8 distinct IDs, or the schema limit must be deliberately changed everywhere.",
+    "The CLI currently silently falls back to defaults for malformed or partially supplied lists, which can unexpectedly broaden access; strict startup failure is the safer behavior.",
+    "Codex client sets modelProvider to openai for every explicit model, so dynamic IDs remain OpenAI/Codex model identifiers, not arbitrary provider routing.",
+    "A persisted Task or Review may reference a valid model removed from the current allowlist. Output schemas and Console rendering must continue accepting/displaying that historical value while new selections are rejected."
+  ],
+  "verificationTargets": [
+    "Shared validator accepts current defaults and a new valid ID, rejects empty/whitespace/comma/control-character/overlength IDs, duplicates, and more than eight configured models.",
+    "Desktop saves, reloads, renders, and forwards an arbitrary valid model ID while preserving order and deduplication; invalid lists leave prior settings intact.",
+    "Direct Core startup accepts a custom valid model and rejects malformed explicit configuration without default fallback.",
+    "CurrentWorkflow and both MCP adapters expose the configured custom model in availableModels.",
+    "MCP schemas contain no three-model enums, remain closed objects, accept bounded custom IDs, and runtime errors still include authoritative candidates.",
+    "Control API accepts configured custom Task and Review selections and rejects syntactically valid but disabled IDs.",
+    "Fresh schema and v28→v29 migration both accept custom model values, preserve existing Task/Review rows, report schema version 29, and pass PRAGMA foreign_key_check.",
+    "Console renders default models with friendly labels and custom valid models verbatim.",
+    "Coordinator and Codex client forward the custom ID unchanged through thread/start and turn/start.",
+    "Run go test ./..., go test -race ./..., cd desktop && go test ./..., and cd desktop/frontend && npm test; finish with git diff --check and a repository-wide search for remaining production three-model enums."
+  ],
+  "drift": {
+    "detected": false,
+    "summary": "Preparation completed read-only. The worktree is clean and HEAD remained 73864ffca5da5d78a562b3e6c2ca405cb1650f12 throughout inspection.",
+    "preparedBaseCommit": "73864ffca5da5d78a562b3e6c2ca405cb1650f12",
+    "observedHeadCommit": "73864ffca5da5d78a562b3e6c2ca405cb1650f12"
+  },
+  "verdict": "CONFLICT"
+}

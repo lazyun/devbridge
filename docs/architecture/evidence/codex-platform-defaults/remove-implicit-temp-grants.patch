@@ -1,0 +1,67 @@
+--- a/codex-rs/sandboxing/src/restricted_read_only_platform_defaults.sbpl
++++ b/codex-rs/sandboxing/src/restricted_read_only_platform_defaults.sbpl
+@@ -90,11 +90,7 @@
+ (allow file-read* file-test-existence file-write-data file-ioctl
+   (literal "/dev/dtracehelper"))
+ 
+-; Scratch space so tools can create temp files.
+-(allow file-read* file-test-existence file-write* (subpath "/tmp"))
+-(allow file-read* file-write* (subpath "/private/tmp"))
+-(allow file-read* file-write* (subpath "/var/tmp"))
+-(allow file-read* file-write* (subpath "/private/var/tmp"))
++; Scratch access must come from explicit dynamic filesystem grants.
+ 
+ ; Allow reading standard config directories.
+ (allow file-read* (subpath "/etc"))
+--- a/codex-rs/sandboxing/src/seatbelt_tests.rs
++++ b/codex-rs/sandboxing/src/seatbelt_tests.rs
+@@ -2008,3 +2008,49 @@
+         empty_root_canonical,
+     }
+ }
++
++// Generator regression only: runtime enforcement requires separate positive controls.
++#[test]
++fn minimal_defaults_require_explicit_temporary_workspace_grants() {
++    let workspace = TempDir::new().expect("temporary workspace");
++    let root = AbsolutePathBuf::from_absolute_path(workspace.path()).expect("absolute workspace");
++    let policy = FileSystemSandboxPolicy::restricted(vec![
++        FileSystemSandboxEntry::new(
++            FileSystemPath::Special { value: FileSystemSpecialPath::Root },
++            FileSystemAccessMode::Deny,
++        ),
++        FileSystemSandboxEntry::new(
++            FileSystemPath::Special { value: FileSystemSpecialPath::Minimal },
++            FileSystemAccessMode::Read,
++        ),
++        FileSystemSandboxEntry::new(
++            FileSystemPath::Path { path: root.into() },
++            FileSystemAccessMode::Write,
++        ),
++    ]);
++    for profile in [MacosSeatbeltProfile::Process, MacosSeatbeltProfile::FileSystemHelper] {
++        let args = create_seatbelt_command_args_with_profile(
++            CreateSeatbeltCommandArgsParams {
++                command: vec!["/bin/true".to_string()],
++                file_system_sandbox_policy: &policy,
++                network_sandbox_policy: NetworkSandboxPolicy::Restricted,
++                sandbox_policy_cwd: workspace.path(),
++                enforce_managed_network: false,
++                managed_network: None,
++                environment_id: None,
++                network: None,
++                extra_allow_unix_sockets: &[],
++            }, profile,
++        ).expect("generate policy");
++        let text = seatbelt_policy_arg(&args);
++        for path in ["/tmp", "/private/tmp", "/var/tmp", "/private/var/tmp"] {
++            let suffix = format!("(subpath \"{path}\"))");
++            assert!(!text.lines().any(|line| line.starts_with("(allow file-read*") && line.ends_with(&suffix)));
++        }
++        assert!(text.contains("WRITABLE_ROOT_0"));
++        assert!(text.contains("READABLE_ROOT_0"));
++        let expected = format!("-DWRITABLE_ROOT_0={}", workspace.path().canonicalize().expect("canonical root").display());
++        assert!(args.contains(&expected));
++        assert!(text.contains("file-map-executable"));
++    }
++}

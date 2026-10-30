@@ -1,0 +1,31 @@
+{
+  "installedHelperActualOutput": {
+    "status": "NOT_OBTAINED",
+    "reason": "No official export entry; new helper startup blocked"
+  },
+  "fixedOriginalGeneratorOutput": {
+    "status": "NOT_OBTAINED",
+    "reason": "No Rust toolchain; original generator not built or invoked"
+  },
+  "observationPatchedBuildOutput": {
+    "status": "NOT_OBTAINED",
+    "reason": "Observation patch prepared and dry-run applies; build unavailable"
+  },
+  "modifiedExperimentPolicyCopy": {
+    "status": "NOT_CREATED",
+    "reason": "Requires actual original export; source-only removal patch is not final SBPL"
+  },
+  "staticSegments": {
+    "status": "ARCHIVED_COMPLETE",
+    "bundle": "fixed-source-evidence.json",
+    "note": "base/network/platform defaults and generator source, not a synthesized final policy"
+  },
+  "candidate": {
+    "status": "SOURCE_CANDIDATE_UNBUILT",
+    "patch": "remove-implicit-temp-grants.patch",
+    "original72": "46 matching, 26 unexpected successes (9 reads, 17 writes)",
+    "candidate72": "NOT_RUN",
+    "addedBehaviorCases": "NOT_RUN",
+    "production": "BLOCKED"
+  }
+}

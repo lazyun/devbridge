@@ -1,0 +1,31 @@
+{
+  "provenance": {
+    "generator": "codex app-server generate-json-schema --experimental",
+    "codexVersion": "0.149.0",
+    "nativeDarwinArm64Sha256": "f4a74117b8142cda581c95ff753abf4508b5636d89682c1ed77e4a9249af8963",
+    "source": "G0 actual Codex 0.149.0 experimental-schema/v2; selected raw files vendored beside this contract",
+    "protocolBundleSha256": "4f4a8d8f53f971b97f818639f58c8d26bb68bfcdfa2d2f20572cb97e6761ab91",
+    "threadStartParamsSha256": "25f490368ec6df52a2a3b82a5469d2413307eb93439121b309f415b5648eee7a",
+    "threadResumeParamsSha256": "f0ffd32fbe09750f27d1c27d7e815db7389167dba4e4b438c8411095cdff5d92",
+    "turnStartParamsSha256": "95f35a9f01beea390cc4e478b4030e46ef37e5d769438d50f40b7aeabbf1ad74"
+  },
+  "threadStart": {
+    "permissionField": "permissions",
+    "exclusiveLegacyField": "sandbox",
+    "runtimeRootsField": "runtimeWorkspaceRoots"
+  },
+  "threadResume": {
+    "permissionField": "permissions",
+    "exclusiveLegacyField": "sandbox",
+    "runtimeRootsField": "runtimeWorkspaceRoots"
+  },
+  "turnStart": {
+    "permissionField": "permissions",
+    "exclusiveLegacyField": "sandboxPolicy",
+    "runtimeRootsField": "runtimeWorkspaceRoots"
+  },
+  "activePermissionProfile": {
+    "fields": ["id", "extends"],
+    "containsProfileDigest": false
+  }
+}

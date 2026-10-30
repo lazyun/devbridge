@@ -1,0 +1,29 @@
+/* Task panel cards share the surrounding task identity and row heading. */
+.dbc-surface { padding: 0; min-width: 0; container-type: inline-size; }
+#db-confirmation-shell { border: 0; box-shadow: none; border-radius: 0 0 10px 10px; }
+#db-confirmation-shell > #root.dbc-content { padding: 12px 10px 0; }
+.dbc-header { display: none; }
+.dbc-intro { margin-bottom: 10px; }
+#db-confirmation-shell .dbc-intro h1 { font-size: 15px; }
+#db-confirmation-shell .dbc-operation-consequence { font-size: 13px; line-height: 1.6; }
+.dbc-operation-detail { margin: 10px 0; font-size: 12px; color: var(--dbc-muted); }
+.dbc-operation-detail > summary { cursor: pointer; padding: 5px 0; }
+#db-confirmation-shell .dbc-operation-detail p { margin: 8px 0; font-size: 12px; }
+#db-confirmation-shell .dbc-operation-detail ul { padding-left: 18px; }
+.dbc-config { border: 0; border-top: 1px solid var(--dbc-line); border-radius: 0; margin-top: 12px; padding: 12px 0; }
+.dbc-section-heading { gap: 0; margin-bottom: 8px; }
+.dbc-section-heading > .dbc-icon-tile { display: none; }
+#db-confirmation-shell .dbc-section-heading h2 { font-size: 13px; }
+.dbc-config-content { margin-left: 0; }
+.dbc-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 10px; }
+#db-confirmation-shell dl { grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 13px; }
+#db-confirmation-shell dd { overflow-wrap: anywhere; }
+.dbc-footer { position: sticky; bottom: 0; z-index: 2; gap: 8px; margin: 8px -10px 0; padding: 10px; background: var(--dbc-surface); border-top: 1px solid var(--dbc-line); }
+.dbc-secondary-actions { flex: 1; gap: 6px; }
+.dbc-primary-actions { width: 100%; margin: 0; }
+.dbc-primary-actions > .primary { width: 100%; }
+#db-confirmation-shell .dbc-footer button { min-height: 38px; padding: 8px 10px; }
+@container (max-width: 350px) {
+  .dbc-fields { grid-template-columns: minmax(0, 1fr); }
+  #db-confirmation-shell dl { gap: 6px 10px; }
+}

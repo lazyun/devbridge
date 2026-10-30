@@ -1,0 +1,77 @@
+{
+  "description": "Public persisted Task.phase vocabulary; this fixture is independent of the optional local Skeleton contract.",
+  "states": [
+    {
+      "id": "TASK_ACCEPTANCE_PENDING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "ACCEPTANCE_PENDING"
+    },
+    {
+      "id": "TASK_DELIVERING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "DELIVERING"
+    },
+    {
+      "id": "TASK_IMPLEMENTATION_PREPARING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "IMPLEMENTATION_PREPARING"
+    },
+    {
+      "id": "TASK_IMPLEMENTATION_READY",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "IMPLEMENTATION_READY"
+    },
+    {
+      "id": "TASK_IMPLEMENTING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "IMPLEMENTING"
+    },
+    {
+      "id": "TASK_NO_RUN_SUCCESSOR_REQUIRED",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "NO_RUN_SUCCESSOR_REQUIRED"
+    },
+    {
+      "id": "TASK_PLANNING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "TASK_RECOVERY_REQUIRED",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "RECOVERY_REQUIRED"
+    },
+    {
+      "id": "TASK_REVIEWING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "REVIEWING"
+    },
+    {
+      "id": "TASK_REVIEW_CONFIRMATION_PENDING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "REVIEW_APPROVAL_PENDING"
+    },
+    {
+      "id": "TASK_VERIFICATION_READY",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "VERIFICATION_READY"
+    },
+    {
+      "id": "TASK_VERIFYING",
+      "flow": "TASK",
+      "persistenceMode": "PERSISTED_PHASE",
+      "persistedPhaseLiteral": "VERIFYING"
+    }
+  ]
+}
