@@ -15,6 +15,8 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/lazyun/devbridge/internal/review"
 )
 
 // Config intentionally has no existing Core URL, DataRoot, repository or model
@@ -54,7 +56,7 @@ type Report struct {
 	Scenarios     []ScenarioResult  `json:"scenarios"`
 }
 
-var scenarioNames = []string{"task-admission", "happy", "claim-race", "file-crash", "review-cancel"}
+var scenarioNames = []string{"task-admission", "review-gates", "review-blocked", "review-further", "happy", "claim-race", "file-crash", "review-cancel"}
 
 func Scenarios() []string { return append([]string(nil), scenarioNames...) }
 
@@ -249,6 +251,12 @@ func runScenario(ctx context.Context, c Config, root, name string) (result Scena
 	switch name {
 	case "task-admission":
 		s.taskAdmission()
+	case "review-gates":
+		s.reviewGates()
+	case "review-blocked":
+		s.reviewNotReady(review.DispositionBlocked)
+	case "review-further":
+		s.reviewNotReady(review.DispositionFurtherReviewRequired)
 	case "happy":
 		s.happy()
 	case "claim-race":

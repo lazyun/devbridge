@@ -8,6 +8,7 @@ import (
 	"github.com/lazyun/devbridge/internal/review"
 	"github.com/lazyun/devbridge/internal/run"
 	"github.com/lazyun/devbridge/internal/runanalysis"
+	"github.com/lazyun/devbridge/internal/workset"
 )
 
 // Both public reads use the exact recorded executor/protocol. Native prose,
@@ -67,7 +68,7 @@ func readExactReviewResult(ctx context.Context, s BridgeService, in ReviewResult
 		if err != nil {
 			return out, err
 		}
-		if report.ReviewID != v.ID || report.RunID != r.ID || report.Baseline != v.BaseCommit {
+		if report.ReviewID != v.ID || report.RunID != r.ID || !upperReportBaselineMatches(v, report) {
 			return out, errors.New("Review report identity mismatch")
 		}
 		proposal := report.Report.CompatibilityResult()
@@ -121,4 +122,19 @@ func readExactReviewResult(ctx context.Context, s BridgeService, in ReviewResult
 	}
 	out.Proposal, out.Source, out.State = &proposal, "VALIDATED_REVIEW_RESULT", "RECORDED"
 	return out, nil
+}
+
+func upperReportBaselineMatches(owner review.Review, report review.StoredReport) bool {
+	if len(owner.RepositoryTargets) == 0 {
+		// Legacy scalar reports keep their exact commit fence. An empty v2
+		// scalar must never turn a missing workset into a successful v1 read.
+		return report.Report.SchemaVersion == 1 && owner.WorkspaceID == "" && owner.BaseCommit != "" && report.Baseline == owner.BaseCommit
+	}
+	if report.Report.SchemaVersion != 2 || owner.WorkspaceID == "" || owner.RepositoryID != "" || owner.BaseCommit != "" {
+		return false
+	}
+	// Match the v2 writer's immutable admitted read set, not the report's
+	// proposed implementation targets (which may add writes or be absent).
+	baseline, err := (workset.Set{Version: workset.Version, WorkspaceID: "review:" + owner.ID, Targets: owner.RepositoryTargets}).Fingerprint()
+	return err == nil && report.Baseline == baseline
 }

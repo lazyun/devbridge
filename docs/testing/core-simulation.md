@@ -6,7 +6,7 @@ Core、GPT MCP proxy 和 Local MCP proxy，使用确定性的上游 GPT、显式
 也不直接读写 SQLite 或插入审批/执行记录。
 
 > **边界：模拟的是 GPT/用户/中性 pull Agent，不是 Codex App Server。**
-> `DIRECT_FILE` 场景使用明确的 **fixture-only 验证豁免**，因此
+> 实际执行 `DIRECT_FILE` 文件工作流的场景使用明确的 **fixture-only 验证豁免**，因此
 > `verificationStatus` 必须一直是 `NOT_RUN`。即使 fixture 用户随后验收并合并，
 > 也不能描述成原生命令验证通过或真实 AI 工作完成。
 
@@ -48,6 +48,9 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 | 场景 | 真实 Core 中检查的行为 |
 |---|---|
 | `task-admission` | 按生命周期从最早缺口开始：Task prepare/options 不创建业务对象；错误 hash/version 拒绝且不泄漏确认对象；无效 variant 形成可读的 `REJECTED_NOT_CONSUMED`，只有 Core 明确允许编辑选择才提交更正；显式仅创建一次 Task，重复/冷启动回执不多建或偷偷启动 Review；单独 Review prepare 仍无 Run，正确确认后只有一个精确只读 UPPER Review Run，停在 `REVIEWING` |
+| `review-gates` | 冻结 Review 指令/只读成员与 claim 哈希；错 epoch、变更 worker/request、越界读取、错误成员/证据 digest/原始提交、缺少或错误 worker 的报告均拒绝且无业务副作用；正式报告关闭权限，精确回执与完整报告冷启动可读；单独批准停在 `IMPLEMENTATION_READY`，保留 `RUN` 验证要求，**不豁免、不启动实现** |
+| `review-blocked` | 独立 fixture 提交真实读文件证据支持的模拟 `BLOCKED` 报告；Review Run `SUCCEEDED` 仅代表报告记录完成，Task 仍 `ACTIVE/REVIEW_REQUIRED` 并要求 DEEP；无可用批准/启动动作，无实现权限，拒绝晚到写报告，冷启动回执稳定 |
+| `review-further` | 同一阶段的独立 `FURTHER_REVIEW_REQUIRED` 分支；不自动发起后继 Review、不创建新 Task，不把已有报告完成当成 Task 完成 |
 | `happy` | 创建 Task → UPPER_LLM Review → worker 真实读文件/提交报告 → 用户批准但不启动 → 用户单独启动 DIRECT_FILE → 实际写入两个精确成员 → 正式结果 → `ACCEPTANCE_PENDING` → 冷启动历史回执 → 用户明确豁免验收 → Task commit → 用户单独确认 FeatureArea merge |
 | `claim-race` | 8 个并发相同 claim 仅一个获得可执行 payload，其余只读同一回执；显式取消只关闭权限，不声称外部 worker 已停止或 Task 已取消 |
 | `file-crash` | 一个文件效果获得回执后 SIGKILL **自有 Core**；重启后旧 worker 为 `OUTCOME_UNKNOWN`，无重新派发；旧回执可读、旧权限不可新写；不支持的继续被拒绝、epoch/generation 不刷新；用户明确取消 |
@@ -58,7 +61,7 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 拒绝后会读取真实文件或 Task 投影，避免只看“报错了”而漏掉已发生的副作用。
 审批、Agent 报告、Task 验收、Git 交付是分开的动作与断言。
 
-`all` 先运行 `task-admission`，然后回归原有四个场景。单独验收初始阶段：
+`all` 先运行 `task-admission`、三个 Review 阶段场景，然后回归原有四个场景。单独验收初始阶段：
 
 ```sh
 ./scripts/verify-core-simulation.sh -scenario task-admission
@@ -68,6 +71,8 @@ go build -o ./build/sim-bin/ ./cmd/devbridge ./cmd/devbridge-mcp \
 `workspace_get` 和精确 `confirmation_get` 交叉核对数量、状态、身份与回执。
 校验未通过、已记录但未消费、已消费是不同结果；不能把报错或无回执当成安全重试。
 此阶段不派发 worker、不批准实现、不启动继续任务，也不触及原生模型资格。
+三个后续 Review 场景只使用中性 pull worker。`workerId` 是交付关联标签，不是
+模型/进程身份证明，也不让文件读取变成某个 worker 的独占权限。
 
 ## 安全隔离与证据
 
@@ -130,3 +135,20 @@ DEVBRIDGE_SIM_BIN=/absolute/path/to/compiled/bin \
   初始开发中的拒绝回执指针和 GPT 工具目录两处假设按公开契约修正，属于
   模拟器问题，不登记为 Core 缺陷。最终场景计数与通过情况以对应 `report.json`
   为准；历史四场景结果不能替代新增阶段的验证。
+
+### Review 阶段发现的真实缺陷
+
+新场景在未修改的真实二进制上复现：多仓 UPPER Review 正式报告已经记录，
+按 `requestId` 读取回执成功，但不带 `requestId` 读取完整 `review_result_get`
+报 `Review report identity mismatch`；`APPROVAL_READY`、`BLOCKED` 与
+`FURTHER_REVIEW_REQUIRED` 三种报告均受影响。
+
+原因是读取端仍把 v2 的冻结成员集合指纹与 v1 的单仓 `BaseCommit` 比较。
+修复保留 Review/Run 身份检查，v2 按原始准入只读目标集合重算指纹，拒绝缺失、
+混合或伪造基线；v1 仍校验自己的标量基线。不使用报告提出的写入范围替代
+准入身份，也不省略检查“让测试通过”。单元回归同时覆盖 `operation_get`
+的共享读取路径。该修复不产生新报告、审批或执行权限。
+
+Review 交付/报告回执使用原始类型化 JSON 字节哈希，Confirmation 回执使用
+规范化 JSON 哈希；模拟器分别验证，不能混用。开发时混用哈希导致的断言失败
+属于模拟器自身问题，与上述实际报告读取缺陷分开记录。

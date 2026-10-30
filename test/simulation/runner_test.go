@@ -32,7 +32,7 @@ func TestConfigFailsClosed(t *testing.T) {
 }
 func TestOrderedScenariosHaveIndependentNamesAndValidConfiguration(t *testing.T) {
 	names := Scenarios()
-	if len(names) != 5 || names[0] != "task-admission" {
+	if len(names) != 8 || names[0] != "task-admission" || names[1] != "review-gates" || names[2] != "review-blocked" || names[3] != "review-further" {
 		t.Fatalf("initial Task admission must precede existing regressions: %v", names)
 	}
 	bin := fixtureBin(t)
@@ -49,6 +49,16 @@ func TestOrderedScenariosHaveIndependentNamesAndValidConfiguration(t *testing.T)
 	names[0] = "caller mutation"
 	if Scenarios()[0] != "task-admission" {
 		t.Fatal("caller changed registered scenario order")
+	}
+}
+
+func TestReviewDigestPreservesTypedJSONFieldOrder(t *testing.T) {
+	value := struct {
+		Z string `json:"z"`
+		A string `json:"a"`
+	}{Z: "first", A: "second"}
+	if got := reviewPayloadDigest(value); got != digestText(`{"z":"first","a":"second"}`) || got == digestText(`{"a":"second","z":"first"}`) {
+		t.Fatalf("Review receipt digest used another JSON ordering: %s", got)
 	}
 }
 func TestEnvironmentDoesNotInheritAuthority(t *testing.T) {

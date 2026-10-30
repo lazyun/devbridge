@@ -12,6 +12,7 @@ import (
 	"github.com/lazyun/devbridge/internal/run"
 	"github.com/lazyun/devbridge/internal/runanalysis"
 	p "github.com/lazyun/devbridge/internal/workflowpresentation"
+	"github.com/lazyun/devbridge/internal/workset"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -188,5 +189,112 @@ func TestReviewResultReadPublicMCPWireExposesNaturalAnalysis(t *testing.T) {
 	var decoded ReviewResultGetOutput
 	if err = json.Unmarshal(raw, &decoded); err != nil || decoded.State != "RECORDED" || decoded.Analysis == nil || decoded.Proposal == nil || decoded.Report != nil {
 		t.Fatalf("wire result %s %v", raw, err)
+	}
+}
+
+func upperV2ResultReadFixture(t *testing.T) *reviewResultReadFixture {
+	t.Helper()
+	f := naturalReviewReadFixture()
+	f.review.ExecutorKind = review.ExecutorUpperLLM
+	f.review.BaseCommit = ""
+	f.review.WorkspaceID = "workspace"
+	f.review.RepositoryTargets = []workset.Target{
+		{RepositoryID: "app", MemberID: "app-member", MemberVersion: 1, OriginCommit: strings.Repeat("a", 40), OriginRef: "refs/heads/app", Read: true, Write: workset.WriteScope{Kind: "NONE"}},
+		{RepositoryID: "sdk", MemberID: "sdk-member", MemberVersion: 1, OriginCommit: strings.Repeat("b", 40), OriginRef: "refs/heads/sdk", Read: true, Write: workset.WriteScope{Kind: "NONE"}},
+	}
+	baseline, err := (workset.Set{Version: workset.Version, WorkspaceID: "review:" + f.review.ID, Targets: f.review.RepositoryTargets}).Fingerprint()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.upper = review.StoredReport{ReviewID: f.review.ID, RunID: f.run.ID, Baseline: baseline, Report: review.ReviewReport{SchemaVersion: 2, Summary: "Frozen multi-member findings", Disposition: review.DispositionBlocked}}
+	return f
+}
+
+func TestReviewResultReadUpperV2UsesAdmittedWorksetBaseline(t *testing.T) {
+	f := upperV2ResultReadFixture(t)
+	// Findings-only reports need not propose any implementation targets. Their
+	// baseline still belongs to the Review's original immutable read set.
+	out, err := ReviewResultGetCore(context.Background(), f, ReviewResultGetInput{AISessionID: "session", ReviewID: f.review.ID})
+	if err != nil || out.State != "RECORDED" || out.Source != "UPPER_REVIEW_REPORT" || out.Report == nil || out.Report.Baseline != f.upper.Baseline || out.Analysis != nil || f.analysisReads != 0 || f.mutations != 0 {
+		t.Fatalf("v2 upper report: %+v %v", out, err)
+	}
+	operation, err := OperationGetCore(context.Background(), f, OperationGetInput{AISessionID: "session", Target: p.OperationTarget{Kind: "REVIEW", OperationID: f.review.ID, OwnerTaskID: f.review.TaskID, RunID: f.run.ID}, Include: []string{"RESULT"}})
+	if err != nil || operation.Result.ReviewResult == nil || operation.Result.ReviewResult.Report == nil || operation.Result.ReviewResult.Report.Baseline != f.upper.Baseline || operation.Result.ReviewSource.SummaryStatus != "AVAILABLE" || f.analysisReads != 0 || f.mutations != 0 {
+		t.Fatalf("v2 operation uses the same exact report: %+v %v", operation, err)
+	}
+	server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "upper-v2-read", Version: "1"}, nil)
+	RegisterUpperReviewTools(server, f)
+	client := connectPresentationTest(t, context.Background(), server)
+	result, err := client.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "review_result_get", Arguments: ReviewResultGetInput{AISessionID: "session", ReviewID: f.review.ID}})
+	if err != nil || result.IsError {
+		t.Fatalf("v2 public read: %+v %v", result, err)
+	}
+	for _, disposition := range []review.Disposition{review.DispositionFurtherReviewRequired, review.DispositionApprovalReady} {
+		f.upper.Report.Disposition = disposition
+		if disposition == review.DispositionApprovalReady {
+			f.upper.Report.RepositoryTargets = workset.CloneTargets(f.review.RepositoryTargets)
+			f.upper.Report.RepositoryTargets[0].Write = workset.WriteScope{Kind: "PATHS", Paths: []string{"same.txt"}}
+		}
+		out, err = ReviewResultGetCore(context.Background(), f, ReviewResultGetInput{AISessionID: "session", ReviewID: f.review.ID})
+		if err != nil || out.Report == nil || out.Report.Baseline != f.upper.Baseline || out.Proposal.ReviewDisposition != disposition {
+			t.Fatalf("%s must use admitted targets, not optional proposed writes: %+v %v", disposition, out, err)
+		}
+	}
+}
+
+func TestReviewResultReadUpperV2RejectsMismatchedBaselineAndOwner(t *testing.T) {
+	for _, name := range []string{"empty-baseline", "foreign-baseline", "changed-origin", "changed-member", "invalid-admitted-target", "missing-admitted-targets", "missing-workspace", "mixed-scalar-repository", "mixed-scalar-baseline", "wrong-report-schema", "foreign-review", "foreign-run"} {
+		t.Run(name, func(t *testing.T) {
+			f := upperV2ResultReadFixture(t)
+			switch name {
+			case "empty-baseline":
+				f.upper.Baseline = ""
+			case "foreign-baseline":
+				f.upper.Baseline = strings.Repeat("0", 64)
+			case "changed-origin":
+				f.review.RepositoryTargets[0].OriginCommit = strings.Repeat("c", 40)
+			case "changed-member":
+				f.review.RepositoryTargets[0].MemberID = "another-member"
+			case "invalid-admitted-target":
+				f.review.RepositoryTargets[0].OriginCommit = "invalid"
+			case "missing-admitted-targets":
+				f.review.RepositoryTargets = nil
+			case "missing-workspace":
+				f.review.WorkspaceID = ""
+			case "mixed-scalar-repository":
+				f.review.RepositoryID = "app"
+			case "mixed-scalar-baseline":
+				f.review.BaseCommit = f.upper.Baseline
+			case "wrong-report-schema":
+				f.upper.Report.SchemaVersion = 1
+			case "foreign-review":
+				f.upper.ReviewID = "other-review"
+			case "foreign-run":
+				f.upper.RunID = "other-run"
+			}
+			out, err := ReviewResultGetCore(context.Background(), f, ReviewResultGetInput{AISessionID: "session", ReviewID: f.review.ID})
+			if err == nil || out.Report != nil || out.Proposal != nil || f.mutations != 0 || f.analysisReads != 0 {
+				t.Fatalf("invalid v2 report source accepted: %+v %v", out, err)
+			}
+		})
+	}
+}
+
+func TestReviewResultReadUpperV1RetainsScalarBaselineFence(t *testing.T) {
+	for _, invalid := range []string{"baseline", "mixed-workspace", "schema"} {
+		f := naturalReviewReadFixture()
+		f.review.ExecutorKind = review.ExecutorUpperLLM
+		f.upper = review.StoredReport{ReviewID: f.review.ID, RunID: f.run.ID, Baseline: f.review.BaseCommit, Report: review.ReviewReport{SchemaVersion: 1, Summary: "Legacy findings", Disposition: review.DispositionBlocked}}
+		switch invalid {
+		case "baseline":
+			f.upper.Baseline = "wrong-scalar"
+		case "mixed-workspace":
+			f.review.WorkspaceID = "workspace"
+		case "schema":
+			f.upper.Report.SchemaVersion = 2
+		}
+		if out, err := ReviewResultGetCore(context.Background(), f, ReviewResultGetInput{AISessionID: "session", ReviewID: f.review.ID}); err == nil || out.Report != nil {
+			t.Fatalf("v1 %s mismatch accepted: %+v %v", invalid, out, err)
+		}
 	}
 }

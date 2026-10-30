@@ -20,6 +20,7 @@ import (
 type fixture struct {
 	s                                                       *scenario
 	project, session, foreign, area, task, review, revision string
+	reviewInstruction                                       string
 	paths, heads, repos, expectedSource, expectedHeads      map[string]string
 	targets                                                 []workset.Target
 	access                                                  review.UpperAccess
@@ -148,6 +149,11 @@ func (f *fixture) startReview() {
 }
 func (f *fixture) adoptReview(result c.Intent) {
 	f.review = result.Steps[0].ReviewID
+	for _, candidate := range result.Content.Variants {
+		if result.Commit != nil && candidate.ID == result.Commit.VariantID {
+			f.reviewInstruction = candidate.ReviewInstruction
+		}
+	}
 	decode(f.s.gpt.call("review_access_get", map[string]any{"aiSessionId": f.session, "reviewId": f.review}), &f.access)
 	f.s.check("review is admitted by real Core", f.access.State == "ACTIVE" && f.access.ProtocolVersion == 2 && len(f.access.RepositoryTargets) == 2, f.access)
 	f.upperClaim = review.WorkerClaimInput{UpperTarget: f.access.Target, WorkerClaimIdentity: review.WorkerClaimIdentity{RequestID: "upper-delivery", WorkerID: "SIMULATED-review-worker"}}
@@ -161,7 +167,7 @@ func (f *fixture) claimReview() {
 	f.s.check("review payload delivered once", f.upperFirst["state"] == review.WorkerDispatchIntent && f.upperFirst["executionPayload"] != nil, f.upperFirst)
 	f.receipt("review_worker_claim", f.upperClaim, f.upperFirst, review.WorkerOutcomeUnknown)
 }
-func (f *fixture) finishReview() {
+func (f *fixture) buildReviewReport() {
 	f.targets = workset.CloneTargets(f.access.RepositoryTargets)
 	refs := []review.EvidenceRef{}
 	for i, t := range f.targets {
@@ -175,25 +181,35 @@ func (f *fixture) finishReview() {
 		verify.Checks = append(verify.Checks, task.VerificationCheck{Kind: task.VerificationCheckTestCommand, Command: "test -f same.txt", Required: true, RepositoryID: f.repos[name], RepositoryIDs: []string{f.repos[name]}, WorkingDirectory: "."})
 	}
 	f.report = review.SubmitInput{UpperTarget: f.access.Target, WorkerClaim: &f.upperClaim.WorkerClaimIdentity, RequestID: "review-result", Report: review.ReviewReport{SchemaVersion: 2, RepositoryTargets: f.targets, PrimaryMemberID: f.targets[0].MemberID, Summary: "SIMULATED proposal grounded in actual Core file reads", Disposition: review.DispositionApprovalReady, Coverage: []string{"app/same.txt", "sdk/same.txt"}, Findings: []review.Finding{}, Limitations: []string{"Deterministic simulated reviewer; no model or command execution"}, RecommendedNextSteps: []string{"Explicit fixture-user approval, waiver and separate start"}, EvidenceRefs: refs, WorkSpec: &work, VerificationSpec: &verify}}
-	f.s.agent.call("review_result_submit", f.report)
+}
+func (f *fixture) recordReviewReport() map[string]any {
+	receipt := f.s.agent.call("review_result_submit", f.report)
 	f.receipt("review_worker_get", f.upperClaim, f.upperFirst, review.WorkerResultRecorded)
 	ws := f.checkPhase("review report is not approval", "ACTIVE", "REVIEW_APPROVAL_PENDING")
 	f.revision = field(ws["taskSources"].(map[string]any), "currentDefinitionRevisionId")
+	return receipt
+}
+func (f *fixture) approvalPreparation(action, request string) c.PrepareInput {
 	approve := variant("approve", "Approve fixture definition without starting")
 	approve.ImplementationMode = task.ImplementationDirectFile
 	approve.RepositoryTargets = f.targets
 	approve.PrimaryMemberID = f.targets[0].MemberID
-	approve.WorkSpec = &work
-	approve.VerificationSpec = &verify
-	premature := c.PrepareInput{AISessionID: f.session, RequestID: "start-before-approval", Purpose: c.Execution, Action: "START_DIRECT_FILE", Execution: &c.ExecutionBody{Action: "START_DIRECT_FILE", TaskID: f.task, FeatureAreaID: f.area, ReviewID: f.review, DecisionID: "REVIEW_APPROVAL:" + f.review, TaskDefinitionRevisionID: f.revision}, Variants: []c.Variant{approve}}
+	approve.WorkSpec = f.report.Report.WorkSpec
+	approve.VerificationSpec = f.report.Report.VerificationSpec
+	return c.PrepareInput{AISessionID: f.session, RequestID: request, Purpose: c.Execution, Action: action, Execution: &c.ExecutionBody{Action: action, TaskID: f.task, FeatureAreaID: f.area, ReviewID: f.review, DecisionID: "REVIEW_APPROVAL:" + f.review, TaskDefinitionRevisionID: f.revision}, Variants: []c.Variant{approve}}
+}
+func (f *fixture) finishReview() {
+	f.buildReviewReport()
+	f.recordReviewReport()
+	premature := f.approvalPreparation("START_DIRECT_FILE", "start-before-approval")
 	f.s.gpt.deny("execution_prepare", premature, "")
 	f.checkPhase("start before approval cannot advance Task", "ACTIVE", "REVIEW_APPROVAL_PENDING")
-	f.complete(c.PrepareInput{RequestID: "approve-no-start", Purpose: c.Execution, Action: "APPROVE", Execution: &c.ExecutionBody{Action: "APPROVE", TaskID: f.task, FeatureAreaID: f.area, ReviewID: f.review, DecisionID: "REVIEW_APPROVAL:" + f.review, TaskDefinitionRevisionID: f.revision}, Variants: []c.Variant{approve}}, c.Selection{VerificationWaiver: &task.VerificationWaiver{Source: task.VerificationWaiverUser, Reason: "SIMULATOR FIXTURE ONLY: user explicitly waives command verification; no real user Task or real model run"}})
-	ws = f.checkPhase("approval is not execution", "ACTIVE", "IMPLEMENTATION_READY")
+	f.complete(f.approvalPreparation("APPROVE", "approve-no-start"), c.Selection{VerificationWaiver: &task.VerificationWaiver{Source: task.VerificationWaiverUser, Reason: "SIMULATOR FIXTURE ONLY: user explicitly waives command verification; no real user Task or real model run"}})
+	ws := f.checkPhase("approval is not execution", "ACTIVE", "IMPLEMENTATION_READY")
 	f.revision = field(ws["taskSources"].(map[string]any), "currentDefinitionRevisionId")
 	source := ws["taskSources"].(map[string]any)["selectedDefinition"].(map[string]any)
 	decode(source["definition"], &f.frozen)
-	f.s.check("explicit fixture waiver frozen", f.frozen.VerificationSpec.Mode == task.VerificationModeNone && f.frozen.WorkSpec.CodexInstruction == work.CodexInstruction, f.frozen)
+	f.s.check("explicit fixture waiver frozen", f.frozen.VerificationSpec.Mode == task.VerificationModeNone && f.frozen.WorkSpec.CodexInstruction == f.report.Report.WorkSpec.CodexInstruction, f.frozen)
 }
 func (f *fixture) directPreparation(action, request string) c.PrepareInput {
 	work, verify := f.frozen.WorkSpec, f.frozen.VerificationSpec
