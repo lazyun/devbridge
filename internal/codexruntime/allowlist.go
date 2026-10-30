@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"strings"
 	"sync"
 	"unicode"
@@ -63,6 +64,9 @@ const (
 // the Desktop has enabled. It is validated structurally and never infers a
 // model or reasoning effort from task complexity.
 type Allowlist struct {
+	// Read-only configured registry inventory, never a model-settings grant.
+	AgentConfigFingerprints map[string]string `json:"agentConfigFingerprints,omitempty"`
+
 	// ModelConfigs is the canonical runtime configuration. Models and
 	// ReasoningEfforts remain an input/output compatibility projection for old
 	// Desktop settings and CLI callers; Authority normalizes them on ingress.
@@ -105,9 +109,10 @@ func Default() Allowlist {
 // without changing the source allowlist.
 func (a Allowlist) Clone() Allowlist {
 	return Allowlist{
-		ModelConfigs:     cloneModelConfigs(a.ModelConfigs),
-		Models:           append([]string(nil), a.Models...),
-		ReasoningEfforts: append([]string(nil), a.ReasoningEfforts...),
+		AgentConfigFingerprints: cloneFingerprints(a.AgentConfigFingerprints),
+		ModelConfigs:            cloneModelConfigs(a.ModelConfigs),
+		Models:                  append([]string(nil), a.Models...),
+		ReasoningEfforts:        append([]string(nil), a.ReasoningEfforts...),
 	}
 }
 
@@ -215,6 +220,9 @@ func (a Allowlist) Valid() bool {
 
 // Validate checks the persisted catalog structure and enabled selection.
 func (a Allowlist) Validate() error {
+	if err := validateFingerprints(a.AgentConfigFingerprints); err != nil {
+		return err
+	}
 	if len(a.ModelConfigs) > 0 {
 		return validateModelConfigs(a.ModelConfigs)
 	}
@@ -241,11 +249,16 @@ func (a Allowlist) Validate() error {
 // once. It also materializes disabled known models, retaining their defaults
 // when settings are subsequently saved.
 func (a Allowlist) Normalize() (Allowlist, error) {
+	if err := validateFingerprints(a.AgentConfigFingerprints); err != nil {
+		return Allowlist{}, err
+	}
 	if len(a.ModelConfigs) > 0 {
 		if err := validateModelConfigs(a.ModelConfigs); err != nil {
 			return Allowlist{}, err
 		}
-		return allowlistFromConfigs(a.ModelConfigs), nil
+		out := allowlistFromConfigs(a.ModelConfigs)
+		out.AgentConfigFingerprints = cloneFingerprints(a.AgentConfigFingerprints)
+		return out, nil
 	}
 	if err := a.Validate(); err != nil {
 		return Allowlist{}, err
@@ -259,7 +272,9 @@ func (a Allowlist) Normalize() (Allowlist, error) {
 		}
 		configs = append(configs, CodingAgentModelConfig{ModelID: capability.ModelID, Enabled: enabled, SupportedReasoningEfforts: capability.SupportedReasoningEfforts, DefaultReasoningEffort: defaultReasoningEffort(allowed)})
 	}
-	return allowlistFromConfigs(configs), nil
+	out := allowlistFromConfigs(configs)
+	out.AgentConfigFingerprints = cloneFingerprints(a.AgentConfigFingerprints)
+	return out, nil
 }
 
 func validateModelConfigs(configs []CodingAgentModelConfig) error {
@@ -427,6 +442,8 @@ type SelectionKind string
 
 const (
 	ModelNotAllowed                 SelectionKind = "MODEL_NOT_ALLOWED"
+	ExecutionPolicyNotAllowed       SelectionKind = "EXECUTION_POLICY_NOT_ALLOWED"
+	AgentConfigurationUnavailable   SelectionKind = "AGENT_CONFIGURATION_UNAVAILABLE"
 	ReasoningEffortNotAllowed       SelectionKind = "REASONING_EFFORT_NOT_ALLOWED"
 	BackendConfigurationUnavailable SelectionKind = "CODEX_BACKEND_CONFIGURATION_UNAVAILABLE"
 	FastModeNotSupported            SelectionKind = "CODEX_FAST_MODE_NOT_SUPPORTED"
@@ -496,12 +513,14 @@ var ErrStaleRevision = errors.New("Codex runtime inventory revision is stale")
 // replaced atomically under one mutex so models and efforts cannot be observed
 // from different generations.
 type Authority struct {
-	mu       sync.RWMutex
-	revision uint64
-	value    Allowlist
+	mu                             sync.RWMutex
+	revision                       uint64
+	value                          Allowlist
+	agentConfigFingerprintProvider func() map[string]string
 }
 
 func NewAuthority(initial Allowlist) (*Authority, error) {
+	initial.AgentConfigFingerprints = nil // Only a configured factory provider can publish these.
 	if len(initial.ModelConfigs) == 0 && len(initial.Models) == 0 && len(initial.ReasoningEfforts) == 0 {
 		initial = Default()
 	}
@@ -517,8 +536,13 @@ func (a *Authority) Snapshot() Snapshot {
 		return Snapshot{}
 	}
 	a.mu.RLock()
-	defer a.mu.RUnlock()
-	return Snapshot{Revision: a.revision, Allowlist: a.value.Clone()}
+	out, provider := Snapshot{Revision: a.revision, Allowlist: a.value.Clone()}, a.agentConfigFingerprintProvider
+	a.mu.RUnlock()
+	out.Allowlist.AgentConfigFingerprints = nil
+	if provider != nil {
+		out.Allowlist.AgentConfigFingerprints = cloneFingerprints(provider())
+	}
+	return out
 }
 
 // ExecutionAllowlist implements the request-time provider used by application
@@ -528,6 +552,7 @@ func (a *Authority) ExecutionAllowlist() Allowlist { return a.Snapshot().Allowli
 // Apply atomically replaces the whole inventory when expectedRevision still
 // names the current generation.
 func (a *Authority) Apply(expectedRevision uint64, next Allowlist) (Snapshot, error) {
+	next.AgentConfigFingerprints = nil // Settings input is not configured agent provenance.
 	if a == nil {
 		return Snapshot{}, errors.New("Codex runtime inventory authority is unavailable")
 	}
@@ -536,11 +561,49 @@ func (a *Authority) Apply(expectedRevision uint64, next Allowlist) (Snapshot, er
 		return Snapshot{}, err
 	}
 	a.mu.Lock()
-	defer a.mu.Unlock()
+	var resultErr error
 	if expectedRevision != a.revision {
-		return Snapshot{Revision: a.revision, Allowlist: a.value.Clone()}, ErrStaleRevision
+		resultErr = ErrStaleRevision
+	} else {
+		a.revision++
+		a.value = next.Clone()
 	}
-	a.revision++
-	a.value = next.Clone()
-	return Snapshot{Revision: a.revision, Allowlist: a.value.Clone()}, nil
+	out, provider := Snapshot{Revision: a.revision, Allowlist: a.value.Clone()}, a.agentConfigFingerprintProvider
+	a.mu.Unlock()
+	if provider != nil {
+		out.Allowlist.AgentConfigFingerprints = cloneFingerprints(provider())
+	}
+	return out, resultErr
+}
+
+// SetAgentConfigFingerprintProvider installs Core's current configured-factory
+// inventory. Snapshot reads it separately from mutable model preferences; client
+// settings cannot substitute launcher fingerprints. Consumers recheck exact
+// fingerprints at confirmation and dispatch, not just inventory revision.
+func (a *Authority) SetAgentConfigFingerprintProvider(provider func() map[string]string) {
+	if a == nil {
+		return
+	}
+	a.mu.Lock()
+	a.agentConfigFingerprintProvider = provider
+	a.mu.Unlock()
+}
+
+func cloneFingerprints(input map[string]string) map[string]string {
+	if input == nil {
+		return nil
+	}
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
+}
+func validateFingerprints(input map[string]string) error {
+	for id, fingerprint := range input {
+		if agentpolicy.ValidateSelection(id, agentpolicy.PolicyCooperativeTrustedV1) != nil || !agentpolicy.ValidConfigFingerprint(fingerprint) {
+			return errors.New("invalid configured agent fingerprint inventory")
+		}
+	}
+	return nil
 }

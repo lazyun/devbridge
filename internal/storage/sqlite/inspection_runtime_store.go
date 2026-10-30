@@ -219,7 +219,7 @@ func (s *InspectionRuntimeStore) mutate(ctx context.Context, id, epoch string, f
 	return state, tx.Commit()
 }
 func (s *InspectionRuntimeStore) BeginInspection(ctx context.Context, spec probeexecution.CanonicalSpec, w workset.RuntimeWorkset, before []recoverystatus.WorktreeObservation) (probeexecution.CanonicalState, error) {
-	if w.Validate() != nil || w.ProtocolVersion != workset.RuntimeProtocolVersionProjectInspection || w.InspectionOperationID != spec.Probe.ID || w.InspectionOwnerTaskID != spec.Probe.TaskID || w.ProjectID != spec.Probe.ProjectID || len(before) != len(w.Members) {
+	if w.AgentID != "" || w.AgentConfigFingerprint != "" || w.ExecutionPolicy != "" || w.Validate() != nil || w.ProtocolVersion != workset.RuntimeProtocolVersionProjectInspection || w.InspectionOperationID != spec.Probe.ID || w.InspectionOwnerTaskID != spec.Probe.TaskID || w.ProjectID != spec.Probe.ProjectID || len(before) != len(w.Members) {
 		return probeexecution.CanonicalState{}, contextprobe.ErrConflict
 	}
 	return s.mutate(ctx, w.RunID, s.db.epoch, func(tx *sql.Tx, state *probeexecution.CanonicalState) error {

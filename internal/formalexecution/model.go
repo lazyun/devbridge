@@ -13,6 +13,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/codexruntime"
 	"github.com/lazyun/devbridge/internal/confirmation"
@@ -316,11 +317,15 @@ func (p Progress) Validate() error {
 	a, plan := p.Archive, *p.Plan
 	adapter, _ := json.Marshal(map[string]string{"adapterId": a.Descriptor.AdapterID, "adapterImplementationDigest": a.Descriptor.AdapterImplementationDigest})
 	protocol, _ := json.Marshal(map[string]string{"protocolId": a.Descriptor.ProtocolID, "protocolSchemaDigest": a.Descriptor.ProtocolSchemaDigest})
+	if a.Runtime.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		adapter = []byte(agentpolicy.CooperativeAdapterIdentity)
+		protocol = []byte(agentpolicy.CooperativeProtocolIdentity)
+	}
 	d, err := formalapproval.DecodeDefinition(a.DefinitionJSON, a.RevisionHash, a.Fence.Schema)
 	if err != nil {
 		return ErrCorrupt
 	}
-	if plan.SourceCommand != "APPROVE_AND_START" || plan.SourceReceiptID != p.T1.Identity.SourceOriginID || plan.SelectedVariantID != a.Commit.VariantID || plan.ProposalHash != p.T1.Identity.VariantPayloadIdentity || plan.PreparationRequestID != "formal_execution_admission_"+p.T1.Identity.ImmutableBinding || plan.PreparationPayloadHash != p.T1.Identity.ImmutableBinding || plan.FeatureAreaID != d.FeatureAreaID || plan.SourceReviewID != a.Fence.ReviewID || plan.SourceExecutionID != "" || plan.SuccessorExecutionID != "" || plan.SuccessorReviewID != "" || plan.Generation != 1 || plan.BackendIdentity != a.Backend.ConfigID || plan.BackendConfigFingerprint != a.Backend.ConfigFingerprint || plan.BackendSource != a.Backend.Source || plan.BackendKind != "CODEX" || plan.Model != a.Runtime.Model || plan.ReasoningEffort != a.Runtime.ReasoningEffort || plan.CodexFastMode != a.Runtime.CodexFastMode || plan.ServiceTier != a.Runtime.ServiceTier || plan.RuntimeAdapterIdentity != string(adapter) || plan.RuntimeProtocolIdentity != string(protocol) || plan.PrimaryMemberID != d.PrimaryMemberID || !reflect.DeepEqual(plan.RepositoryTargets, d.RepositoryTargets) {
+	if plan.SourceCommand != "APPROVE_AND_START" || plan.SourceReceiptID != p.T1.Identity.SourceOriginID || plan.SelectedVariantID != a.Commit.VariantID || plan.ProposalHash != p.T1.Identity.VariantPayloadIdentity || plan.PreparationRequestID != "formal_execution_admission_"+p.T1.Identity.ImmutableBinding || plan.PreparationPayloadHash != p.T1.Identity.ImmutableBinding || plan.FeatureAreaID != d.FeatureAreaID || plan.SourceReviewID != a.Fence.ReviewID || plan.SourceExecutionID != "" || plan.SuccessorExecutionID != "" || plan.SuccessorReviewID != "" || plan.Generation != 1 || plan.BackendIdentity != a.Backend.ConfigID || plan.BackendConfigFingerprint != a.Backend.ConfigFingerprint || plan.BackendSource != a.Backend.Source || plan.BackendKind != "CODEX" || plan.Model != a.Runtime.Model || plan.ReasoningEffort != a.Runtime.ReasoningEffort || plan.CodexFastMode != a.Runtime.CodexFastMode || plan.ServiceTier != a.Runtime.ServiceTier || plan.AgentID != a.Runtime.AgentID || plan.AgentConfigFingerprint != a.Runtime.AgentConfigFingerprint || plan.ExecutionPolicy != a.Runtime.ExecutionPolicy || plan.RuntimeAdapterIdentity != string(adapter) || plan.RuntimeProtocolIdentity != string(protocol) || plan.PrimaryMemberID != d.PrimaryMemberID || !reflect.DeepEqual(plan.RepositoryTargets, d.RepositoryTargets) {
 		return ErrCorrupt
 	}
 	if len(plan.ExpectedSourceHEADs) != len(d.RepositoryTargets) || len(plan.DevelopmentRefs) != len(d.RepositoryTargets) || len(plan.WriteScopes) != len(d.RepositoryTargets) {

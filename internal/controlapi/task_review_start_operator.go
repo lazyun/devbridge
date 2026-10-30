@@ -58,6 +58,12 @@ func (f *Facade) StartTaskReviewForOperator(ctx context.Context, projectID, task
 	if err != nil {
 		return review.StartAdmission{}, MapError(err)
 	}
+	if config.AgentID == "pi" {
+		current := reader.conversationModelDefault(ctx, owner.FeatureAreaID)
+		if current == nil || current.State != "THREADLESS" {
+			return review.StartAdmission{}, confirmationSelectionFailure("AGENT_CAPABILITY_UNAVAILABLE", "Pi requires a fresh single run and cannot resume an existing canonical conversation.")
+		}
+	}
 	var selected codexconfig.BackendSelection
 	if executor == review.ExecutorCodingAgent {
 		var err error

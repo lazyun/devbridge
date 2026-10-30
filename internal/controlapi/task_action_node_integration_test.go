@@ -221,6 +221,7 @@ func TestTaskActionNodeReviewReplacementCannotConsumeOldSelection(t *testing.T) 
 
 func rewindProjectAuthorizationV135(t *testing.T, f *upperLifecycleFixture) {
 	t.Helper()
+	rewindAgentPolicyV136(t, f)
 	// Rewind the later authorization schema along with its migration marker.
 	// These fixtures have no authorization history to preserve.
 	for _, table := range []string{"project_execution_authorization_revisions", "project_execution_authorizations"} {
@@ -268,7 +269,7 @@ func rebuildTaskActionV133(t *testing.T, f *upperLifecycleFixture) {
 		}
 	}
 	rewindProjectAuthorizationV135(t, f)
-	if _, err = f.plane.DB.SQL().Exec(`DELETE FROM schema_migrations WHERE version>=133`); err != nil {
+	if _, err = f.plane.DB.SQL().Exec(`DELETE FROM schema_migrations WHERE version BETWEEN 133 AND 135`); err != nil {
 		t.Fatal(err)
 	}
 	var through133 []sqlite.Migration
@@ -278,6 +279,46 @@ func rebuildTaskActionV133(t *testing.T, f *upperLifecycleFixture) {
 		}
 	}
 	if err := sqlite.ApplyMigrations(f.ctx, f.plane.DB.SQL(), through133); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// This historical fixture uses only native runs. Rewind the complete later
+// additive schema together with its marker so the production monotonic
+// migration runner can replay v133/v134 normally. Never discard cooperative
+// authority or edit production migration behavior just to manufacture history.
+func rewindAgentPolicyV136(t *testing.T, f *upperLifecycleFixture) {
+	t.Helper()
+	tx, err := f.plane.DB.SQL().BeginTx(f.ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	// A historical fixture has no worker delivery. Rewind the complete later
+	// additive table together with its marker, never drop a live dispatch fact.
+	var workers int
+	if err = tx.QueryRow(`SELECT count(*) FROM upper_review_worker_claims`).Scan(&workers); err != nil || workers != 0 {
+		t.Fatalf("cannot rewind worker dispatch authority: %d %v", workers, err)
+	}
+	if _, err = tx.Exec(`DROP TABLE upper_review_worker_claims`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(`DELETE FROM schema_migrations WHERE version=137`); err != nil {
+		t.Fatal(err)
+	}
+	var explicit int
+	if err = tx.QueryRow(`SELECT count(*) FROM runtime_scope_plans WHERE agent_id<>'' OR execution_policy<>'' OR agent_config_fingerprint<>''`).Scan(&explicit); err != nil || explicit != 0 {
+		t.Fatalf("cannot rewind explicit agent-policy authority: %d %v", explicit, err)
+	}
+	for _, column := range []string{"agent_config_fingerprint", "execution_policy", "agent_id"} {
+		if _, err = tx.Exec(`ALTER TABLE runtime_scope_plans DROP COLUMN ` + column); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err = tx.Exec(`DELETE FROM schema_migrations WHERE version=136`); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
 }

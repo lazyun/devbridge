@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/runtimepreparation"
 	"github.com/lazyun/devbridge/internal/workset"
 	"github.com/lazyun/devbridge/internal/workspace"
@@ -15,7 +16,7 @@ import (
 // This fixture exercises the v90 binding boundary after a durable Run and
 // observation exist. The admission and external workspace builder have their
 // own tests; this test checks the four writes in the binding transaction.
-func preparedBindingFixture(t *testing.T) (*DB, string, workset.RuntimeWorkset) {
+func preparedBindingFixture(t *testing.T, selection ...string) (*DB, string, workset.RuntimeWorkset) {
 	t.Helper()
 	ctx := context.Background()
 	db := openTestDB(t, t.TempDir())
@@ -39,6 +40,13 @@ func preparedBindingFixture(t *testing.T) (*DB, string, workset.RuntimeWorkset) 
 	}
 	target := workset.Target{RepositoryID: f.repository.ID, MemberID: "member-v90-binding", MemberVersion: 1, OriginCommit: strings.Repeat("a", 40), Read: true, Write: workset.WriteScope{Kind: "PATHS", Paths: []string{"internal"}}}
 	plan := runtimepreparation.Plan{ID: "plan-v90-binding", Generation: 1, OwnerKind: runtimepreparation.OwnerImplementation, OwnerID: f.run.ExecutionProposalID, ProjectID: f.project.ID, FeatureAreaID: f.task.FeatureAreaID, TaskID: f.task.ID, SourceCommand: "TEST_BINDING", RepositoryTargets: []workset.Target{target}, PrimaryMemberID: target.MemberID, BackendIdentity: f.task.CodexConfigID, Model: "model", ReasoningEffort: "high", RuntimeAdapterIdentity: "codex-app-server", TopologyRevision: topology, DevelopmentContextHash: development, DevelopmentRefs: map[string]string{}, ExpectedSourceHEADs: map[string]string{target.MemberID: target.OriginCommit}, WriteScopes: map[string]workset.WriteScope{target.MemberID: target.Write}, PreparationRequestID: "create-v90-binding", PreparationPayloadHash: strings.Repeat("1", 64), CreatedAt: now}
+	if len(selection) == 2 {
+		plan.AgentID, plan.ExecutionPolicy = selection[0], selection[1]
+		plan.AgentConfigFingerprint = strings.Repeat("c", 64)
+		if plan.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+			plan.RuntimeAdapterIdentity, plan.RuntimeProtocolIdentity = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
+		}
+	}
 	plan.ContentHash, err = plan.ComputeContentHash()
 	if err == nil {
 		err = freezeRuntimeScopePlanTx(ctx, tx, plan)
@@ -73,6 +81,10 @@ func preparedBindingFixture(t *testing.T) (*DB, string, workset.RuntimeWorkset) 
 		t.Fatalf("observation response-loss replay hash=%q err=%v", replayHash, err)
 	}
 	w := workset.RuntimeWorkset{ProtocolVersion: workset.RuntimeProtocolVersion, ProjectID: f.project.ID, FeatureAreaID: f.task.FeatureAreaID, TaskID: f.task.ID, TaskDefinitionRevisionID: "revision-v90-binding", ExecutionID: f.run.ExecutionProposalID, RunID: f.run.ID, WorkspaceID: workspaceID, PrimaryMemberID: target.MemberID, Members: []workset.RuntimeMemberBinding{{RepositoryID: target.RepositoryID, RepositoryAlias: "app", MemberID: target.MemberID, MemberVersion: target.MemberVersion, WorktreeID: observation.WorktreeID, CanonicalRoot: observation.CanonicalRoot, RootFileIdentity: observation.RootIdentity, OriginCommit: target.OriginCommit, StartHEAD: observation.StartHEAD, StartSnapshot: observation.StartSnapshot, Read: true, Write: target.Write, RuntimeRootIdentity: "runtime-root-v90-binding"}}, BackendConfigID: plan.BackendIdentity, BackendConfigFingerprint: strings.Repeat("4", 64), Model: plan.Model, ReasoningEffort: plan.ReasoningEffort, RuntimeAdapterIdentity: plan.RuntimeAdapterIdentity, RuntimeProtocolIdentity: "1", CreatedAt: now}
+	w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint = plan.AgentID, plan.ExecutionPolicy, plan.AgentConfigFingerprint
+	if plan.ExecutionPolicy != "" {
+		w.RuntimeProtocolIdentity = plan.RuntimeProtocolIdentity
+	}
 	w, err = w.WithHash()
 	if err != nil {
 		db.Close()

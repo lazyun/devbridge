@@ -1,17 +1,31 @@
 package codexruntime
 
-// NextRunRuntimeConfig is the immutable, non-semantic runtime selection
+import "github.com/lazyun/devbridge/internal/agentpolicy"
+
+// NextRunRuntimeConfig is the immutable runtime and enforcement selection
 // authorized for one successor Execution. ServiceTier is derived rather than
 // trusted from clients: the installed Codex App Server exposes Fast as
 // config.service_tier=priority.
 type NextRunRuntimeConfig struct {
-	Model           string `json:"model"`
-	ReasoningEffort string `json:"reasoningEffort"`
-	CodexFastMode   bool   `json:"codexFastMode"`
-	ServiceTier     string `json:"serviceTier"`
+	// Empty fields retain the exact historical Codex/native policy and JSON.
+	// Cooperative execution is a prospective user selection, never inferred
+	// from project trust, backend availability, or a previous run.
+	AgentID                string `json:"agentId,omitempty"`
+	AgentConfigFingerprint string `json:"agentConfigFingerprint,omitempty"`
+	ExecutionPolicy        string `json:"executionPolicy,omitempty"`
+	Model                  string `json:"model"`
+	ReasoningEffort        string `json:"reasoningEffort"`
+	CodexFastMode          bool   `json:"codexFastMode"`
+	ServiceTier            string `json:"serviceTier"`
 }
 
 func (c NextRunRuntimeConfig) Normalize(allowlist Allowlist) (NextRunRuntimeConfig, error) {
+	if err := agentpolicy.ValidateFrozenSelection(c.AgentID, c.ExecutionPolicy, c.AgentConfigFingerprint); err != nil {
+		return NextRunRuntimeConfig{}, &SelectionError{Kind: ExecutionPolicyNotAllowed, Value: c.ExecutionPolicy, Cause: err}
+	}
+	if c.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && allowlist.AgentConfigFingerprints[c.AgentID] != c.AgentConfigFingerprint {
+		return NextRunRuntimeConfig{}, &SelectionError{Kind: AgentConfigurationUnavailable, Value: c.AgentID}
+	}
 	effort, err := allowlist.ResolveSelection(c.Model, c.ReasoningEffort)
 	if err != nil {
 		return NextRunRuntimeConfig{}, err

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/codexruntime"
 	"github.com/lazyun/devbridge/internal/confirmation"
@@ -130,8 +131,12 @@ func (a AdoptionArchive) Validate() error {
 	}
 	adapter, _ := json.Marshal(map[string]string{"adapterId": a.Descriptor.AdapterID, "adapterImplementationDigest": a.Descriptor.AdapterImplementationDigest})
 	protocol, _ := json.Marshal(map[string]string{"protocolId": a.Descriptor.ProtocolID, "protocolSchemaDigest": a.Descriptor.ProtocolSchemaDigest})
+	if a.Runtime.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		adapter = []byte(agentpolicy.CooperativeAdapterIdentity)
+		protocol = []byte(agentpolicy.CooperativeProtocolIdentity)
+	}
 	plan := a.Plan
-	if plan.Validate() != nil || plan.OwnerID != a.ExecutionID || (a.PriorRuntimeApproval == nil && plan.OwnerKind != runtimepreparation.OwnerExecution) || plan.ProjectID != a.ProjectID || plan.TaskID != a.TaskID || plan.FeatureAreaID != a.FeatureAreaID || plan.TaskDefinitionRevisionID != a.RevisionID || plan.PreparationRequestID != a.AdmissionRequestID || plan.PreparationPayloadHash != a.AdmissionPayloadHash || a.PreparationAuthorityID != plan.ID || plan.BackendIdentity != a.Backend.ConfigID || plan.BackendConfigFingerprint != a.Backend.ConfigFingerprint || plan.BackendSource != a.Backend.Source || plan.BackendKind != "CODEX" || plan.RuntimeAdapterIdentity != string(adapter) || plan.RuntimeProtocolIdentity != string(protocol) || (a.PriorRuntimeApproval == nil && (plan.SourceCommand != "EXECUTION_ADMISSION" || plan.SourceReceiptID != a.AdmissionRequestID)) || plan.Model != a.Runtime.Model || plan.ReasoningEffort != a.Runtime.ReasoningEffort || plan.CodexFastMode != a.Runtime.CodexFastMode || plan.ServiceTier != a.Runtime.ServiceTier {
+	if plan.Validate() != nil || plan.OwnerID != a.ExecutionID || (a.PriorRuntimeApproval == nil && plan.OwnerKind != runtimepreparation.OwnerExecution) || plan.ProjectID != a.ProjectID || plan.TaskID != a.TaskID || plan.FeatureAreaID != a.FeatureAreaID || plan.TaskDefinitionRevisionID != a.RevisionID || plan.PreparationRequestID != a.AdmissionRequestID || plan.PreparationPayloadHash != a.AdmissionPayloadHash || a.PreparationAuthorityID != plan.ID || plan.BackendIdentity != a.Backend.ConfigID || plan.BackendConfigFingerprint != a.Backend.ConfigFingerprint || plan.BackendSource != a.Backend.Source || plan.BackendKind != "CODEX" || plan.RuntimeAdapterIdentity != string(adapter) || plan.RuntimeProtocolIdentity != string(protocol) || (a.PriorRuntimeApproval == nil && (plan.SourceCommand != "EXECUTION_ADMISSION" || plan.SourceReceiptID != a.AdmissionRequestID)) || plan.Model != a.Runtime.Model || plan.ReasoningEffort != a.Runtime.ReasoningEffort || plan.CodexFastMode != a.Runtime.CodexFastMode || plan.ServiceTier != a.Runtime.ServiceTier || plan.AgentID != a.Runtime.AgentID || plan.AgentConfigFingerprint != a.Runtime.AgentConfigFingerprint || plan.ExecutionPolicy != a.Runtime.ExecutionPolicy {
 		return ErrCorrupt
 	}
 	if !reflect.DeepEqual(plan.RepositoryTargets, d.RepositoryTargets) || plan.PrimaryMemberID != d.PrimaryMemberID || len(plan.DevelopmentRefs) != len(d.RepositoryTargets) || len(plan.ExpectedSourceHEADs) != len(d.RepositoryTargets) || len(plan.WriteScopes) != len(d.RepositoryTargets) {

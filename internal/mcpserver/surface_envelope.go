@@ -66,6 +66,19 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		contextValue["aiSessionId"] = session
 	}
 	scope := wp.ResourceScope{AISessionID: session, FeatureAreaID: stringValue(contextValue, "featureAreaId"), TaskID: stringValue(contextValue, "taskId"), ReviewID: stringValue(contextValue, "reviewId"), ExecutionID: stringValue(contextValue, "executionId"), RunID: stringValue(contextValue, "runId"), OwnerType: stringValue(input, "ownerType"), OwnerID: stringValue(input, "ownerId")}
+	// Cancellation's legacy executionId can be a virtual inventory identity
+	// (review:<id>), not an ExecutionProposal. Use the durable semantic owner
+	// for enrichment and leave the original receipt byte-for-byte unchanged.
+	reviewCancellation := params.Name == "operation_cancel" && stringValue(value, "ownerType") == "REVIEW" && stringValue(value, "ownerId") != ""
+	if reviewCancellation {
+		if owner := stringValue(value, "ownerId"); owner != "" {
+			scope.OwnerType, scope.OwnerID = "REVIEW", owner
+			scope.ReviewID, scope.ExecutionID = owner, ""
+			contextValue["reviewId"] = owner
+			delete(contextValue, "executionId")
+		}
+	}
+	exactReviewReadback := reviewCancellation || params.Name == "review_worker_claim" || params.Name == "review_worker_get"
 	if params.Name == "task_create" {
 		scope.TaskID = stringValue(value, "id")
 		contextValue["taskId"] = scope.TaskID
@@ -114,6 +127,11 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 			if readErr != nil {
 				refreshRequired = true
 				workflow["readError"] = publicToolError(readErr).Error()
+			} else if exactReviewReadback && ((g.ReviewID != "" && g.ReviewID != scope.ReviewID) || (g.RunID != "" && g.RunID != scope.RunID) || g.ExecutionID != "") {
+				// Exact receipt replay may outlive its Task's current operation.
+				// Do not attach a successor's identity/actions to the old receipt.
+				refreshRequired = true
+				workflow["readError"] = "Exact Review readback is superseded by another operation; refresh its authoritative state separately."
 			} else {
 				workflow = compactSurfaceGuidance(g)
 				hint = surfaceHintForGuidance(SurfaceContext{AISessionID: session, ProjectID: g.ProjectID, FeatureAreaID: g.FeatureAreaID, TaskID: g.TaskID}, g)

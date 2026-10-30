@@ -150,3 +150,23 @@ func TestCompactTaskProjectionOmitsEngineeringDefinition(t *testing.T) {
 		t.Fatalf("compact identity facts = %+v", compact)
 	}
 }
+
+func TestInterruptedWorkerCurrentActionRequiresExactCancellationCapability(t *testing.T) {
+	p := Projection{Recovery: &Recovery{Required: true, Status: "RECOVERY_REQUIRED", Reason: "UPPER_WORKER_CONTINUATION_UNSUPPORTED", Summary: "Same-Run continuation unsupported; explicit cancellation only, no stopped proof."}, CurrentOperation: &Operation{Kind: "REVIEW", ID: "review", RunID: "run"}, Capabilities: []Capability{{Action: "RECOVER", Available: false}, {Action: "CANCEL_EXECUTION", Available: true, Target: &ActionTarget{OperationKind: "REVIEW", OperationID: "review", RunID: "run"}}}}
+	if got := CurrentAction(p); got.Code != "CANCEL_REVIEW" || got.Message != p.Recovery.Summary {
+		t.Fatalf("action=%+v", got)
+	}
+	p.Capabilities[1].Target.RunID = "other"
+	if got := CurrentAction(p); got.Code != "REFRESH" {
+		t.Fatalf("foreign cancel=%+v", got)
+	}
+	p.Capabilities[1].Target.RunID = "run"
+	p.Capabilities[1].Available = false
+	if got := CurrentAction(p); got.Code != "REFRESH" {
+		t.Fatalf("disabled cancel=%+v", got)
+	}
+	p.Recovery.Reason = "GPT_REVIEW_AUTHORIZATION_REQUIRED"
+	if got := CurrentAction(p); got.Code != "RECOVER" {
+		t.Fatalf("legacy recovery=%+v", got)
+	}
+}

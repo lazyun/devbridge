@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"reflect"
 	"time"
 
@@ -63,6 +64,9 @@ func createFileVerificationTx(ctx context.Context, tx *sql.Tx, result *directfil
 	if len(t.RepositoryTargets) > 0 {
 		candidate.RuntimeAdapterIdentity = executionproposal.RuntimeAdapterCodexAppServerV1
 		candidate.RuntimeProtocolIdentity = executionproposal.RuntimeProtocolCodex0149
+	}
+	if candidate.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		candidate.RuntimeAdapterIdentity, candidate.RuntimeProtocolIdentity = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
 	}
 	if err = bindExecutionDefinitionKindTx(ctx, tx, &candidate, true); err != nil {
 		return err

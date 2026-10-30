@@ -2,6 +2,7 @@ package controlapi_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -85,6 +86,23 @@ func TestUnreviewedSingleConfirmationStartsAndReplays(t *testing.T) {
 			if err == nil || rejected.Submission == nil || rejected.Submission.Outcome != c.RejectedNotConsumed {
 				t.Fatalf("missing-runtime rejection: %+v %v", rejected, err)
 			}
+			f.plane.CodexRuntime.SetAgentConfigFingerprintProvider(func() map[string]string { return map[string]string{"pi": strings.Repeat("a", 64)} })
+			for index, invalidPolicy := range []codexruntime.NextRunRuntimeConfig{
+				{Model: runtime.Model, ReasoningEffort: runtime.ReasoningEffort, ExecutionPolicy: "COOPERATIVE_TRUSTED_V1"},
+				{Model: runtime.Model, ReasoningEffort: runtime.ReasoningEffort, AgentID: "pi", ExecutionPolicy: "TASK_SANDBOX_V1"},
+				{Model: runtime.Model, ReasoningEffort: runtime.ReasoningEffort, AgentID: "pi", ExecutionPolicy: "COOPERATIVE_TRUSTED_V1", AgentConfigFingerprint: strings.Repeat("a", 64)},
+			} {
+				invalid := commit
+				invalid.RequestID = fmt.Sprintf("invalid-policy-%d", index)
+				invalid.Selection.RuntimeConfig = &invalidPolicy
+				blocked, policyErr := f.facade.CommitConfirmation(f.ctx, invalid)
+				if policyErr == nil || blocked.Submission == nil || blocked.Submission.Outcome != c.RejectedNotConsumed {
+					t.Fatalf("invalid policy consumed confirmation: %+v %v", blocked, policyErr)
+				}
+				if index == 2 && (blocked.Submission.Failure == nil || blocked.Submission.Failure.Code != "AGENT_CAPABILITY_UNAVAILABLE") {
+					t.Fatalf("Pi multi-stage plan not refused before effects: %+v %v", blocked, policyErr)
+				}
+			}
 			before, err := f.plane.Tasks.Get(f.ctx, owner.ID)
 			if err != nil || before.CurrentDefinitionRevisionID != owner.CurrentDefinitionRevisionID || before.CurrentExecutionID != "" {
 				t.Fatalf("preflight mutated definition: %+v %v", before, err)
@@ -149,6 +167,12 @@ func TestUnreviewedSingleConfirmationStartsAndReplays(t *testing.T) {
 			changed.Selection.RuntimeConfig = &codexruntime.NextRunRuntimeConfig{Model: "gpt-5.6-luna", ReasoningEffort: "high"}
 			if _, err = f.facade.CommitConfirmation(f.ctx, changed); err == nil {
 				t.Fatal("changed consumed selection accepted")
+			}
+			policyChanged := commit
+			policyChanged.RequestID = "different-policy"
+			policyChanged.Selection.RuntimeConfig = &codexruntime.NextRunRuntimeConfig{Model: runtime.Model, ReasoningEffort: runtime.ReasoningEffort, AgentID: "pi", ExecutionPolicy: "COOPERATIVE_TRUSTED_V1"}
+			if _, err = f.facade.CommitConfirmation(f.ctx, policyChanged); err == nil {
+				t.Fatal("native frozen execution silently converted to cooperative")
 			}
 		})
 	}

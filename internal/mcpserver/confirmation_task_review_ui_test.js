@@ -20,6 +20,7 @@ function taskOptions(intent,startReview,noRuntime){
   projects:[],repositories:[],branches:[],variants:intent.content.variants.map(v=>({id:v.id,label:v.label,available:!(blocked&&v.executorKind==="CODING_AGENT"),reason:blocked&&v.executorKind==="CODING_AGENT"?"CODEX_RUNTIME_INVENTORY_UNAVAILABLE":""})),
   runtimeInventorySource:noRuntime?"UNAVAILABLE":"CORE_CODEX_RUNTIME_AUTHORITY",runtimeInventoryRevision:noRuntime?0:1,
   ...(noRuntime?{runtimeInventoryReadError:"CODEX_RUNTIME_INVENTORY_UNAVAILABLE"}:{}),
+  agentConfigFingerprints:noRuntime?{}:{pi:"a".repeat(64)},backendContinuity:{state:"THREADLESS"},
   runtimeOptions:noRuntime?[]:[{modelId:"test-model",enabled:true,supportedReasoningEfforts:["high"],codexFastModeSupported:true}],
   backendInventoryComplete:true,backendCandidates:noRuntime?[]:[{configId:"backend",configFingerprint:"b".repeat(64),configName:"Test backend",source:"SESSION_INVENTORY"}],
   eligibility:{available:intent.content.variants.some(v=>!(blocked&&v.executorKind==="CODING_AGENT")),reprepareAllowed:false,attemptState:"NOT_ATTEMPTED",receiptState:"NOT_OBSERVED"}}};
@@ -323,4 +324,19 @@ test("retained current-card click handlers cannot submit after switching to hist
  const confirm=button(card,'创建任务，进入实施确认');assert.ok(confirm);
  card.instance.peek("window.devBridgeHistoryReadOnly=true;safeRender()");await confirm.onclick();await card.instance.settle();
  assert.equal(card.host.commits.length,0);assert.equal(card.host.messages.length,0);assert.match(textOf(card),/历史操作仅供查看/);
+});
+
+test("cooperative review visibly distinguishes trust from native isolation and freezes the explicit choice",async()=>{
+ const card=await bind(startTask());await selectMode(card,"CODING_AGENT");chooseRuntime(card);
+ card.instance.peek("draft.codexFastMode=false;draft.executionPolicy='COOPERATIVE_TRUSTED_V1';safeRender()");
+ assert.notEqual(card.instance.peek("choiceError()"),"");
+ const text=renderedText(card.instance.peek("root")).join(" ");
+ assert.match(text,/不提供 TASK_SANDBOX_V1/);assert.match(text,/不等于模型已读取或遵守/);assert.match(text,/确认及派发前阻止运行/);
+ card.instance.peek("draft.agentId='pi';draft.agentConfigFingerprint='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';safeRender()");
+ assert.equal(card.instance.peek("choiceError()"),"");
+ await submit(card,"创建任务并开始审查");
+ assert.equal(card.host.commits.length,1);
+ assert.equal(card.host.commits[0].selection.runtimeConfig.agentId,"pi");
+ assert.equal(card.host.commits[0].selection.runtimeConfig.executionPolicy,"COOPERATIVE_TRUSTED_V1");
+ assert.equal(card.instance.peek("confirmedOutcome"),"CONSUMED");
 });

@@ -76,6 +76,9 @@ func agentRunBackendSelectionTx(ctx context.Context, tx *sql.Tx, value run.Run) 
 }
 
 func validateAgentRunBackendContinuityTx(ctx context.Context, tx *sql.Tx, value run.Run) error {
+	if err := validateRunAgentCapabilitiesTx(ctx, tx, value); err != nil {
+		return err
+	}
 	selected, err := agentRunBackendSelectionTx(ctx, tx, value)
 	if err != nil || selected == nil {
 		return err

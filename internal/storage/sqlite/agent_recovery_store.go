@@ -373,6 +373,9 @@ func (s *AgentConversationStore) State(ctx context.Context, fa string) (agentcon
 			}
 			if claim.RuntimeEpoch != s.db.epoch || facts.state == "RECOVERY_REQUIRED" {
 				state.Status, state.Message = "RECOVERY_REQUIRED", "Upper Review authorization belongs to an interrupted runtime; inspect the exact recovery action and its observed authorization version."
+				if facts.workerEnrolled {
+					state.Message = upperWorkerContinuationGuidance
+				}
 			} else if facts.state == "PREPARING" || facts.state == "ACTIVE" || facts.state == "AWAITING_REPORT" || facts.state == "FINALIZING" {
 				// A same-Run recovery retains historical startup classification.
 				// Current durable grant/claim epochs are the Upper authority;
@@ -467,6 +470,13 @@ func (s *AgentConversationStore) Recover(ctx context.Context, input agentconvers
 		upper = executor == review.ExecutorUpperLLM
 	}
 	if upper {
+		var enrolled bool
+		if e := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM upper_review_worker_claims WHERE run_id=?)`, input.RunID).Scan(&enrolled); e != nil {
+			return empty, e
+		}
+		if enrolled {
+			return empty, fmt.Errorf("%w: same-Run Upper Review worker continuation is unsupported; cancellation or a successor requires separate authorization", agentconversation.ErrConflict)
+		}
 		if input.AgentConversationID != "" || input.ProjectID == "" || !input.ExpectedUpperVersion.Valid() {
 			return empty, agentconversation.ErrInvalidArgument
 		}

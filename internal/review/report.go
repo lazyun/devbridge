@@ -216,8 +216,9 @@ type UpperTarget struct {
 }
 type SubmitInput struct {
 	UpperTarget
-	RequestID string       `json:"requestId"`
-	Report    ReviewReport `json:"report"`
+	WorkerClaim *WorkerClaimIdentity `json:"workerClaim,omitempty"`
+	RequestID   string               `json:"requestId"`
+	Report      ReviewReport         `json:"report"`
 }
 type ReportReceipt struct {
 	RequestID     string      `json:"requestId"`

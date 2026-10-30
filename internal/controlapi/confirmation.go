@@ -500,6 +500,7 @@ func (f *Facade) ConfirmationOptions(ctx context.Context, in confirmation.Option
 		out.RuntimeInventorySource = "UNAVAILABLE"
 	} else {
 		out.RuntimeOptions = inventory.Allowlist.RuntimeOptions()
+		out.AgentConfigFingerprints = inventory.Allowlist.Clone().AgentConfigFingerprints
 		out.RuntimeInventoryRevision = inventory.Revision
 		out.RuntimeInventorySource = "CORE_CODEX_RUNTIME_AUTHORITY"
 	}
@@ -909,7 +910,7 @@ func (f *Facade) CommitConfirmation(ctx context.Context, in confirmation.CommitI
 		// canonical-proven, not-started steps; uncertain steps stay fenced.
 		if in.Selection.RuntimeConfig != nil && current.Commit.Selection.RuntimeConfig != nil {
 			requested, saved := *in.Selection.RuntimeConfig, *current.Commit.Selection.RuntimeConfig
-			if requested.Model == saved.Model && requested.ReasoningEffort == saved.ReasoningEffort && requested.CodexFastMode == saved.CodexFastMode && requested.ServiceTier == "" {
+			if requested.Model == saved.Model && requested.ReasoningEffort == saved.ReasoningEffort && requested.CodexFastMode == saved.CodexFastMode && requested.AgentID == saved.AgentID && requested.AgentConfigFingerprint == saved.AgentConfigFingerprint && requested.ExecutionPolicy == saved.ExecutionPolicy && requested.ServiceTier == "" {
 				requested.ServiceTier = saved.ServiceTier
 				in.Selection.RuntimeConfig = &requested
 			}
@@ -1014,6 +1015,14 @@ func (f *Facade) CommitConfirmation(ctx context.Context, in confirmation.CommitI
 			c, e := in.Selection.RuntimeConfig.Normalize(f.ExecutionAllowlist())
 			if e != nil {
 				return variant, e
+			}
+			if c.AgentID == "pi" {
+				if variant.VerificationSpec != nil && variant.VerificationSpec.Mode == task.VerificationModeRun {
+					return variant, confirmationSelectionFailure("AGENT_CAPABILITY_UNAVAILABLE", "Pi supports only a fresh single run; this plan requires independent verification and durable continuation.")
+				}
+				if opts.ConversationModelDefault == nil || opts.ConversationModelDefault.State != "THREADLESS" {
+					return variant, confirmationSelectionFailure("AGENT_CAPABILITY_UNAVAILABLE", "Pi cannot resume an existing canonical conversation; a confirmed threadless context is required.")
+				}
 			}
 			in.Selection.RuntimeConfig = &c
 			if opts.LockedRuntimeConfig != nil && c != *opts.LockedRuntimeConfig {

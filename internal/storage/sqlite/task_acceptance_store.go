@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"path"
 	"strings"
 	"time"
@@ -805,6 +806,9 @@ func insertAcceptanceSuccessorTx(ctx context.Context, tx *sql.Tx, id, sessionID,
 }
 
 func freezeExecutionRuntimeConfig(value codexruntime.NextRunRuntimeConfig) (codexruntime.NextRunRuntimeConfig, error) {
+	if err := agentpolicy.ValidateFrozenSelection(value.AgentID, value.ExecutionPolicy, value.AgentConfigFingerprint); err != nil {
+		return codexruntime.NextRunRuntimeConfig{}, executionproposal.ErrConflict
+	}
 	if strings.TrimSpace(value.Model) == "" || strings.TrimSpace(value.ReasoningEffort) == "" {
 		return codexruntime.NextRunRuntimeConfig{}, executionproposal.ErrConflict
 	}
@@ -838,7 +842,7 @@ func matchesReplayRuntimeConfig(requested, persisted codexruntime.NextRunRuntime
 	if requested.ReasoningEffort != "" && requested.ReasoningEffort != persisted.ReasoningEffort {
 		return false
 	}
-	return requested.CodexFastMode == persisted.CodexFastMode
+	return requested.CodexFastMode == persisted.CodexFastMode && requested.AgentID == persisted.AgentID && requested.AgentConfigFingerprint == persisted.AgentConfigFingerprint && requested.ExecutionPolicy == persisted.ExecutionPolicy
 }
 
 func (s *WorkflowProgressionStore) replayTaskAcceptance(ctx context.Context, tx *sql.Tx, in workflowprogression.TaskAcceptanceInput, receipt decisionresolution.Receipt) (workflowprogression.TaskAcceptanceResolution, error) {

@@ -10,7 +10,7 @@ function card(mode){
  const state={initialized:true,fatal:false,error:"",editableRetry:false,lastFailure:null,
   entry:{purpose:"EXECUTION"},intent:{action:"START_APPROVED",expiresAt:"2099-01-01T00:00:00Z",content:{execution:{action:"START_APPROVED",executionId:""}}},
   draft:{variantId:"start",model:"new-model",reasoningEffort:"high",codexFastMode:false,backendConfigId:"new-backend",backendConfigFingerprint:"b".repeat(64)},
-  options:{runtimeSelectionMode:mode,runtimeOptions:[{modelId:"new-model",enabled:true,supportedReasoningEfforts:["high"],codexFastModeSupported:false}],backendInventoryComplete:true,backendCandidates:[{configId:"new-backend",configFingerprint:"b".repeat(64)}]},
+  options:{agentConfigFingerprints:{pi:"a".repeat(64),codex:"c".repeat(64)},backendContinuity:{state:"THREADLESS"},runtimeSelectionMode:mode,runtimeOptions:[{modelId:"new-model",enabled:true,supportedReasoningEfforts:["high"],codexFastModeSupported:false}],backendInventoryComplete:true,backendCandidates:[{configId:"new-backend",configFingerprint:"b".repeat(64)}]},
   selectedVariant:()=>({id:"start",implementationMode:"CODING_AGENT"}),runtimeNeeded:()=>true,variantReason:()=>"",str:v=>typeof v==="string",structuredClone};
  vm.createContext(state);
  const start=script.indexOf("function choiceError("),end=script.indexOf("function validateAccess(",start);
@@ -52,4 +52,44 @@ test("GPT file implementation asks for Codex verification selection at file star
  state.draft.model="";assert.notEqual(state.choiceError(),"");
  state.intent.action="RECOVER_DIRECT_FILE";assert.equal(state.runtimeNeeded(),false,"recovery retains original verification selection");
  variant.verificationSpec.mode="NONE";state.intent.action="START_DIRECT_FILE";assert.equal(state.runtimeNeeded(),false,"historical explicit waiver does not fabricate a run");
+});
+
+test("cooperative policy is an explicit choice and never seeded by a recommendation",()=>{
+ const state=card("EXPLICIT_SELECTION");
+ state.intent.content.recommendedRuntimeConfig={agentId:"pi",agentConfigFingerprint:"a".repeat(64),executionPolicy:"COOPERATIVE_TRUSTED_V1"};
+ assert.equal(state.selection().runtimeConfig.executionPolicy,undefined);
+ state.draft.executionPolicy="COOPERATIVE_TRUSTED_V1";
+ assert.notEqual(state.choiceError(),"","cooperative mode must name the exact agent");
+ state.draft.agentId="pi";state.draft.agentConfigFingerprint="a".repeat(64);assert.equal(state.choiceError(),"");
+ assert.equal(state.selection().runtimeConfig.agentId,"pi");assert.equal(state.selection().runtimeConfig.executionPolicy,"COOPERATIVE_TRUSTED_V1");
+ state.draft.executionPolicy="TASK_SANDBOX_V1";assert.notEqual(state.choiceError(),"","Pi must not silently inherit unsupported native policy");
+ state.draft.executionPolicy="unknown";assert.notEqual(state.choiceError(),"");
+});
+test("locked cooperative policy cannot be downgraded by the draft",()=>{
+ const state=card("FROZEN_EXECUTION");
+ state.options.lockedBackend={configId:"frozen-backend",configFingerprint:"f".repeat(64)};
+ state.options.lockedRuntimeConfig={model:"new-model",reasoningEffort:"high",codexFastMode:false,serviceTier:"",agentId:"pi",agentConfigFingerprint:"a".repeat(64),executionPolicy:"COOPERATIVE_TRUSTED_V1"};
+ state.draft.agentId="codex";state.draft.executionPolicy="TASK_SANDBOX_V1";
+ assert.equal(state.choiceError(),"");assert.equal(state.selection().runtimeConfig.agentId,"pi");assert.equal(state.selection().runtimeConfig.executionPolicy,"COOPERATIVE_TRUSTED_V1");
+});
+test("confirmation replay binds the exact agent and policy",()=>{
+ const state=card("EXPLICIT_SELECTION");state.sameIdentity=()=>true;
+ const start=script.indexOf("function sameCommit("),end=script.indexOf("\n",start);vm.runInContext(script.slice(start,end),state);
+ const base={action:"START_APPROVED",contentHash:"h",variantId:"v",selection:{runtimeConfig:{model:"m",reasoningEffort:"high",codexFastMode:false,agentId:"pi",agentConfigFingerprint:"a".repeat(64),executionPolicy:"COOPERATIVE_TRUSTED_V1"}}};
+ const changed=structuredClone(base);assert.equal(state.sameCommit(base,changed),true);
+ delete changed.selection.runtimeConfig.executionPolicy;assert.equal(state.sameCommit(base,changed),false);
+ changed.selection.runtimeConfig.executionPolicy="COOPERATIVE_TRUSTED_V1";changed.selection.runtimeConfig.agentId="codex";assert.equal(state.sameCommit(base,changed),false);
+});
+
+test("cooperative launch configuration drift blocks confirmation without silently refreshing the selection",()=>{
+ const state=card("EXPLICIT_SELECTION");state.draft.agentId="pi";state.draft.executionPolicy="COOPERATIVE_TRUSTED_V1";state.draft.agentConfigFingerprint="a".repeat(64);
+ assert.equal(state.choiceError(),"");assert.equal(state.selection().runtimeConfig.agentConfigFingerprint,"a".repeat(64));
+ state.options.agentConfigFingerprints.pi="b".repeat(64);assert.notEqual(state.choiceError(),"");
+ assert.equal(state.selection().runtimeConfig.agentConfigFingerprint,"a".repeat(64),"read refresh must not change selected launcher authority");
+ delete state.options.agentConfigFingerprints.pi;assert.notEqual(state.choiceError(),"");
+});
+test("Pi continuation and independent verification refuse before confirmation",()=>{
+ const state=card("EXPLICIT_SELECTION");state.draft.agentId="pi";state.draft.executionPolicy="COOPERATIVE_TRUSTED_V1";state.draft.agentConfigFingerprint="a".repeat(64);
+ state.options.backendContinuity={state:"BOUND_AVAILABLE"};assert.notEqual(state.choiceError(),"");
+ state.options.backendContinuity={state:"THREADLESS"};state.selectedVariant=()=>({id:"start",implementationMode:"CODING_AGENT",verificationSpec:{mode:"RUN"}});assert.notEqual(state.choiceError(),"");
 });

@@ -96,7 +96,7 @@ func TestQualifiedLaunchUsesMeasuredNativeInsteadOfPackageWrapper(t *testing.T) 
 	if err != nil {
 		t.Fatalf("verified native launch used wrapper/default instead: %v", err)
 	}
-	actual := session.(*codexSession).client.Executable()
+	actual := session.(*codexSession).Executable()
 	if err = session.Close(); err != nil {
 		t.Fatal(err)
 	}

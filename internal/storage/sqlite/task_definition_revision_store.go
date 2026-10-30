@@ -137,6 +137,9 @@ func bindExecutionDefinitionKindTx(ctx context.Context, tx *sql.Tx, value *execu
 	if err != nil {
 		return err
 	}
+	if err = validatePiResumeRequirementTx(ctx, tx, t.FeatureAreaID, value.RuntimeConfig, value.VerificationSpec.Mode); err != nil {
+		return err
+	}
 	if t.ProjectID != value.ProjectID || t.Type != task.TypeDevelopment || t.LegacyReadOnly {
 		return executionproposal.ErrConflict
 	}

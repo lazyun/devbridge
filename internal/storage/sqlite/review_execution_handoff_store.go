@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"time"
 
 	"github.com/lazyun/devbridge/internal/event"
@@ -137,6 +138,9 @@ func createApprovedExecutionWithSourceTx(ctx context.Context, tx *sql.Tx, t task
 		if err := json.Unmarshal([]byte(runtimeJSON.String), &candidate.RuntimeConfig); err != nil {
 			return err
 		}
+	}
+	if candidate.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		candidate.RuntimeAdapterIdentity, candidate.RuntimeProtocolIdentity = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
 	}
 	if err = bindExecutionDefinitionTx(ctx, tx, &candidate); err != nil {
 		return err

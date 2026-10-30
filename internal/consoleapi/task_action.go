@@ -25,26 +25,29 @@ import (
 )
 
 type TaskActionInput struct {
-	CompletionPlan        *delivery.TaskCompletionPlan       `json:"completionPlan,omitempty"`
-	Note                  string                             `json:"note,omitempty"`
-	ReviewPurpose         string                             `json:"reviewPurpose,omitempty"`
-	ReviewFeedback        string                             `json:"reviewFeedback,omitempty"`
-	ExecutionInstructions *task.ExecutionInstructions        `json:"executionInstructions,omitempty"`
-	ExecutorKind          review.ExecutorKind                `json:"executorKind,omitempty"`
-	NextRunRuntimeConfig  *codexruntime.NextRunRuntimeConfig `json:"nextRunRuntimeConfig,omitempty"`
-	BackendSelection      *codexconfig.BackendSelectionInput `json:"backendSelection,omitempty"`
-	ReviewDepth           task.ReviewDepth                   `json:"reviewDepth,omitempty"`
-	ReviewInstruction     string                             `json:"reviewInstruction,omitempty"`
-	ReviewEngineeringGoal string                             `json:"reviewEngineeringGoal,omitempty"`
-	ReviewFocus           *review.Focus                      `json:"reviewFocus,omitempty"`
-	Model                 string                             `json:"model,omitempty"`
-	ReasoningEffort       string                             `json:"reasoningEffort,omitempty"`
-	CodexFastMode         bool                               `json:"codexFastMode,omitempty"`
-	NextWorkSpec          *task.WorkSpec                     `json:"nextWorkSpec,omitempty"`
-	NextVerificationSpec  *task.VerificationSpec             `json:"nextVerificationSpec,omitempty"`
-	Action                string                             `json:"action"`
-	Target                *workflowpresentation.ActionTarget `json:"target"`
-	RequestID             string                             `json:"requestId"`
+	CompletionPlan         *delivery.TaskCompletionPlan       `json:"completionPlan,omitempty"`
+	Note                   string                             `json:"note,omitempty"`
+	ReviewPurpose          string                             `json:"reviewPurpose,omitempty"`
+	ReviewFeedback         string                             `json:"reviewFeedback,omitempty"`
+	ExecutionInstructions  *task.ExecutionInstructions        `json:"executionInstructions,omitempty"`
+	ExecutorKind           review.ExecutorKind                `json:"executorKind,omitempty"`
+	NextRunRuntimeConfig   *codexruntime.NextRunRuntimeConfig `json:"nextRunRuntimeConfig,omitempty"`
+	BackendSelection       *codexconfig.BackendSelectionInput `json:"backendSelection,omitempty"`
+	ReviewDepth            task.ReviewDepth                   `json:"reviewDepth,omitempty"`
+	ReviewInstruction      string                             `json:"reviewInstruction,omitempty"`
+	ReviewEngineeringGoal  string                             `json:"reviewEngineeringGoal,omitempty"`
+	ReviewFocus            *review.Focus                      `json:"reviewFocus,omitempty"`
+	Model                  string                             `json:"model,omitempty"`
+	ReasoningEffort        string                             `json:"reasoningEffort,omitempty"`
+	AgentConfigFingerprint string                             `json:"agentConfigFingerprint,omitempty"`
+	AgentID                string                             `json:"agentId,omitempty"`
+	ExecutionPolicy        string                             `json:"executionPolicy,omitempty"`
+	CodexFastMode          bool                               `json:"codexFastMode,omitempty"`
+	NextWorkSpec           *task.WorkSpec                     `json:"nextWorkSpec,omitempty"`
+	NextVerificationSpec   *task.VerificationSpec             `json:"nextVerificationSpec,omitempty"`
+	Action                 string                             `json:"action"`
+	Target                 *workflowpresentation.ActionTarget `json:"target"`
+	RequestID              string                             `json:"requestId"`
 }
 
 // ReadLocalApproveAndStartReceipt returns evidence for one immutable local
@@ -211,7 +214,7 @@ func (r *Reader) ResolveTaskAction(ctx context.Context, projectID, taskID string
 	}
 	switch in.Action {
 	case "START_TASK_REVIEW":
-		return r.control.StartTaskReviewForOperator(ctx, projectID, taskID, in.Action, in.RequestID, rawPayloadHash, target, in.ExecutorKind, in.ReviewDepth, in.ReviewInstruction, in.ReviewEngineeringGoal, *in.ReviewFocus, codexruntime.NextRunRuntimeConfig{Model: in.Model, ReasoningEffort: in.ReasoningEffort, CodexFastMode: in.CodexFastMode}, in.BackendSelection)
+		return r.control.StartTaskReviewForOperator(ctx, projectID, taskID, in.Action, in.RequestID, rawPayloadHash, target, in.ExecutorKind, in.ReviewDepth, in.ReviewInstruction, in.ReviewEngineeringGoal, *in.ReviewFocus, codexruntime.NextRunRuntimeConfig{Model: in.Model, ReasoningEffort: in.ReasoningEffort, CodexFastMode: in.CodexFastMode, AgentID: in.AgentID, AgentConfigFingerprint: in.AgentConfigFingerprint, ExecutionPolicy: in.ExecutionPolicy}, in.BackendSelection)
 	case wp.ActionRequestTaskReview:
 		return r.control.RequestTaskReviewForOperator(ctx, projectID, taskID, in.Action, wp.TaskReviewRequestInput{TaskID: taskID, FeatureAreaID: target.FeatureAreaID, RequestID: in.RequestID, Purpose: in.ReviewPurpose, ExpectedTarget: target.ExpectedReviewRequest})
 	case "ACCEPT", "REJECT", "REQUEST_CHANGES", "REQUEST_REVERIFICATION", "RETRY_IMPLEMENTATION":
@@ -444,7 +447,7 @@ func consoleTaskInputShape(in TaskActionInput) bool {
 		return false
 	}
 
-	if in.CodexFastMode && in.Action != "START_TASK_REVIEW" {
+	if (in.CodexFastMode || in.AgentID != "" || in.AgentConfigFingerprint != "" || in.ExecutionPolicy != "") && in.Action != "START_TASK_REVIEW" {
 		return false
 	}
 	if in.Action == wp.ActionRequestTaskReview {

@@ -3,6 +3,8 @@ package execution
 import (
 	"errors"
 	"fmt"
+
+	"github.com/lazyun/devbridge/internal/agent"
 )
 
 const BridgeShutdownInterruptedCode = "bridge_shutdown_interrupted"
@@ -64,10 +66,7 @@ func (e *InfrastructureError) Unwrap() error { return e.Err }
 
 // TaskExecutionError marks a terminal executor outcome that is not an
 // infrastructure failure.
-type TaskExecutionError struct{ Err error }
-
-func (e *TaskExecutionError) Error() string { return "task execution failed: " + e.Err.Error() }
-func (e *TaskExecutionError) Unwrap() error { return e.Err }
+type TaskExecutionError = agent.ExecutionError
 
 type ApprovalPersistenceError struct{ Err error }
 

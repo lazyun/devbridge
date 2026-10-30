@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lazyun/devbridge/internal/agentconversation"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/codexruntime"
 	"github.com/lazyun/devbridge/internal/observability"
@@ -317,6 +318,9 @@ func (s *Service) Prepare(value Review) (Review, error) {
 		// that selection at creation, never reconstruct historical records.
 		if value.RuntimeConfig == (codexruntime.NextRunRuntimeConfig{}) && value.RuntimeConfirmationID == "" {
 			value.RuntimeConfig = codexruntime.NextRunRuntimeConfig{Model: value.Model, ReasoningEffort: value.ReasoningEffort}
+		}
+		if agentpolicy.ValidateFrozenSelection(value.RuntimeConfig.AgentID, value.RuntimeConfig.ExecutionPolicy, value.RuntimeConfig.AgentConfigFingerprint) != nil || value.ExecutorKind == ExecutorPiAgent && value.RuntimeConfig.AgentID != "" && value.RuntimeConfig.AgentID != "pi" {
+			return Review{}, ErrInvalidArgument
 		}
 		if value.RuntimeConfig.Model == "" || value.RuntimeConfig.ReasoningEffort == "" {
 			return Review{}, ErrInvalidArgument

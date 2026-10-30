@@ -44,11 +44,15 @@ func (s *UpperReviewAccessStore) UpperReviewAccessForSession(ctx context.Context
 	if s == nil || s.db == nil || sessionID == "" || reviewID == "" {
 		return review.UpperAccess{}, invalidUpperAccess()
 	}
+	return upperReviewAccessForSessionQuery(ctx, s.db.sql, sessionID, reviewID)
+}
+
+func upperReviewAccessForSessionQuery(ctx context.Context, q definitionQuerier, sessionID, reviewID string) (review.UpperAccess, error) {
 	var v review.UpperAccess
 	var allowed, forbidden, targetsJSON string
 	var observed sql.NullString
 	var created string
-	err := s.db.sql.QueryRowContext(ctx, `SELECT r.created_by_ai_session_id,r.feature_area_id,r.task_id,g.run_id,g.runtime_epoch,g.generation,g.state,COALESCE(g.workspace_id,r.workspace_id,''),COALESCE(g.worktree_id,''),COALESCE(g.baseline,''),g.initial_scope_paths_json,g.forbidden_paths_json,g.last_observed_at,COALESCE((SELECT start_snapshot FROM runs WHERE id=g.run_id),''),COALESCE(g.preparation_error,''),g.protocol_version,r.repository_targets_json,r.created_at
+	err := q.QueryRowContext(ctx, `SELECT r.created_by_ai_session_id,r.feature_area_id,r.task_id,g.run_id,g.runtime_epoch,g.generation,g.state,COALESCE(g.workspace_id,r.workspace_id,''),COALESCE(g.worktree_id,''),COALESCE(g.baseline,''),g.initial_scope_paths_json,g.forbidden_paths_json,g.last_observed_at,COALESCE((SELECT start_snapshot FROM runs WHERE id=g.run_id),''),COALESCE(g.preparation_error,''),g.protocol_version,r.repository_targets_json,r.created_at
 FROM reviews r JOIN review_grants g ON g.review_id=r.id WHERE r.id=? AND r.executor_kind='UPPER_LLM' AND r.created_by_ai_session_id=?`, reviewID, sessionID).Scan(
 		&v.Target.AISessionID, &v.Target.FeatureAreaID, &v.Target.TaskID, &v.Target.RunID, &v.Target.RuntimeEpoch, &v.Target.GrantGeneration, &v.State, &v.WorkspaceID, &v.WorktreeID, &v.Baseline, &allowed, &forbidden, &observed, &v.StartSnapshot, &v.Blocker, &v.ProtocolVersion, &targetsJSON, &created)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -69,7 +73,7 @@ FROM reviews r JOIN review_grants g ON g.review_id=r.id WHERE r.id=? AND r.execu
 	if v.AllowedPaths, err = decodeReviewScopePaths(allowed); err != nil {
 		return review.UpperAccess{}, fmt.Errorf("decode upper review allowed paths")
 	}
-	forbidden, err = reviewForbiddenPathsJSON(ctx, s.db.sql, reviewID, forbidden)
+	forbidden, err = reviewForbiddenPathsJSON(ctx, q, reviewID, forbidden)
 	if err != nil {
 		return review.UpperAccess{}, err
 	}

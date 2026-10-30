@@ -277,6 +277,17 @@ func CurrentAction(p Projection) wp.Action {
 		return wp.Action{Code: "RESOLVE_DECISION", Required: true, Message: p.PendingDecision.Summary}
 	}
 	if p.Recovery != nil && p.Recovery.Required {
+		if p.Recovery.Reason == "UPPER_WORKER_CONTINUATION_UNSUPPORTED" {
+			if p.CurrentOperation != nil && p.CurrentOperation.Kind == "REVIEW" {
+				for _, capability := range p.Capabilities {
+					target := capability.Target
+					if capability.Action == "CANCEL_EXECUTION" && capability.Available && target != nil && target.OperationKind == "REVIEW" && target.OperationID == p.CurrentOperation.ID && target.RunID == p.CurrentOperation.RunID && target.RunID != "" {
+						return wp.Action{Code: "CANCEL_REVIEW", Required: true, Message: p.Recovery.Summary}
+					}
+				}
+			}
+			return wp.Action{Code: "REFRESH", Required: true, Message: p.Recovery.Summary}
+		}
 		return wp.Action{Code: "RECOVER", Required: true, Message: p.Recovery.Summary}
 	}
 	if p.Commit != nil {

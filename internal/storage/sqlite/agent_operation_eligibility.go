@@ -131,7 +131,11 @@ func (s *AgentConversationStore) RecoveryEligibility(ctx context.Context, featur
 			}
 			if facts.reason != "" {
 				result.Reason = facts.reason
-				if claim.RuntimeEpoch == s.db.epoch {
+				if facts.workerEnrolled {
+					result.ReasonCode = agentconversation.ReasonUpperWorkerContinuationUnsupported
+					result.Reason = upperWorkerContinuationGuidance
+				}
+				if claim.RuntimeEpoch == s.db.epoch && !facts.workerEnrolled {
 					result.Prerequisite = "CORE_RESTART"
 				}
 				return result, nil

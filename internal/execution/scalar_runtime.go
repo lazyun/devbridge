@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/executionproposal"
 	"github.com/lazyun/devbridge/internal/run"
 	"github.com/lazyun/devbridge/internal/runtimeplatform"
@@ -128,11 +129,14 @@ func (c *Coordinator) prepareScalarRuntime(ctx context.Context, prepared *Prepar
 	if root != o.CanonicalRoot || identity != o.RootIdentity {
 		return errors.New("scalar observed root identity changed")
 	}
-	frozen := workset.RuntimeWorkset{ProtocolVersion: workset.RuntimeProtocolVersion, ProjectID: p.ProjectID, FeatureAreaID: p.FeatureAreaID, TaskID: p.TaskID, TaskDefinitionRevisionID: p.TaskDefinitionRevisionID, ExecutionID: p.OwnerID, RunID: prepared.Run.ID, WorkspaceID: o.WorkspaceID, PrimaryMemberID: p.PrimaryMemberID, Members: []workset.RuntimeMemberBinding{{RepositoryID: target.RepositoryID, RepositoryAlias: target.MemberID, MemberID: target.MemberID, MemberVersion: target.MemberVersion, WorktreeID: o.WorktreeID, CanonicalRoot: o.CanonicalRoot, RootFileIdentity: o.RootIdentity, OriginCommit: target.OriginCommit, StartHEAD: o.StartHEAD, StartSnapshot: o.StartSnapshot, Read: target.Read, Write: target.Write, IntendedReadScope: target.ReadScope, RuntimeRootIdentity: o.RootIdentity}}, BackendConfigID: p.BackendIdentity, BackendConfigFingerprint: prepared.backendSelection.ConfigFingerprint, Model: p.Model, ReasoningEffort: p.ReasoningEffort, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, CreatedAt: prepared.Run.CreatedAt}
+	frozen := workset.RuntimeWorkset{AgentConfigFingerprint: p.AgentConfigFingerprint, AgentID: p.AgentID, ExecutionPolicy: p.ExecutionPolicy, ProtocolVersion: workset.RuntimeProtocolVersion, ProjectID: p.ProjectID, FeatureAreaID: p.FeatureAreaID, TaskID: p.TaskID, TaskDefinitionRevisionID: p.TaskDefinitionRevisionID, ExecutionID: p.OwnerID, RunID: prepared.Run.ID, WorkspaceID: o.WorkspaceID, PrimaryMemberID: p.PrimaryMemberID, Members: []workset.RuntimeMemberBinding{{RepositoryID: target.RepositoryID, RepositoryAlias: target.MemberID, MemberID: target.MemberID, MemberVersion: target.MemberVersion, WorktreeID: o.WorktreeID, CanonicalRoot: o.CanonicalRoot, RootFileIdentity: o.RootIdentity, OriginCommit: target.OriginCommit, StartHEAD: o.StartHEAD, StartSnapshot: o.StartSnapshot, Read: target.Read, Write: target.Write, IntendedReadScope: target.ReadScope, RuntimeRootIdentity: o.RootIdentity}}, BackendConfigID: p.BackendIdentity, BackendConfigFingerprint: prepared.backendSelection.ConfigFingerprint, Model: p.Model, ReasoningEffort: p.ReasoningEffort, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, CreatedAt: prepared.Run.CreatedAt}
 	// Protocol and service tier are frozen on the execution, not inferred defaults.
 	execution, err := c.Executions.Get(ctx, p.OwnerID)
 	if err != nil {
 		return err
+	}
+	if p.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (execution.RuntimeAdapterIdentity != p.RuntimeAdapterIdentity || execution.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || execution.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return errors.New("scalar cooperative runtime identity conflicts with Plan")
 	}
 	frozen.ServiceTier = execution.RuntimeConfig.ServiceTier
 	frozen.RuntimeProtocolIdentity = execution.RuntimeProtocolIdentity
@@ -141,7 +145,7 @@ func (c *Coordinator) prepareScalarRuntime(ctx context.Context, prepared *Prepar
 	if frozen.RuntimeProtocolIdentity == "" && p.RuntimeAdapterIdentity == "codex-app-server-v1" {
 		frozen.RuntimeProtocolIdentity = executionproposal.RuntimeProtocolCodex0149
 	}
-	if execution.RuntimeConfig.Model != p.Model || execution.RuntimeConfig.ReasoningEffort != p.ReasoningEffort || !(frozen.RuntimeProtocolIdentity == executionproposal.RuntimeProtocolCodex0149 || runtimeplatform.QualifiedExecutorIdentity(p.RuntimeAdapterIdentity, frozen.RuntimeProtocolIdentity)) {
+	if execution.RuntimeConfig.AgentConfigFingerprint != p.AgentConfigFingerprint || execution.RuntimeConfig.AgentID != p.AgentID || execution.RuntimeConfig.ExecutionPolicy != p.ExecutionPolicy || execution.RuntimeConfig.Model != p.Model || execution.RuntimeConfig.ReasoningEffort != p.ReasoningEffort || (p.ExecutionPolicy != agentpolicy.PolicyCooperativeTrustedV1 && !(frozen.RuntimeProtocolIdentity == executionproposal.RuntimeProtocolCodex0149 || runtimeplatform.QualifiedExecutorIdentity(p.RuntimeAdapterIdentity, frozen.RuntimeProtocolIdentity))) {
 		return errors.New("scalar runtime configuration conflicts with Plan")
 	}
 	frozen, err = frozen.WithHash()

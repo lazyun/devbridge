@@ -36,6 +36,9 @@ func TestResolvePiExecutable(t *testing.T) {
 }
 
 func TestClientStartAndClose(t *testing.T) {
+	if os.Getenv("DEVBRIDGE_PI_REAL_TEST") != "1" {
+		t.Skip("explicit DEVBRIDGE_PI_REAL_TEST=1 required for installed-runtime probe")
+	}
 	// Check if pi is available.
 	piPath := Resolve("pi")
 	if _, err := exec.LookPath(piPath); err != nil {
@@ -65,7 +68,7 @@ func TestClientStartAndClose(t *testing.T) {
 	t.Log("Sending GetState command...")
 	state, err := client.GetState(ctx)
 	if err != nil {
-		t.Logf("Stderr output: %s", client.stderrOutput.String())
+		t.Logf("Stderr output: %s", client.Diagnostics())
 		t.Errorf("GetState failed: %v", err)
 	} else if len(state) == 0 {
 		t.Error("GetState returned empty data")
@@ -82,6 +85,9 @@ func TestClientStartAndClose(t *testing.T) {
 }
 
 func TestClientPrompt(t *testing.T) {
+	if os.Getenv("DEVBRIDGE_PI_MODEL_TEST") != "1" {
+		t.Skip("explicit DEVBRIDGE_PI_MODEL_TEST=1 required for a real model call")
+	}
 	piPath := Resolve("pi")
 	if _, err := exec.LookPath(piPath); err != nil {
 		t.Skip("pi executable not available, skipping integration test")
@@ -109,7 +115,7 @@ func TestClientPrompt(t *testing.T) {
 		if strings.Contains(errStr, "auth") || strings.Contains(errStr, "credential") || strings.Contains(errStr, "API key") || strings.Contains(errStr, "login") {
 			t.Skipf("PI Agent requires authentication: %v", err)
 		}
-		t.Logf("Stderr: %s", client.stderrOutput.String())
+		t.Logf("Stderr: %s", client.Diagnostics())
 		t.Fatalf("Prompt failed: %v", err)
 	}
 

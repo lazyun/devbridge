@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agent"
 	"github.com/lazyun/devbridge/internal/executioncancel"
 )
 
@@ -118,9 +119,7 @@ func (s *RuntimeSupervisor) interruptExecution(session *RunSession, in execution
 	if !dispatch {
 		return
 	}
-	interrupt, ok := client.(interface {
-		InterruptTurn(context.Context, string, string) error
-	})
+	interrupt, ok := client.(agent.TurnInterrupter)
 	if !ok {
 		unknown()
 		return

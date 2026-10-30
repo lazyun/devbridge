@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"unicode/utf16"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	c "github.com/lazyun/devbridge/internal/confirmation"
 )
 
@@ -743,7 +744,7 @@ func validateRequestShape(request map[string]any) (string, string) {
 		}
 		for key := range config {
 			switch key {
-			case "model", "reasoningEffort", "codexFastMode", "serviceTier":
+			case "model", "reasoningEffort", "codexFastMode", "serviceTier", "agentId", "executionPolicy", "agentConfigFingerprint":
 			default:
 				return "SUBMISSION_RUNTIME_SHAPE", "intent.submission.request.selection.runtimeConfig"
 			}
@@ -751,7 +752,7 @@ func validateRequestShape(request map[string]any) (string, string) {
 		_, fastBool := jsonBool(config, "codexFastMode")
 		_, serviceTierStr := jsonStrOK(config, "serviceTier")
 		if !jsonNonemptyStr(config, "model") || !jsonNonemptyStr(config, "reasoningEffort") || !fastBool ||
-			(jsonHas(config, "serviceTier") && !serviceTierStr) {
+			(jsonHas(config, "serviceTier") && !serviceTierStr) || !validRuntimePolicyShape(config) {
 			return "SUBMISSION_RUNTIME_SHAPE", "intent.submission.request.selection.runtimeConfig"
 		}
 	}
@@ -821,7 +822,7 @@ func sameCommit(a, b map[string]any) bool {
 	if aRuntimeHas != bRuntimeHas {
 		return false
 	}
-	if aRuntimeHas && (strOr(aRuntime["model"]) != strOr(bRuntime["model"]) || strOr(aRuntime["reasoningEffort"]) != strOr(bRuntime["reasoningEffort"]) || !sameJSONValue(aRuntime["codexFastMode"], bRuntime["codexFastMode"])) {
+	if aRuntimeHas && (strOr(aRuntime["model"]) != strOr(bRuntime["model"]) || strOr(aRuntime["reasoningEffort"]) != strOr(bRuntime["reasoningEffort"]) || !sameJSONValue(aRuntime["codexFastMode"], bRuntime["codexFastMode"]) || strOr(aRuntime["agentId"]) != strOr(bRuntime["agentId"]) || strOr(aRuntime["agentConfigFingerprint"]) != strOr(bRuntime["agentConfigFingerprint"]) || strOr(aRuntime["executionPolicy"]) != strOr(bRuntime["executionPolicy"])) {
 		return false
 	}
 	return true
@@ -970,8 +971,20 @@ func validateOptionsAbsolute(options map[string]any) (string, string) {
 			return "LOCKED_CONFIG_INVALID", "options.lockedRuntimeConfig"
 		}
 		_, fastBool := jsonBool(locked, "codexFastMode")
-		if !jsonIsStr(locked, "model") || !jsonIsStr(locked, "reasoningEffort") || !fastBool || !jsonIsStr(locked, "serviceTier") {
+		if !jsonIsStr(locked, "model") || !jsonIsStr(locked, "reasoningEffort") || !fastBool || !jsonIsStr(locked, "serviceTier") || !validRuntimePolicyShape(locked) {
 			return "LOCKED_CONFIG_INVALID", "options.lockedRuntimeConfig"
+		}
+	}
+	if raw, present := options["agentConfigFingerprints"]; present {
+		fingerprints, ok := raw.(map[string]any)
+		if !ok {
+			return "AGENT_CONFIG_INVENTORY_INVALID", "options.agentConfigFingerprints"
+		}
+		for id, value := range fingerprints {
+			fp, ok := value.(string)
+			if !ok || agentpolicy.ValidateFrozenSelection(id, agentpolicy.PolicyCooperativeTrustedV1, fp) != nil {
+				return "AGENT_CONFIG_INVENTORY_INVALID", "options.agentConfigFingerprints"
+			}
 		}
 	}
 	runtimeOptions, isArray := jsonArray(options, "runtimeOptions")
@@ -1069,4 +1082,15 @@ func optionsProjectionFailure(reasonCode, jsonPath string) *c.Failure {
 	)
 	failure.ReasonCode = reasonCode
 	return failure
+}
+
+// The public read contract must preserve the policy identity, not merely the
+// model fields. Unknown/malformed selection data must not become legacy mode.
+func validRuntimePolicyShape(config map[string]any) bool {
+	for _, key := range []string{"agentId", "executionPolicy", "agentConfigFingerprint"} {
+		if jsonHas(config, key) && !jsonNonemptyStr(config, key) {
+			return false
+		}
+	}
+	return agentpolicy.ValidateFrozenSelection(strOr(config["agentId"]), strOr(config["executionPolicy"]), strOr(config["agentConfigFingerprint"])) == nil
 }

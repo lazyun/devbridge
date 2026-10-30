@@ -35,7 +35,7 @@ func runtimeSelectionSourceFromReceipt(r formalexecution.Receipt) (runtimeselect
 		return runtimeselection.ApprovedSource{}, err
 	}
 	p := r.Plan
-	planValues := runtimeselection.AuthorityValues{BackendIdentity: p.BackendIdentity, BackendConfigFingerprint: p.BackendConfigFingerprint, BackendSource: p.BackendSource, BackendKind: p.BackendKind, Model: p.Model, ReasoningEffort: p.ReasoningEffort, CodexFastMode: p.CodexFastMode, ServiceTier: p.ServiceTier, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, RuntimeProtocolIdentity: p.RuntimeProtocolIdentity}
+	planValues := runtimeselection.AuthorityValues{BackendIdentity: p.BackendIdentity, BackendConfigFingerprint: p.BackendConfigFingerprint, BackendSource: p.BackendSource, BackendKind: p.BackendKind, Model: p.Model, ReasoningEffort: p.ReasoningEffort, CodexFastMode: p.CodexFastMode, ServiceTier: p.ServiceTier, AgentID: p.AgentID, AgentConfigFingerprint: p.AgentConfigFingerprint, ExecutionPolicy: p.ExecutionPolicy, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, RuntimeProtocolIdentity: p.RuntimeProtocolIdentity}
 	if values != planValues || p.AuthoritySnapshotHash != runtimeselection.HashValue(values) {
 		return runtimeselection.ApprovedSource{}, runtimeselection.ErrCorrupt
 	}
@@ -167,7 +167,7 @@ func runtimeSelectionSourceFromAdoption(r formalexecution.AdoptionReceipt) (runt
 		return s, err
 	}
 	p := a.Plan
-	planValues := runtimeselection.AuthorityValues{BackendIdentity: p.BackendIdentity, BackendConfigFingerprint: p.BackendConfigFingerprint, BackendSource: p.BackendSource, BackendKind: p.BackendKind, Model: p.Model, ReasoningEffort: p.ReasoningEffort, CodexFastMode: p.CodexFastMode, ServiceTier: p.ServiceTier, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, RuntimeProtocolIdentity: p.RuntimeProtocolIdentity}
+	planValues := runtimeselection.AuthorityValues{BackendIdentity: p.BackendIdentity, BackendConfigFingerprint: p.BackendConfigFingerprint, BackendSource: p.BackendSource, BackendKind: p.BackendKind, Model: p.Model, ReasoningEffort: p.ReasoningEffort, CodexFastMode: p.CodexFastMode, ServiceTier: p.ServiceTier, AgentID: p.AgentID, AgentConfigFingerprint: p.AgentConfigFingerprint, ExecutionPolicy: p.ExecutionPolicy, RuntimeAdapterIdentity: p.RuntimeAdapterIdentity, RuntimeProtocolIdentity: p.RuntimeProtocolIdentity}
 	if values != planValues || p.AuthoritySnapshotHash != runtimeselection.HashValue(values) {
 		return s, runtimeselection.ErrCorrupt
 	}

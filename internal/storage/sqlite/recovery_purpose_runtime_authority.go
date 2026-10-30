@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"reflect"
 
 	"github.com/lazyun/devbridge/internal/confirmation"
@@ -43,8 +44,11 @@ func executionAuthorityValues(v executionproposal.Proposal) (runtimeselection.Au
 		return runtimeselection.AuthorityValues{}, runtimeselection.ErrBindingMissing
 	}
 	b, r := v.BackendSelection, v.RuntimeConfig
-	values := runtimeselection.AuthorityValues{BackendIdentity: b.ConfigID, BackendConfigFingerprint: b.ConfigFingerprint, BackendSource: b.Source, BackendKind: "CODEX", Model: r.Model, ReasoningEffort: r.ReasoningEffort, CodexFastMode: r.CodexFastMode, ServiceTier: r.ServiceTier, RuntimeAdapterIdentity: v.RuntimeAdapterIdentity, RuntimeProtocolIdentity: v.RuntimeProtocolIdentity}
-	if values.BackendIdentity == "" || len(values.BackendConfigFingerprint) != 64 || values.BackendSource == "" || values.Model == "" || values.ReasoningEffort == "" || values.RuntimeAdapterIdentity == "" || values.RuntimeProtocolIdentity == "" || (values.CodexFastMode && values.ServiceTier != "priority") || (!values.CodexFastMode && values.ServiceTier != "") {
+	values := runtimeselection.AuthorityValues{BackendIdentity: b.ConfigID, BackendConfigFingerprint: b.ConfigFingerprint, BackendSource: b.Source, BackendKind: "CODEX", Model: r.Model, ReasoningEffort: r.ReasoningEffort, CodexFastMode: r.CodexFastMode, ServiceTier: r.ServiceTier, AgentID: r.AgentID, AgentConfigFingerprint: r.AgentConfigFingerprint, ExecutionPolicy: r.ExecutionPolicy, RuntimeAdapterIdentity: v.RuntimeAdapterIdentity, RuntimeProtocolIdentity: v.RuntimeProtocolIdentity}
+	if agentpolicy.ValidateFrozenSelection(values.AgentID, values.ExecutionPolicy, values.AgentConfigFingerprint) != nil || values.BackendIdentity == "" || len(values.BackendConfigFingerprint) != 64 || values.BackendSource == "" || values.Model == "" || values.ReasoningEffort == "" || values.RuntimeAdapterIdentity == "" || values.RuntimeProtocolIdentity == "" || (values.CodexFastMode && values.ServiceTier != "priority") || (!values.CodexFastMode && values.ServiceTier != "") {
+		return values, runtimeselection.ErrCorrupt
+	}
+	if values.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (values.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || values.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
 		return values, runtimeselection.ErrCorrupt
 	}
 	return values, nil
@@ -134,7 +138,7 @@ func recoveryPurposeSourceAuthoritySeenTx(ctx context.Context, q definitionQueri
 	if err != nil {
 		return empty, err
 	}
-	if w.BackendConfigID != values.BackendIdentity || w.BackendConfigFingerprint != values.BackendConfigFingerprint || w.Model != values.Model || w.ReasoningEffort != values.ReasoningEffort || w.ServiceTier != values.ServiceTier || w.RuntimeAdapterIdentity != values.RuntimeAdapterIdentity || w.RuntimeProtocolIdentity != values.RuntimeProtocolIdentity {
+	if w.BackendConfigID != values.BackendIdentity || w.BackendConfigFingerprint != values.BackendConfigFingerprint || w.Model != values.Model || w.ReasoningEffort != values.ReasoningEffort || w.ServiceTier != values.ServiceTier || w.AgentID != values.AgentID || w.AgentConfigFingerprint != values.AgentConfigFingerprint || w.ExecutionPolicy != values.ExecutionPolicy || w.RuntimeAdapterIdentity != values.RuntimeAdapterIdentity || w.RuntimeProtocolIdentity != values.RuntimeProtocolIdentity {
 		return empty, rs.ErrPurposeSourceWorksetChanged
 	}
 	// Recovery has no backend/runtime selection controls. A recommendation may

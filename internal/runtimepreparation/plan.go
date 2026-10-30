@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"time"
 
 	"github.com/lazyun/devbridge/internal/workset"
@@ -26,6 +27,9 @@ const (
 // Plan contains intended authority only. Actual Run, workspace, worktree,
 // root, start HEAD, snapshot and RuntimeWorkset facts belong to later stages.
 type Plan struct {
+	AgentID                  string                        `json:"agentId,omitempty"`
+	AgentConfigFingerprint   string                        `json:"agentConfigFingerprint,omitempty"`
+	ExecutionPolicy          string                        `json:"executionPolicy,omitempty"`
 	ID                       string                        `json:"planId"`
 	Generation               int                           `json:"generation"`
 	OwnerKind                OwnerKind                     `json:"ownerKind"`
@@ -67,6 +71,12 @@ type Plan struct {
 }
 
 func (p Plan) Validate() error {
+	if err := agentpolicy.ValidateFrozenSelection(p.AgentID, p.ExecutionPolicy, p.AgentConfigFingerprint); err != nil {
+		return err
+	}
+	if p.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (p.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || p.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return errors.New("cooperative runtime scope plan identity mismatch")
+	}
 	if p.ID == "" || p.Generation < 1 || p.OwnerID == "" || p.ProjectID == "" || p.SourceCommand == "" || p.PrimaryMemberID == "" || p.BackendIdentity == "" || p.Model == "" || p.ReasoningEffort == "" || p.RuntimeAdapterIdentity == "" || p.DevelopmentContextHash == "" || p.PreparationRequestID == "" || len(p.PreparationPayloadHash) != 64 || p.CreatedAt.IsZero() {
 		return errors.New("runtime scope plan identity incomplete")
 	}
@@ -132,6 +142,15 @@ func (p Plan) ComputeAuthoritySnapshotHash() (string, error) {
 		"serviceTier":              p.ServiceTier,
 		"runtimeAdapterIdentity":   p.RuntimeAdapterIdentity,
 		"runtimeProtocolIdentity":  p.RuntimeProtocolIdentity,
+	}
+	if p.AgentConfigFingerprint != "" {
+		value["agentConfigFingerprint"] = p.AgentConfigFingerprint
+	}
+	if p.AgentID != "" {
+		value["agentId"] = p.AgentID
+	}
+	if p.ExecutionPolicy != "" {
+		value["executionPolicy"] = p.ExecutionPolicy
 	}
 	raw, err := json.Marshal(value)
 	if err != nil {

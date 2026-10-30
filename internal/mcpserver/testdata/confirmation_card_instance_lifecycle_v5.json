@@ -8,57 +8,57 @@
     "staticResourceUri": "ui://devbridge/confirmation/v14"
   },
   "replacement": {
-    "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+    "contentHash": "953d98a5f177a12d33ed3c8f0b29382126905caa32deb9c73b0a08b858b34f13",
     "entry": {
       "display": {
-        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
-        "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+        "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
+        "decisionId": "REVIEW_APPROVAL:review_da3a797782952517ea0c0fd22491aa4a",
         "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
-        "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+        "featureAreaId": "feature_area_53ec8d0ba3f49496632b268159da86be",
         "featureAreaName": "Lifecycle area",
-        "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+        "intentId": "confirm_b90a3e0735aeb7b968cbf280e6158324",
         "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "projectId": "project_ac07154e-9dff-4fc6-b9cf-327be180384e",
         "projectName": "Upper lifecycle",
         "purpose": "REVIEW",
         "related": {
           "availability": "AVAILABLE",
-          "id": "review_119ed678c42ef3af11567e4332c78bcc",
+          "id": "review_da3a797782952517ea0c0fd22491aa4a",
           "kind": "REVIEW",
           "outcome": "SUCCEEDED",
           "reviewRun": {
-            "id": "run_8bef1ef51af3f8a54b6fa9b29adf5822",
+            "id": "run_45fbf5240169a888c6b424dc51d8d464",
             "status": "SUCCEEDED"
           },
           "state": "SUCCEEDED"
         },
         "repositoryCount": 4,
-        "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+        "reviewId": "review_da3a797782952517ea0c0fd22491aa4a",
         "reviewOrdinal": 1,
         "status": "AVAILABLE",
-        "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05",
+        "taskId": "task_3c146e21311ee4db517fc04a0bd45e9d",
         "taskName": "Lifecycle intent",
         "topologyRevision": 5,
         "version": 1
       },
       "intent": {
         "action": "REVISE",
-        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
         "canResume": false,
         "content": {
           "action": "REVISE",
-          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
           "purpose": "REVIEW",
           "requestId": "prepare-replacement-testconfirmationreplacementintentmountsitsowncardinstance-2",
           "review": {
-            "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
-            "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
-            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "preparedDevelopmentContextHash": "289702453f9dc2f288bbaeb13330b87c19cbc5456f6e62c932e04753906f04e7",
+            "decisionId": "REVIEW_APPROVAL:review_da3a797782952517ea0c0fd22491aa4a",
+            "featureAreaId": "feature_area_53ec8d0ba3f49496632b268159da86be",
+            "preparedDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "preparedDevelopmentContextHash": "b0cfb3faf3c59c7bb8cdebc9b9985f2c217777b08f538f309843859fde71c059",
             "preparedTopologyRevision": 5,
             "reviewDepth": "",
             "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
-            "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+            "reviewId": "review_da3a797782952517ea0c0fd22491aa4a",
             "reviewPlan": {
               "initialScope": {
                 "kind": ""
@@ -66,9 +66,9 @@
               "mode": "",
               "selectedModules": null
             },
-            "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05"
+            "taskId": "task_3c146e21311ee4db517fc04a0bd45e9d"
           },
-          "sourceIntentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+          "sourceIntentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
           "variants": [
             {
               "id": "revise",
@@ -77,12 +77,12 @@
             }
           ]
         },
-        "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
-        "createdAt": "2026-10-25T17:52:07.015589Z",
+        "contentHash": "953d98a5f177a12d33ed3c8f0b29382126905caa32deb9c73b0a08b858b34f13",
+        "createdAt": "2026-10-30T06:58:05.141367869Z",
         "currentUpperReadAvailable": false,
-        "expiresAt": "2026-10-26T17:52:07.015589Z",
-        "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
-        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "expiresAt": "2026-10-31T06:58:05.141367869Z",
+        "intentId": "confirm_b90a3e0735aeb7b968cbf280e6158324",
+        "projectId": "project_ac07154e-9dff-4fc6-b9cf-327be180384e",
         "purpose": "REVIEW",
         "state": "PENDING",
         "steps": [],
@@ -90,22 +90,22 @@
       }
     },
     "expectCommittableVariant": "revise",
-    "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+    "intentId": "confirm_b90a3e0735aeb7b968cbf280e6158324",
     "meta": {
-      "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+      "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
       "componentVersion": "PURPOSE_CONFIRMATION_V14",
-      "contentHash": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
-      "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
-      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "contentHash": "953d98a5f177a12d33ed3c8f0b29382126905caa32deb9c73b0a08b858b34f13",
+      "intentId": "confirm_b90a3e0735aeb7b968cbf280e6158324",
+      "mainScriptSHA256": "cd8e62e4dab63ae15b7b7e9470e89aaf6f59bb41553db9a8bd6e739e634d7790",
       "outputTemplate": "ui://devbridge/confirmation/v14",
-      "presentationInstanceId": "744077fd49a207bbfbee603624b0f79f25ce3cb81430b4434629e68663af746c",
+      "presentationInstanceId": "fc14f654cc6f3eaee2f1f47ba53d238cadc7e09d26834c14a8dc43503925cc57",
       "resourceUri": "ui://devbridge/confirmation/v14",
       "version": 1
     },
     "options": {
       "entry": {
         "options": {
-          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
           "backendInventoryComplete": false,
           "branches": [],
           "conversationModelDefault": {
@@ -115,16 +115,16 @@
           "eligibility": {
             "attemptState": "NOT_ATTEMPTED",
             "available": true,
-            "currentDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "currentGeneration": "d36376d5dd017db8064f661b47297539a8935551ce35952e589476456c250d34",
+            "currentDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "currentGeneration": "bc75e9aa9c87b04abf7927bebf8af78e1e97bf7ac06213078668709feb328997",
             "currentTopologyRevision": 5,
-            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "preparedGeneration": "447d9693e6297af22b42ab4f77b83bb26de30eb405ffcdf0ec3a715436de33e2",
+            "preparedDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "preparedGeneration": "953d98a5f177a12d33ed3c8f0b29382126905caa32deb9c73b0a08b858b34f13",
             "preparedTopologyRevision": 5,
             "receiptState": "NOT_OBSERVED",
             "reprepareAllowed": false
           },
-          "intentId": "confirm_df50318e62f63e13d3b5563781fccbd7",
+          "intentId": "confirm_b90a3e0735aeb7b968cbf280e6158324",
           "projectId": "",
           "projects": [],
           "purpose": "REVIEW",
@@ -197,62 +197,62 @@
         }
       }
     },
-    "presentationInstanceId": "744077fd49a207bbfbee603624b0f79f25ce3cb81430b4434629e68663af746c",
+    "presentationInstanceId": "fc14f654cc6f3eaee2f1f47ba53d238cadc7e09d26834c14a8dc43503925cc57",
     "state": "PENDING",
     "version": 1
   },
   "superseded": {
-    "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+    "contentHash": "3bd9658411120a6106e26c5ef365248af7fa5a9cc76a917e5cfff818c483dceb",
     "entry": {
       "display": {
-        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
-        "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
+        "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
+        "decisionId": "REVIEW_APPROVAL:review_da3a797782952517ea0c0fd22491aa4a",
         "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
-        "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
+        "featureAreaId": "feature_area_53ec8d0ba3f49496632b268159da86be",
         "featureAreaName": "Lifecycle area",
-        "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+        "intentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
         "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "projectId": "project_ac07154e-9dff-4fc6-b9cf-327be180384e",
         "projectName": "Upper lifecycle",
         "purpose": "REVIEW",
         "related": {
           "availability": "AVAILABLE",
-          "id": "review_119ed678c42ef3af11567e4332c78bcc",
+          "id": "review_da3a797782952517ea0c0fd22491aa4a",
           "kind": "REVIEW",
           "outcome": "SUCCEEDED",
           "reviewRun": {
-            "id": "run_8bef1ef51af3f8a54b6fa9b29adf5822",
+            "id": "run_45fbf5240169a888c6b424dc51d8d464",
             "status": "SUCCEEDED"
           },
           "state": "SUCCEEDED"
         },
         "repositoryCount": 4,
-        "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+        "reviewId": "review_da3a797782952517ea0c0fd22491aa4a",
         "reviewOrdinal": 1,
         "status": "AVAILABLE",
-        "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05",
+        "taskId": "task_3c146e21311ee4db517fc04a0bd45e9d",
         "taskName": "Lifecycle intent",
         "topologyRevision": 5,
         "version": 1
       },
       "intent": {
         "action": "REVISE",
-        "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+        "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
         "canResume": false,
         "content": {
           "action": "REVISE",
-          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
           "purpose": "REVIEW",
           "requestId": "prepare-prior-testconfirmationreplacementintentmountsitsowncardinstance-1",
           "review": {
-            "decisionId": "REVIEW_APPROVAL:review_119ed678c42ef3af11567e4332c78bcc",
-            "featureAreaId": "feature_area_56b70cf5e76f27d599245c22f11c5be8",
-            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "preparedDevelopmentContextHash": "c814bbd578c6c30681798bd06836c31ac06eb7ecb2273bc6d00183183e627e22",
+            "decisionId": "REVIEW_APPROVAL:review_da3a797782952517ea0c0fd22491aa4a",
+            "featureAreaId": "feature_area_53ec8d0ba3f49496632b268159da86be",
+            "preparedDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "preparedDevelopmentContextHash": "feeec9b0343a1898f324172391d164ea493dc66787ab56ff8614754dcdb484c3",
             "preparedTopologyRevision": 4,
             "reviewDepth": "",
             "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
-            "reviewId": "review_119ed678c42ef3af11567e4332c78bcc",
+            "reviewId": "review_da3a797782952517ea0c0fd22491aa4a",
             "reviewPlan": {
               "initialScope": {
                 "kind": ""
@@ -260,7 +260,7 @@
               "mode": "",
               "selectedModules": null
             },
-            "taskId": "task_744b0e8f52cdbe77b1091cb7f9b08b05"
+            "taskId": "task_3c146e21311ee4db517fc04a0bd45e9d"
           },
           "variants": [
             {
@@ -270,12 +270,12 @@
             }
           ]
         },
-        "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
-        "createdAt": "2026-10-25T17:52:06.760828Z",
+        "contentHash": "3bd9658411120a6106e26c5ef365248af7fa5a9cc76a917e5cfff818c483dceb",
+        "createdAt": "2026-10-30T06:58:05.001055149Z",
         "currentUpperReadAvailable": false,
-        "expiresAt": "2026-10-26T17:52:06.760828Z",
-        "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
-        "projectId": "project_0699d825-f74d-47df-8fb3-46e091d2931f",
+        "expiresAt": "2026-10-31T06:58:05.001055149Z",
+        "intentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
+        "projectId": "project_ac07154e-9dff-4fc6-b9cf-327be180384e",
         "purpose": "REVIEW",
         "state": "SUPERSEDED",
         "steps": [],
@@ -283,22 +283,22 @@
       }
     },
     "expectCommittableVariant": "",
-    "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+    "intentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
     "meta": {
-      "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+      "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
       "componentVersion": "PURPOSE_CONFIRMATION_V14",
-      "contentHash": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
-      "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
-      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "contentHash": "3bd9658411120a6106e26c5ef365248af7fa5a9cc76a917e5cfff818c483dceb",
+      "intentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
+      "mainScriptSHA256": "cd8e62e4dab63ae15b7b7e9470e89aaf6f59bb41553db9a8bd6e739e634d7790",
       "outputTemplate": "ui://devbridge/confirmation/v14",
-      "presentationInstanceId": "1d695d15c67e6083627b9e2b54a140b15e1d7268b02c51f9b5a1a0b7010e7c63",
+      "presentationInstanceId": "4e374f12b84c4bba4d8ae7e2a6f4cbfb8817881df84623f8a6e4cf0647d9cf98",
       "resourceUri": "ui://devbridge/confirmation/v14",
       "version": 1
     },
     "options": {
       "entry": {
         "options": {
-          "aiSessionId": "ai_session_b4de5226542fa8deed12f98e489cd81f",
+          "aiSessionId": "ai_session_9baca08de003267cbba5c3ceda8a35d7",
           "backendInventoryComplete": false,
           "branches": [],
           "conversationModelDefault": {
@@ -308,18 +308,18 @@
           "eligibility": {
             "attemptState": "NOT_ATTEMPTED",
             "available": false,
-            "currentDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "currentGeneration": "84b50e85fc9c7144f427f03e96bec0c5ebe7d4758b35a1d5b0789f043ef46858",
+            "currentDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "currentGeneration": "7400077e8e70edae953c89c71234e09f560cfaddb1188f01912169b11601b40b",
             "currentTopologyRevision": 5,
-            "preparedDecisionVersion": "a9111d30e0d067daee029175b408f48f093b04bd6c6be74de2a3ae7295f71862",
-            "preparedGeneration": "61435f26b922e6c58ae682bda9f3dc8cc50a540a123f2451cb905a83c49f78a9",
+            "preparedDecisionVersion": "5ebf0079b8166b7b3c8d0ff87f87f7994be136ca6352bc2fccc636fbae904640",
+            "preparedGeneration": "3bd9658411120a6106e26c5ef365248af7fa5a9cc76a917e5cfff818c483dceb",
             "preparedTopologyRevision": 4,
             "reasonCode": "INTENT_ALREADY_CONSUMED",
             "reasonMessage": "This confirmation is no longer available for a new commit.",
             "receiptState": "NOT_OBSERVED",
             "reprepareAllowed": true
           },
-          "intentId": "confirm_95213eb380f038d9ac1e12e9c06a49de",
+          "intentId": "confirm_de09f38da54d3b86811cd161ffedfc3d",
           "projectId": "",
           "projects": [],
           "purpose": "REVIEW",
@@ -392,7 +392,7 @@
         }
       }
     },
-    "presentationInstanceId": "1d695d15c67e6083627b9e2b54a140b15e1d7268b02c51f9b5a1a0b7010e7c63",
+    "presentationInstanceId": "4e374f12b84c4bba4d8ae7e2a6f4cbfb8817881df84623f8a6e4cf0647d9cf98",
     "state": "SUPERSEDED",
     "version": 1
   }

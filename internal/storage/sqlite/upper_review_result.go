@@ -74,6 +74,10 @@ func (s *UpperReviewResultStore) SubmitReviewResult(ctx context.Context, in revi
 	if receipt, found, e := upperReportReplayTx(ctx, observed, in, digest); e != nil || found {
 		return receipt, e
 	}
+	if err = requireUpperWorkerSubmissionTx(ctx, observed, in); err != nil {
+		observed.Rollback()
+		return review.ReportReceipt{}, err
+	}
 	if err = in.Report.ValidateAdmission(); err != nil {
 		return review.ReportReceipt{}, err
 	}
@@ -98,6 +102,9 @@ func (s *UpperReviewResultStore) SubmitReviewResult(ctx context.Context, in revi
 	// still wins before the new-command lifecycle/target checks.
 	if receipt, found, e := upperReportReplayTx(ctx, tx, in, digest); e != nil || found {
 		return receipt, e
+	}
+	if err = requireUpperWorkerSubmissionTx(ctx, tx, in); err != nil {
+		return review.ReportReceipt{}, err
 	}
 	if err = requireUpperReviewCurrentTargetTx(ctx, tx, in.UpperTarget); err != nil {
 		return review.ReportReceipt{}, err
@@ -202,6 +209,9 @@ func (s *UpperReviewResultStore) SubmitReviewResult(ctx context.Context, in revi
 	if _, err = tx.ExecContext(ctx, `UPDATE review_result_receipts SET state='COMPLETED',receipt_json=? WHERE review_id=? AND request_id=? AND ai_session_id=? AND state='FINALIZING'`, string(stored), in.ReviewID, in.RequestID, in.AISessionID); err != nil {
 		return review.ReportReceipt{}, err
 	}
+	if err = completeUpperWorkerSubmissionTx(ctx, tx, in, stored); err != nil {
+		return review.ReportReceipt{}, err
+	}
 	if err = tx.Commit(); err != nil {
 		return review.ReportReceipt{}, err
 	}
@@ -237,6 +247,10 @@ func (s *UpperReviewResultStore) submitReviewResultV2(ctx context.Context, in re
 		observed.Rollback()
 		return receipt, e
 	}
+	if err = requireUpperWorkerSubmissionTx(ctx, observed, in); err != nil {
+		observed.Rollback()
+		return review.ReportReceipt{}, err
+	}
 	if err = in.Report.ValidateAdmission(); err != nil {
 		observed.Rollback()
 		return review.ReportReceipt{}, err
@@ -256,6 +270,9 @@ func (s *UpperReviewResultStore) submitReviewResultV2(ctx context.Context, in re
 	defer tx.Rollback()
 	if receipt, found, e := upperReportReplayTx(ctx, tx, in, digest); e != nil || found {
 		return receipt, e
+	}
+	if err = requireUpperWorkerSubmissionTx(ctx, tx, in); err != nil {
+		return review.ReportReceipt{}, err
 	}
 	if err = requireUpperReviewCurrentTargetV2Tx(ctx, tx, in.UpperTarget); err != nil {
 		return review.ReportReceipt{}, err
@@ -346,6 +363,9 @@ func (s *UpperReviewResultStore) submitReviewResultV2(ctx context.Context, in re
 		return review.ReportReceipt{}, err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE review_result_receipts SET state='COMPLETED',receipt_json=? WHERE review_id=? AND request_id=? AND ai_session_id=? AND state='FINALIZING'`, string(stored), in.ReviewID, in.RequestID, in.AISessionID); err != nil {
+		return review.ReportReceipt{}, err
+	}
+	if err = completeUpperWorkerSubmissionTx(ctx, tx, in, stored); err != nil {
 		return review.ReportReceipt{}, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -584,6 +604,22 @@ func upperReportReplayTx(ctx context.Context, tx *sql.Tx, in review.SubmitInput,
 	}
 	if owner != in.AISessionID {
 		return review.ReportReceipt{}, true, review.ErrNotFound
+	}
+	// Claimed report replay remains a pure historical receipt read, but it
+	// still belongs to the authenticated worker claim's caller scope.
+	if in.WorkerClaim != nil {
+		scope, e := workerScopeTx(ctx, tx, in.AISessionID)
+		if e != nil {
+			return review.ReportReceipt{}, true, e
+		}
+		var matches bool
+		e = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM upper_review_worker_claims WHERE run_id=? AND review_id=? AND ai_session_id=? AND caller_scope=? AND request_id=? AND worker_id=?)`, in.RunID, in.ReviewID, in.AISessionID, scope, in.WorkerClaim.RequestID, in.WorkerClaim.WorkerID).Scan(&matches)
+		if e != nil {
+			return review.ReportReceipt{}, true, e
+		}
+		if !matches {
+			return review.ReportReceipt{}, true, review.ErrNotFound
+		}
 	}
 	if oldDigest != digest {
 		return review.ReportReceipt{}, true, review.ErrRequestConflict

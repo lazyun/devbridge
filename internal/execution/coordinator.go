@@ -13,10 +13,11 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/lazyun/devbridge/internal/agent"
 	"github.com/lazyun/devbridge/internal/agentconversation"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/agentruntime"
 	"github.com/lazyun/devbridge/internal/approval"
-	"github.com/lazyun/devbridge/internal/appserver"
 	"github.com/lazyun/devbridge/internal/codex"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/codexlaunch"
@@ -112,26 +113,8 @@ type UpperReviewAccess interface {
 	UpperReviewAccessForSession(context.Context, string, string) (review.UpperAccess, error)
 }
 
-type CodexSession interface {
-	StartThread(context.Context, string) (string, error)
-	StartTurn(context.Context, string, string) (CodexTurnResult, error)
-	Close() error
-}
-type threadNamingCodexSession interface {
-	SetThreadName(context.Context, string, string) error
-}
-type resumableCodexSession interface {
-	ResumeThread(context.Context, string, string, *run.TokenCounts) (string, error)
-}
-type turnStartedCodexSession interface {
-	StartTurnWithStarted(context.Context, string, string, func(string) error) (CodexTurnResult, error)
-}
-type structuredTurnStartedCodexSession interface {
-	StartTurnWithSchemaAndStarted(context.Context, string, string, json.RawMessage, func(string) error) (CodexTurnResult, error)
-}
-type structuredCodexSession interface {
-	StartTurnWithSchema(context.Context, string, string, json.RawMessage) (CodexTurnResult, error)
-}
+// CodexSession is retained for existing callers; new adapters use agent.Session.
+type CodexSession = agent.Session
 type InteractiveCodexSession interface {
 	CodexSession
 	NextApproval(context.Context) (codex.ApprovalRequest, error)
@@ -157,12 +140,8 @@ type DiagnosticRecorder interface {
 	RecordThreadNameFailure(context.Context, string, string, string, time.Time) error
 }
 
-type CodexTurnResult struct {
-	TurnID     string
-	Message    string
-	Commands   []ObservedCommand
-	TokenUsage *run.TokenUsageObservation
-}
+// CodexTurnResult is the compatibility name for neutral observed turn facts.
+type CodexTurnResult = agent.TurnResult
 
 type RuntimeHandoffStore interface {
 	ReadHandoff(context.Context, string, string) (executionproposal.Handoff, error)
@@ -192,6 +171,7 @@ type Coordinator struct {
 	Workspaces            WorkspaceService
 	Codex                 CodexFactory
 	PiAgent               CodexFactory
+	Agents                *agent.Registry[agent.Factory]
 	Evidence              EvidenceCollector
 	Results               ResultRecorder
 	Approvals             ApprovalController
@@ -735,8 +715,16 @@ func (c *Coordinator) PrepareReservedExecution(ctx context.Context, runID string
 		if err := task.ValidateExecutablePrimary(task.Definition{Version: 2, RepositoryTargets: taskValue.RepositoryTargets, PrimaryMemberID: taskValue.PrimaryMemberID, WorkSpec: taskValue.WorkSpec}); err != nil {
 			return c.failReservedSetup(ctx, prepared, "exact repository workset", "RUNTIME_WORKSET_INCOMPLETE", err)
 		}
-		if boundProposal == nil || boundProposal.PrimaryMemberID != taskValue.PrimaryMemberID || !(boundProposal.RuntimeAdapterIdentity == executionproposal.RuntimeAdapterCodexAppServerV1 && boundProposal.RuntimeProtocolIdentity == executionproposal.RuntimeProtocolCodex0149 || runtimeplatform.QualifiedExecutorIdentity(boundProposal.RuntimeAdapterIdentity, boundProposal.RuntimeProtocolIdentity)) {
-			return c.failReservedSetup(ctx, prepared, "exact repository workset", "RUNTIME_WORKSET_INCOMPLETE", errors.New("Execution lacks the frozen Trusted Executor Model v1 identity"))
+		validRuntimeIdentity := false
+		if boundProposal != nil && agentpolicy.ValidateFrozenSelection(boundProposal.RuntimeConfig.AgentID, boundProposal.RuntimeConfig.ExecutionPolicy, boundProposal.RuntimeConfig.AgentConfigFingerprint) == nil {
+			if boundProposal.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+				validRuntimeIdentity = boundProposal.RuntimeAdapterIdentity == agentpolicy.CooperativeAdapterIdentity && boundProposal.RuntimeProtocolIdentity == agentpolicy.CooperativeProtocolIdentity
+			} else {
+				validRuntimeIdentity = boundProposal.RuntimeAdapterIdentity == executionproposal.RuntimeAdapterCodexAppServerV1 && boundProposal.RuntimeProtocolIdentity == executionproposal.RuntimeProtocolCodex0149 || runtimeplatform.QualifiedExecutorIdentity(boundProposal.RuntimeAdapterIdentity, boundProposal.RuntimeProtocolIdentity)
+			}
+		}
+		if boundProposal == nil || boundProposal.PrimaryMemberID != taskValue.PrimaryMemberID || !validRuntimeIdentity {
+			return c.failReservedSetup(ctx, prepared, "exact repository workset", "RUNTIME_WORKSET_INCOMPLETE", errors.New("Execution lacks its exact frozen agent policy and runtime identity"))
 		}
 	}
 	if boundProposal != nil && runtimeplatform.QualifiedExecutorIdentity(boundProposal.RuntimeAdapterIdentity, boundProposal.RuntimeProtocolIdentity) {
@@ -855,7 +843,7 @@ func (c *Coordinator) PrepareReservedExecution(ctx context.Context, runID string
 		multi, multiErr := c.PrepareMultiRuntime(ctx, MultiRuntimePrepareInput{
 			Owner:       MultiRuntimeOwner{ProjectID: taskValue.ProjectID, FeatureAreaID: taskValue.FeatureAreaID, TaskID: taskValue.ID, TaskDefinitionRevisionID: boundProposal.TaskDefinitionRevisionID, ExecutionID: boundProposal.ID, RunID: runValue.ID},
 			WorkspaceID: sourceReview.WorkspaceID, PrimaryMemberID: taskValue.PrimaryMemberID, Targets: taskValue.RepositoryTargets,
-			Runtime:  MultiRuntimeIdentity{BackendConfigID: boundSelection.ConfigID, BackendConfigFingerprint: boundSelection.ConfigFingerprint, Model: boundProposal.RuntimeConfig.Model, ReasoningEffort: boundProposal.RuntimeConfig.ReasoningEffort, ServiceTier: boundProposal.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: boundProposal.RuntimeAdapterIdentity, RuntimeProtocolIdentity: boundProposal.RuntimeProtocolIdentity, CreatedAt: runValue.CreatedAt},
+			Runtime:  MultiRuntimeIdentity{AgentConfigFingerprint: boundProposal.RuntimeConfig.AgentConfigFingerprint, AgentID: boundProposal.RuntimeConfig.AgentID, ExecutionPolicy: boundProposal.RuntimeConfig.ExecutionPolicy, BackendConfigID: boundSelection.ConfigID, BackendConfigFingerprint: boundSelection.ConfigFingerprint, Model: boundProposal.RuntimeConfig.Model, ReasoningEffort: boundProposal.RuntimeConfig.ReasoningEffort, ServiceTier: boundProposal.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: boundProposal.RuntimeAdapterIdentity, RuntimeProtocolIdentity: boundProposal.RuntimeProtocolIdentity, CreatedAt: runValue.CreatedAt},
 			ReadOnly: prepared.purpose == run.PurposeVerification,
 		})
 		if multiErr != nil {
@@ -1133,6 +1121,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	}
 	model, reasoningEffort := taskValue.Model, taskValue.ReasoningEffort
 	serviceTier := ""
+	agentID, executionPolicy, agentConfigFingerprint := "", "", ""
 	if runValue.ExecutionProposalID != "" {
 		if c.Executions == nil {
 			return failCoded(run.FailureInfrastructure, "Execution runtime configuration", "EXECUTION_RUNTIME_CONFIG_UNAVAILABLE", errors.New("execution lookup unavailable"))
@@ -1148,6 +1137,10 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 			return failCoded(run.FailureInfrastructure, "Execution runtime configuration", "EXECUTION_RUNTIME_CONFIG_UNAVAILABLE", configErr)
 		}
 		model, reasoningEffort, serviceTier = proposal.RuntimeConfig.Model, proposal.RuntimeConfig.ReasoningEffort, proposal.RuntimeConfig.ServiceTier
+		agentID, executionPolicy, agentConfigFingerprint = proposal.RuntimeConfig.AgentID, proposal.RuntimeConfig.ExecutionPolicy, proposal.RuntimeConfig.AgentConfigFingerprint
+		if executionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (proposal.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || proposal.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+			return failCoded(run.FailureInfrastructure, "cooperative runtime", "COOPERATIVE_POLICY_IDENTITY_MISMATCH", errors.New("frozen Execution does not carry the cooperative adapter/protocol identity"))
+		}
 	}
 	baseCommit := taskValue.BaseCommit
 	if prepared.multiRuntime != nil {
@@ -1170,6 +1163,17 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		}
 		model, reasoningEffort, baseCommit = prepared.review.RuntimeConfig.Model, prepared.review.RuntimeConfig.ReasoningEffort, prepared.review.BaseCommit
 		serviceTier = prepared.review.RuntimeConfig.ServiceTier
+		agentID, executionPolicy, agentConfigFingerprint = prepared.review.RuntimeConfig.AgentID, prepared.review.RuntimeConfig.ExecutionPolicy, prepared.review.RuntimeConfig.AgentConfigFingerprint
+	}
+	// Canonical backend identity includes the frozen agent and policy, not only
+	// the historical backend-config fingerprint. Do not send a Codex thread to
+	// another agent (or reinterpret a cooperative thread as native recovery).
+	continuitySelection := codexruntime.NextRunRuntimeConfig{AgentConfigFingerprint: agentConfigFingerprint, AgentID: agentID, ExecutionPolicy: executionPolicy, Model: model, ReasoningEffort: reasoningEffort, ServiceTier: serviceTier}
+	if continuityErr := c.validateConversationAgentIdentity(ctx, conversation, runValue, continuitySelection); continuityErr != nil {
+		if prepared.rejoin != nil {
+			return detachRejectedAgentRejoin(runValue, prepared.rejoin, prepared.rejoin.Client, continuityErr)
+		}
+		return failCoded(run.FailureInfrastructure, "agent identity continuity", "AGENT_CONTINUITY_UNAVAILABLE", continuityErr)
 	}
 	if workspaceValue.RuntimeQuarantined || (c.Conversations == nil && workspaceValue.Status != workspace.StatusReady) {
 		cause := &WorkspaceContinuityUnavailableError{TaskID: runValue.TaskID, ReviewID: runValue.ReviewID, WorkspaceID: workspaceValue.ID, Reason: "the preserved workspace is isolated after unsafe runtime interruption"}
@@ -1259,7 +1263,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	}
 	prepared.Run = runValue
 
-	var session CodexSession
+	var session agent.Session
 	if err = c.prepareScalarReviewSandbox(ctx, &prepared, worktreeValue, startSnapshot); err != nil {
 		return failCoded(run.FailureInfrastructure, "review sandbox", "TASK_PERMISSION_PREPARATION_FAILED", err)
 	}
@@ -1273,6 +1277,18 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 			return failCoded(run.FailureInfrastructure, "Feature Area backend continuity", "BACKEND_CONTINUITY_UNAVAILABLE", errors.Join(configErr, errors.New("the frozen backend changed before client creation")))
 		}
 		configValue = freshConfig
+	}
+	cooperative := executionPolicy == agentpolicy.PolicyCooperativeTrustedV1
+	cooperativeReview := cooperative && prepared.purpose == run.PurposeScopeReview
+	var reviewSources map[string]cooperativeReviewSource
+	if cooperativeReview {
+		reviewSources, err = captureCooperativeReviewSources(ctx, prepared, worktreeValue.Path)
+		if err != nil {
+			return failCoded(run.FailureInfrastructure, "review source observation", "REVIEW_SOURCE_OBSERVATION_UNKNOWN", err)
+		}
+	}
+	if cooperative && (prepared.rejoin != nil || prepared.qualifiedExecution != nil) {
+		return failCoded(run.FailureInfrastructure, "cooperative runtime", "COOPERATIVE_NATIVE_RECOVERY_UNSUPPORTED", errors.New("cooperative execution cannot adopt native recovery or qualification"))
 	}
 	authorizationCeiling := codex.AuthorizationWorkspaceWrite
 	var qualifiedLaunch codexlaunch.VerifiedExecutable
@@ -1293,7 +1309,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		authorizationCeiling = codex.AuthorizationReadOnly
 	}
 	if productReviewRun || runValue.ExecutionProposalID != "" {
-		selected := codexruntime.NextRunRuntimeConfig{Model: model, ReasoningEffort: reasoningEffort, CodexFastMode: serviceTier != "", ServiceTier: serviceTier}
+		selected := codexruntime.NextRunRuntimeConfig{AgentConfigFingerprint: agentConfigFingerprint, AgentID: agentID, ExecutionPolicy: executionPolicy, Model: model, ReasoningEffort: reasoningEffort, CodexFastMode: serviceTier != "", ServiceTier: serviceTier}
 		if c.RuntimeConfigProvider == nil {
 			return failCoded(run.FailureInfrastructure, "runtime configuration", "RUNTIME_CONFIG_UNAVAILABLE", errors.New("runtime authority unavailable"))
 		}
@@ -1301,42 +1317,80 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 			return failCoded(run.FailureInfrastructure, "runtime configuration", "RUNTIME_CONFIG_UNAVAILABLE", configErr)
 		}
 	}
-	if serviceTier != "" {
+	if !cooperative && serviceTier != "" {
 		if _, ok := c.Codex.(runtimeSelectionAwareCodexFactory); !ok {
 			return failCoded(run.FailureInfrastructure, "runtime configuration", "RUNTIME_SELECTION_UNSUPPORTED", errors.New("runtime factory cannot honor frozen service tier"))
 		}
 	}
 
-	// Select factory based on ExecutorKind
-	factory := c.Codex
-	if prepared.review != nil && prepared.review.ExecutorKind == review.ExecutorPiAgent {
-		if c.PiAgent == nil {
-			return failCoded(run.FailureInfrastructure, "PI Agent runtime", "PI_AGENT_UNAVAILABLE", errors.New("PI Agent factory is not configured"))
-		}
-		factory = c.PiAgent
-	}
-
-	if qualifiedLaunch != nil {
-		factoryImpl, ok := factory.(qualifiedRunCodexFactory)
-		if !ok {
-			return failCoded(run.FailureInfrastructure, "qualified runtime", "RUNTIME_SELECTION_UNSUPPORTED", errors.New("runtime factory cannot honor the verified native executable"))
-		}
-		checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
-		session, err = factoryImpl.StartForQualifiedRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, qualifiedLaunch, checkpoint, prepared.rejoin)
-	} else if continuity, ok := factory.(boundRunCodexFactory); ok && (continuity.ContinuityEnabled() || prepared.rejoin != nil) {
-		checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
-		session, err = continuity.StartForBoundRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, checkpoint, prepared.rejoin)
-	} else if taskFactory, ok := factory.(taskRunCodexFactory); ok {
-		checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
-		session, err = taskFactory.StartForTaskRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, checkpoint)
-	} else if runtimeAware, ok := factory.(runtimeSelectionAwareCodexFactory); ok {
-		session, err = runtimeAware.StartForRuntimeSelection(ctx, configValue, model, reasoningEffort, serviceTier, authorizationCeiling)
-	} else if operationAware, ok := factory.(operationAwareCodexFactory); ok {
-		session, err = operationAware.StartForOperation(ctx, configValue, model, reasoningEffort, authorizationCeiling)
-	} else if modelAware, ok := factory.(modelAwareCodexFactory); ok && model != "" && reasoningEffort != "" {
-		session, err = modelAware.StartWithSelection(ctx, configValue, model, reasoningEffort)
+	var factory CodexFactory
+	var requiredCapabilities []agent.Capability
+	if cooperative {
+		session, err = c.startCooperativeAgent(ctx, prepared, configValue, codexruntime.NextRunRuntimeConfig{AgentConfigFingerprint: agentConfigFingerprint, AgentID: agentID, ExecutionPolicy: executionPolicy, Model: model, ReasoningEffort: reasoningEffort, ServiceTier: serviceTier}, worktreeValue.Path, conversation.BackendThreadID)
 	} else {
-		session, err = factory.Start(ctx, configValue)
+		// Require declared capabilities before creating a transport. This does not
+		// replace immutable admission, concrete method checks, or runtime proofs.
+		requiredCapabilities = []agent.Capability{}
+		if authorizationCeiling == codex.AuthorizationReadOnly {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityAuthorizationCeiling)
+		}
+		if serviceTier != "" {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityServiceTier)
+		}
+		if qualifiedLaunch != nil {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityQualifiedLaunch)
+		}
+		if prepared.multiRuntime != nil || prepared.scalarRuntime != nil {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityRuntimeBinding)
+		}
+		if c.Conversations != nil {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityHostTools)
+		}
+		if c.Cancellations != nil {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityInterrupt)
+			if prepared.rejoin == nil {
+				requiredCapabilities = append(requiredCapabilities, agent.CapabilityTurnStarted)
+			}
+		}
+		if prepared.rejoin != nil {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilitySameTurnRecovery)
+		} else if conversation.BackendThreadID != "" {
+			requiredCapabilities = append(requiredCapabilities, agent.CapabilityThreadResume)
+		}
+		var selectErr error
+		factory, selectErr = c.selectAgentFactory(prepared.review, requiredCapabilities)
+		if selectErr != nil {
+			if prepared.rejoin != nil {
+				return detachRejectedAgentRejoin(runValue, prepared.rejoin, prepared.rejoin.Client, selectErr)
+			}
+			if prepared.review != nil && prepared.review.ExecutorKind == review.ExecutorPiAgent && c.PiAgent == nil {
+				return failCoded(run.FailureInfrastructure, "PI Agent runtime", "PI_AGENT_UNAVAILABLE", errors.New("PI Agent factory is not configured"))
+			}
+			return failCoded(run.FailureInfrastructure, "agent capability selection", "BACKEND_CAPABILITY_INSUFFICIENT", selectErr)
+		}
+
+		if qualifiedLaunch != nil {
+			factoryImpl, ok := factory.(qualifiedRunCodexFactory)
+			if !ok {
+				return failCoded(run.FailureInfrastructure, "qualified runtime", "RUNTIME_SELECTION_UNSUPPORTED", errors.New("runtime factory cannot honor the verified native executable"))
+			}
+			checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
+			session, err = factoryImpl.StartForQualifiedRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, qualifiedLaunch, checkpoint, prepared.rejoin)
+		} else if continuity, ok := factory.(boundRunCodexFactory); ok && (continuity.ContinuityEnabled() || prepared.rejoin != nil) {
+			checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
+			session, err = continuity.StartForBoundRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, checkpoint, prepared.rejoin)
+		} else if taskFactory, ok := factory.(taskRunCodexFactory); ok {
+			checkpoint := newExecutionCheckpoint(prepared, workspaceValue, worktreeValue, conversation, startSnapshot)
+			session, err = taskFactory.StartForTaskRun(ctx, runValue.ID, configValue, model, reasoningEffort, serviceTier, authorizationCeiling, checkpoint)
+		} else if runtimeAware, ok := factory.(runtimeSelectionAwareCodexFactory); ok {
+			session, err = runtimeAware.StartForRuntimeSelection(ctx, configValue, model, reasoningEffort, serviceTier, authorizationCeiling)
+		} else if operationAware, ok := factory.(operationAwareCodexFactory); ok {
+			session, err = operationAware.StartForOperation(ctx, configValue, model, reasoningEffort, authorizationCeiling)
+		} else if modelAware, ok := factory.(modelAwareCodexFactory); ok && model != "" && reasoningEffort != "" {
+			session, err = modelAware.StartWithSelection(ctx, configValue, model, reasoningEffort)
+		} else {
+			session, err = factory.Start(ctx, configValue)
+		}
 	}
 	if err != nil {
 		if contextEnded(ctx, err) {
@@ -1347,14 +1401,23 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		}
 		return fail(run.FailureInfrastructure, "start Codex", err)
 	}
-	if accounting, ok := session.(interface{ setUsageRunID(string) }); ok {
-		accounting.setUsageRunID(runValue.ID)
+	if session == nil {
+		return failCoded(run.FailureInfrastructure, "agent session", "BACKEND_CAPABILITY_INSUFFICIENT", errors.New("agent factory returned no session"))
 	}
-	if binding, ok := session.(interface{ setRuntimeBinding(codex.RuntimeBinding) }); ok && prepared.multiRuntime != nil {
-		binding.setRuntimeBinding(prepared.multiRuntime.Binding)
+	if capabilityErr := validateAgentSessionCapabilities(factory, session, requiredCapabilities); !cooperative && capabilityErr != nil {
+		if prepared.rejoin != nil {
+			return detachRejectedAgentRejoin(runValue, prepared.rejoin, session, capabilityErr)
+		}
+		return failCoded(run.FailureInfrastructure, "agent session capabilities", "BACKEND_CAPABILITY_INSUFFICIENT", errors.Join(capabilityErr, session.Close()))
 	}
-	if binding, ok := session.(interface{ setRuntimeBinding(codex.RuntimeBinding) }); ok && prepared.scalarRuntime != nil {
-		binding.setRuntimeBinding(prepared.scalarRuntime.Binding)
+	if accounting, ok := session.(agent.UsageRunBinder); ok {
+		accounting.SetUsageRunID(runValue.ID)
+	}
+	if binding, ok := session.(agent.RuntimeBinder); ok && prepared.multiRuntime != nil {
+		binding.SetRuntimeBinding(agent.RuntimeBinding(prepared.multiRuntime.Binding))
+	}
+	if binding, ok := session.(agent.RuntimeBinder); ok && prepared.scalarRuntime != nil {
+		binding.SetRuntimeBinding(agent.RuntimeBinding(prepared.scalarRuntime.Binding))
 	}
 	if c.Conversations != nil {
 		conversationQuiesced = false
@@ -1362,7 +1425,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	if live != nil {
 		live.attachClient(session)
 	}
-	if configurable, ok := session.(interface{ setDynamicTools([]codex.DynamicToolSpec) }); ok {
+	if configurable, ok := session.(agent.ToolConfigurer); ok {
 		var specs []codex.DynamicToolSpec
 		if c.Conversations != nil {
 			specs = FeatureAreaHostToolV1Specs()
@@ -1376,7 +1439,11 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 				}
 			}
 		}
-		configurable.setDynamicTools(specs)
+		tools := make([]agent.ToolSpec, len(specs))
+		for i, spec := range specs {
+			tools[i] = agent.ToolSpec(spec)
+		}
+		configurable.SetDynamicTools(tools)
 	}
 	closed := false
 	var sessionCloseErr error
@@ -1449,7 +1516,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		}
 		threadID, err = session.StartThread(ctx, runtimeCWD)
 		if err == nil {
-			if naming, ok := session.(threadNamingCodexSession); ok {
+			if naming, ok := session.(agent.ThreadNamer); ok {
 				if nameErr := naming.SetThreadName(ctx, threadID, executorThreadLabel(taskValue.Title, prepared.purpose)); nameErr != nil {
 					c.recordThreadNameFailure(operationLabel, threadID, nameErr)
 				}
@@ -1487,7 +1554,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		if c.Conversations != nil {
 			baseline = c.conversationUsageBaseline(ctx, conversation)
 		}
-		resumable, ok := session.(resumableCodexSession)
+		resumable, ok := session.(agent.ThreadResumer)
 		if !ok {
 			err = errors.New("Codex gateway does not support thread/resume")
 		}
@@ -1656,7 +1723,7 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	}
 	turnRequestedAt := time.Now()
 	observability.Info(ctx, "codex", "codex.turn.requested", "Codex turn requested", map[string]any{"threadId": threadID, "purpose": prepared.purpose, "instruction": observability.Fingerprint(prompt)})
-	var turnResult CodexTurnResult
+	var turnResult agent.TurnResult
 	var turnErr error
 	if err := c.validateRunExecutionDispatch(ctx, runValue); err != nil {
 		return failCoded(run.FailureInfrastructure, "AgentExecution turn ownership", "AGENT_EXECUTION_UNAVAILABLE", err)
@@ -1670,16 +1737,16 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 			live.turnStarted(runValue.ID)
 		}
 		turnResult, turnErr = rejoining.RejoinTurn(turnContext, runValue.ThreadID, runValue.TurnID, prepared.rejoin.Runtime)
-	} else if started, ok := session.(structuredTurnStartedCodexSession); ok && len(outputSchema) != 0 {
+	} else if started, ok := session.(agent.StructuredTurnStarter); ok && len(outputSchema) != 0 {
 		turnResult, turnErr = started.StartTurnWithSchemaAndStarted(turnContext, threadID, prompt, outputSchema, onTurnStarted)
-	} else if structured, ok := session.(structuredCodexSession); ok && len(outputSchema) != 0 {
+	} else if structured, ok := session.(agent.StructuredSession); ok && len(outputSchema) != 0 {
 		turnResult, turnErr = structured.StartTurnWithSchema(turnContext, threadID, prompt, outputSchema)
 		if turnResult.TurnID != "" {
 			turnErr = errors.Join(turnErr, onTurnStarted(turnResult.TurnID))
 		}
 	} else if len(outputSchema) != 0 {
 		return failCoded(run.FailureInfrastructure, "structured output", "BACKEND_CAPABILITY_INSUFFICIENT", errors.New("Coding Agent backend must support output schema"))
-	} else if started, ok := session.(turnStartedCodexSession); ok {
+	} else if started, ok := session.(agent.TurnStarter); ok {
 		turnResult, turnErr = started.StartTurnWithStarted(turnContext, threadID, prompt, onTurnStarted)
 	} else {
 		turnResult, turnErr = session.StartTurn(turnContext, threadID, prompt)
@@ -1691,9 +1758,9 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	// joined. Those failures cannot invalidate an already proven context point.
 	terminalTurn := turnErr == nil && turnResult.TurnID != ""
 	if turnErr != nil {
-		var terminal *codex.TurnError
-		terminalTurn = errors.As(turnErr, &terminal) && terminal.ThreadID == threadID && terminal.TurnID == turnResult.TurnID && terminal.TurnID != ""
-		if terminalTurn && terminal.Status == "interrupted" && c.Cancellations != nil {
+		terminal := terminalAgentObservation(turnErr)
+		terminalTurn = terminal.Matches(threadID, turnResult.TurnID)
+		if terminalTurn && terminal.State == agent.TurnInterrupted && c.Cancellations != nil {
 			conversationCanceled, err = c.Cancellations.Requested(context.WithoutCancel(ctx), runValue.ID)
 			if err != nil {
 				return fail(run.FailureInfrastructure, "cancellation observation", err)
@@ -1788,10 +1855,15 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 	}
 	var multiObservationErr error
 	if prepared.multiRuntime != nil {
-		multiObservationErr = c.ObserveMultiRuntime(context.WithoutCancel(ctx), *prepared.multiRuntime)
+		multiObservationErr = c.observeMultiRuntime(context.WithoutCancel(ctx), *prepared.multiRuntime, reviewSources)
 	}
 	endSnapshot, snapshotErr := c.Evidence.CaptureSnapshot(context.WithoutCancel(ctx), worktreeValue.Path)
 	verificationMutated := prepared.purpose == run.PurposeVerification && snapshotErr == nil && startSnapshot != endSnapshot
+	var reviewObservationErr, reviewStateMutation error
+	if cooperativeReview {
+		reviewStateMutation, reviewObservationErr = compareCooperativeReviewSources(context.WithoutCancel(ctx), reviewSources)
+	}
+	reviewMutated := cooperativeReview && ((snapshotErr == nil && startSnapshot != endSnapshot) || reviewStateMutation != nil)
 	if snapshotErr == nil {
 		runValue, snapshotErr = c.Runs.AttachEndSnapshot(context.WithoutCancel(ctx), runValue.ID, endSnapshot)
 		prepared.Run = runValue
@@ -1815,17 +1887,21 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		}
 		snapshotErr = collectErr
 	}
-	if prepared.purpose == run.PurposeVerification && snapshotErr == nil {
+	if (prepared.purpose == run.PurposeVerification || reviewMutated || reviewObservationErr != nil) && snapshotErr == nil {
+		resultPurpose := "verification"
+		if cooperativeReview {
+			resultPurpose = "review"
+		}
 		if results, ok := c.Runs.(resultRunService); ok {
 			updated, attachErr := results.AttachResult(context.WithoutCancel(ctx), runValue.ID, result)
 			if attachErr == nil {
 				runValue = updated
 				prepared.Run = updated
 			} else {
-				snapshotErr = fmt.Errorf("persist verification Bridge-observed evidence: %w", attachErr)
+				snapshotErr = fmt.Errorf("persist %s Bridge-observed evidence: %w", resultPurpose, attachErr)
 			}
 		} else {
-			snapshotErr = errors.New("run service does not support pre-terminal verification results")
+			snapshotErr = fmt.Errorf("run service does not support pre-terminal %s results", resultPurpose)
 		}
 	}
 	if conversationCanceled {
@@ -1835,6 +1911,12 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		if copyErr := c.verifyTaskCopies(context.WithoutCancel(ctx), *runValue.RuntimeWorkset); copyErr != nil {
 			return failCoded(run.FailureInfrastructure, "verification copy policy", "VERIFICATION_MUTATED_COPY_SOURCE", copyErr)
 		}
+	}
+	if reviewMutated {
+		return failCoded(run.FailureInfrastructure, "review mutation policy", "REVIEW_MUTATED_WORKTREE", errors.Join(errors.New("cooperative read-only Review changed the managed source worktree; changes retained for inspection"), reviewStateMutation, reviewObservationErr, snapshotErr))
+	}
+	if reviewObservationErr != nil {
+		return failCoded(run.FailureInfrastructure, "review source observation", "REVIEW_SOURCE_OBSERVATION_UNKNOWN", errors.Join(reviewObservationErr, snapshotErr))
 	}
 	if verificationMutated {
 		return failCoded(run.FailureInfrastructure, "verification mutation policy", "VERIFICATION_MUTATED_WORKTREE", errors.Join(errors.New("Verification Run changed the managed worktree"), snapshotErr))
@@ -1875,8 +1957,8 @@ func (c *Coordinator) ExecuteRun(ctx context.Context, prepared PreparedRun, live
 		return currentRun, &InfrastructureError{Stage: "approval delivery", Err: errors.New(message)}
 	}
 	if turnErr != nil {
-		var interrupted *codex.TurnError
-		if terminalTurn && errors.As(turnErr, &interrupted) && interrupted.Status == "interrupted" {
+		interrupted := terminalAgentObservation(turnErr)
+		if terminalTurn && interrupted != nil && interrupted.State == agent.TurnInterrupted {
 			return failCoded(run.FailureInfrastructure, "Codex turn", run.CodexTurnInterruptedCode, errors.Join(turnErr, snapshotErr, closeErr))
 		}
 		if contextEnded(ctx, turnErr) {
@@ -2290,163 +2372,6 @@ func cancellationError(ctx context.Context, err error) error {
 	return err
 }
 
-type DefaultCodexFactory struct {
-	ContinuityDirectory string
-	AppServers          AppServerContinuityStore
-	AppServerSpec       func(codexconfig.Config) appserver.Spec
-
-	Config             codex.Config
-	DynamicToolHandler codex.DynamicToolHandler
-}
-
-// runtimeSelectionAwareCodexFactory carries the durable non-semantic runtime
-// snapshot without changing the established model-aware test seam.
-type runtimeSelectionAwareCodexFactory interface {
-	StartForRuntimeSelection(context.Context, codexconfig.Config, string, string, string, codex.AuthorizationCeiling) (CodexSession, error)
-}
-
-func (f DefaultCodexFactory) StartForRuntimeSelection(ctx context.Context, selected codexconfig.Config, model, reasoningEffort, serviceTier string, ceiling codex.AuthorizationCeiling) (CodexSession, error) {
-	config := codexLaunchConfig(f.Config, selected)
-	config.ApprovalMode = codex.ApprovalModeInteractive
-	config.AuthorizationCeiling = ceiling
-	config.DynamicToolHandler = f.DynamicToolHandler
-	client, err := codex.Start(ctx, config)
-	if err != nil {
-		return nil, err
-	}
-	return &codexSession{client: client, model: model, reasoningEffort: reasoningEffort, serviceTier: serviceTier, authorizationCeiling: ceiling}, nil
-}
-
-func (f DefaultCodexFactory) Start(ctx context.Context, selected codexconfig.Config) (CodexSession, error) {
-	return f.StartForOperation(ctx, selected, "", "", codex.AuthorizationWorkspaceWrite)
-}
-
-// StartForOperation binds the immutable authorization ceiling before the App
-// Server begins handling approvals. The same ceiling is rebound on every Turn.
-func (f DefaultCodexFactory) StartForOperation(ctx context.Context, selected codexconfig.Config, model, reasoningEffort string, ceiling codex.AuthorizationCeiling) (CodexSession, error) {
-	config := codexLaunchConfig(f.Config, selected)
-	config.ApprovalMode = codex.ApprovalModeInteractive
-	config.AuthorizationCeiling = ceiling
-	config.DynamicToolHandler = f.DynamicToolHandler
-	client, err := codex.Start(ctx, config)
-	if err != nil {
-		return nil, err
-	}
-	return &codexSession{client: client, model: model, reasoningEffort: reasoningEffort, authorizationCeiling: ceiling}, nil
-}
-
-// StartWithSelection starts a Codex App Server with this operation's requested
-// model and reasoning effort. The selection applies to each Turn, including
-// Turns that resume an existing FeatureArea conversation.
-func (f DefaultCodexFactory) StartWithSelection(ctx context.Context, selected codexconfig.Config, model, reasoningEffort string) (CodexSession, error) {
-	return f.StartForOperation(ctx, selected, model, reasoningEffort, codex.AuthorizationWorkspaceWrite)
-}
-
-func codexLaunchConfig(base codex.Config, selected codexconfig.Config) codex.Config {
-	config := base
-	if selected.CodexPath != "" {
-		config.CodexPath = selected.CodexPath
-	}
-	return config
-}
-
-type codexSession struct {
-	idleCleanup       func(context.Context) error
-	appServerInstance appserver.Binding
-	independent       bool
-
-	usageRunID           string
-	client               *codex.Client
-	dynamicTools         []codex.DynamicToolSpec
-	model                string
-	reasoningEffort      string
-	serviceTier          string
-	authorizationCeiling codex.AuthorizationCeiling
-	runtimeBinding       codex.RuntimeBinding
-}
-
-func (s *codexSession) setRuntimeBinding(value codex.RuntimeBinding) { s.runtimeBinding = value }
-
-func (s *codexSession) setUsageRunID(id string) { s.usageRunID = id }
-
-func (s *codexSession) setDynamicTools(specs []codex.DynamicToolSpec) {
-	s.dynamicTools = append([]codex.DynamicToolSpec(nil), specs...)
-}
-
-func (s codexSession) StartThread(ctx context.Context, cwd string) (string, error) {
-	thread, err := s.client.StartThread(ctx, codex.ThreadOptions{CWD: cwd, DynamicTools: s.dynamicTools, Model: s.model, ReasoningEffort: s.reasoningEffort, ServiceTier: s.serviceTier, RuntimeBinding: s.runtimeBinding})
-	return thread.ID, err
-}
-func (s codexSession) ResumeThread(ctx context.Context, threadID, cwd string, baseline *run.TokenCounts) (string, error) {
-	var codexBaseline *codex.TokenCounts
-	if baseline != nil {
-		codexBaseline = &codex.TokenCounts{InputTokens: baseline.InputTokens, CachedInputTokens: baseline.CachedInputTokens, CacheWriteInputTokens: baseline.CacheWriteInputTokens, OutputTokens: baseline.OutputTokens, ReasoningOutputTokens: baseline.ReasoningOutputTokens, TotalTokens: baseline.TotalTokens}
-	}
-	thread, err := s.client.ResumeThread(ctx, codex.ThreadResumeOptions{ThreadID: threadID, CWD: cwd, UsageBaseline: codexBaseline, DynamicTools: s.dynamicTools, Model: s.model, ReasoningEffort: s.reasoningEffort, ServiceTier: s.serviceTier, RuntimeBinding: s.runtimeBinding})
-	return thread.ID, err
-}
-func (s codexSession) SetThreadName(ctx context.Context, threadID, name string) error {
-	return s.client.SetThreadName(ctx, threadID, name)
-}
-func (s codexSession) StartTurn(ctx context.Context, threadID, prompt string) (CodexTurnResult, error) {
-	return s.StartTurnWithStarted(ctx, threadID, prompt, nil)
-}
-func (s codexSession) StartTurnWithSchema(ctx context.Context, threadID, prompt string, outputSchema json.RawMessage) (CodexTurnResult, error) {
-	return s.StartTurnWithSchemaAndStarted(ctx, threadID, prompt, outputSchema, nil)
-}
-func (s codexSession) StartTurnWithSchemaAndStarted(ctx context.Context, threadID, prompt string, outputSchema json.RawMessage, onStarted func(string) error) (CodexTurnResult, error) {
-	return s.startTurn(ctx, threadID, prompt, outputSchema, onStarted)
-}
-func (s codexSession) StartTurnWithStarted(ctx context.Context, threadID, prompt string, onStarted func(string) error) (CodexTurnResult, error) {
-	return s.startTurn(ctx, threadID, prompt, nil, onStarted)
-}
-func (s codexSession) startTurn(ctx context.Context, threadID, prompt string, outputSchema json.RawMessage, onStarted func(string) error) (CodexTurnResult, error) {
-	var tier *string
-	if s.serviceTier != "" {
-		tier = &s.serviceTier
-	}
-	result, err := s.client.StartTurn(ctx, codex.TurnOptions{RunID: s.usageRunID, ThreadID: threadID, Prompt: prompt, OutputSchema: outputSchema, Model: s.model, ReasoningEffort: s.reasoningEffort, ServiceTier: tier, AuthorizationCeiling: s.authorizationCeiling, RuntimeBinding: s.runtimeBinding, OnStarted: func(_ string, turnID string) error {
-		if onStarted == nil {
-			return nil
-		}
-		return onStarted(turnID)
-	}})
-	value := CodexTurnResult{TurnID: result.TurnID, Message: result.FinalMessage, Commands: make([]ObservedCommand, 0, len(result.Commands))}
-	for _, command := range result.Commands {
-		value.Commands = append(value.Commands, ObservedCommand{
-			ItemID: command.ItemID, Command: command.Command, CWD: command.CWD, Status: command.Status, ExitCode: command.ExitCode,
-			Actions: append([]string(nil), command.Actions...), Output: command.Output, OutputTruncated: command.OutputTruncated, DurationMillis: command.DurationMS,
-			StartedAt: command.StartedAt, FinishedAt: command.FinishedAt,
-		})
-	}
-	if result.TokenUsage != nil {
-		value.TokenUsage = &run.TokenUsageObservation{
-			Attribution:        &result.TokenUsage.Attribution,
-			StartCumulative:    run.TokenCounts{InputTokens: result.TokenUsage.StartCumulative.InputTokens, CachedInputTokens: result.TokenUsage.StartCumulative.CachedInputTokens, CacheWriteInputTokens: result.TokenUsage.StartCumulative.CacheWriteInputTokens, OutputTokens: result.TokenUsage.StartCumulative.OutputTokens, ReasoningOutputTokens: result.TokenUsage.StartCumulative.ReasoningOutputTokens, TotalTokens: result.TokenUsage.StartCumulative.TotalTokens},
-			EndCumulative:      run.TokenCounts{InputTokens: result.TokenUsage.EndCumulative.InputTokens, CachedInputTokens: result.TokenUsage.EndCumulative.CachedInputTokens, CacheWriteInputTokens: result.TokenUsage.EndCumulative.CacheWriteInputTokens, OutputTokens: result.TokenUsage.EndCumulative.OutputTokens, ReasoningOutputTokens: result.TokenUsage.EndCumulative.ReasoningOutputTokens, TotalTokens: result.TokenUsage.EndCumulative.TotalTokens},
-			ModelContextWindow: result.TokenUsage.ModelContextWindow,
-			Reliable:           result.TokenUsage.Reliable,
-		}
-	}
-	if err != nil {
-		var turnErr *codex.TurnError
-		if errors.As(err, &turnErr) {
-			return value, &TaskExecutionError{Err: err}
-		}
-	}
-	return value, err
-}
-func (s codexSession) Close() error { return s.client.Close() }
-func (s codexSession) InterruptTurn(ctx context.Context, threadID, turnID string) error {
-	return s.client.InterruptTurn(ctx, threadID, turnID)
-}
-func (s codexSession) NextApproval(ctx context.Context) (codex.ApprovalRequest, error) {
-	return s.client.NextApproval(ctx)
-}
-func (s codexSession) ResolveApproval(ctx context.Context, id string, decision codex.ApprovalDecision) error {
-	return s.client.ResolveApproval(ctx, id, decision)
-}
-
 func fullCommit(value string) bool {
 	if len(value) != 40 && len(value) != 64 {
 		return false
@@ -2525,8 +2450,12 @@ func (c *Coordinator) prepareProductReview(ctx context.Context, prepared Prepare
 		input := MultiRuntimePrepareInput{
 			Owner:       MultiRuntimeOwner{ProjectID: v.ProjectID, FeatureAreaID: v.FeatureAreaID, ReviewID: v.ID, RunID: r.ID},
 			WorkspaceID: v.WorkspaceID, PrimaryMemberID: v.PrimaryMemberID, Targets: v.RepositoryTargets,
-			Runtime:  MultiRuntimeIdentity{BackendConfigID: v.BackendSelection.ConfigID, BackendConfigFingerprint: v.BackendSelection.ConfigFingerprint, Model: v.RuntimeConfig.Model, ReasoningEffort: v.RuntimeConfig.ReasoningEffort, ServiceTier: v.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: executionproposal.RuntimeAdapterCodexAppServerV1, RuntimeProtocolIdentity: executionproposal.RuntimeProtocolCodex0149, CreatedAt: r.CreatedAt},
+			Runtime:  MultiRuntimeIdentity{AgentConfigFingerprint: v.RuntimeConfig.AgentConfigFingerprint, AgentID: v.RuntimeConfig.AgentID, ExecutionPolicy: v.RuntimeConfig.ExecutionPolicy, BackendConfigID: v.BackendSelection.ConfigID, BackendConfigFingerprint: v.BackendSelection.ConfigFingerprint, Model: v.RuntimeConfig.Model, ReasoningEffort: v.RuntimeConfig.ReasoningEffort, ServiceTier: v.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: executionproposal.RuntimeAdapterCodexAppServerV1, RuntimeProtocolIdentity: executionproposal.RuntimeProtocolCodex0149, CreatedAt: r.CreatedAt},
 			ReadOnly: true,
+		}
+		if v.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+			input.Runtime.RuntimeAdapterIdentity = agentpolicy.CooperativeAdapterIdentity
+			input.Runtime.RuntimeProtocolIdentity = agentpolicy.CooperativeProtocolIdentity
 		}
 		if preparation, found, readErr := c.recoveryReviewPreparation(ctx, r.ID); readErr != nil {
 			return c.failReservedSetup(ctx, prepared, "Review preparation authority", "RUNTIME_WORKSET_PREPARATION_FAILED", readErr)

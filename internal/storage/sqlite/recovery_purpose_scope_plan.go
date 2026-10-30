@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"time"
 
 	"github.com/lazyun/devbridge/internal/confirmation"
@@ -91,15 +92,19 @@ func freezeRecoveryPurposeScopeTx(ctx context.Context, tx *sql.Tx, intent confir
 		SourceCommand: in.Action, SourceReceiptID: in.IntentID, SelectedVariantID: variant.ID, ProposalHash: proposal.SubmittedHash,
 		TaskDefinitionRevisionID: out.TaskDefinitionRevisionID, SourceExecutionID: proposal.SourceExecutionID, SourceReviewID: proposal.SourceReviewID,
 		SuccessorExecutionID: out.ExecutionID, SuccessorReviewID: out.ReviewID, RepositoryTargets: workset.CloneTargets(targets), PrimaryMemberID: primary,
-		BackendIdentity: prior.BackendConfigID, Model: model, ReasoningEffort: effort, RuntimeAdapterIdentity: prior.RuntimeAdapterIdentity,
+		AgentID: prior.AgentID, AgentConfigFingerprint: prior.AgentConfigFingerprint, ExecutionPolicy: prior.ExecutionPolicy, BackendIdentity: prior.BackendConfigID, Model: model, ReasoningEffort: effort, RuntimeAdapterIdentity: prior.RuntimeAdapterIdentity,
 		TopologyRevision: intent.Content.RecoveryPurpose.PreparedTopologyRevision, DevelopmentContextHash: intent.Content.RecoveryPurpose.PreparedDevelopmentContextHash,
 		DevelopmentRefs: refs, ExpectedSourceHEADs: heads, WriteScopes: scopes,
 		PreparationRequestID: "runtime_prepare_recovery_purpose_" + identity, PreparationPayloadHash: workflowHash(in.Action + "\x00" + in.PayloadHash + "\x00" + variant.ID), CreatedAt: now.UTC(),
+	}
+	if plan.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		plan.RuntimeProtocolIdentity = prior.RuntimeProtocolIdentity
 	}
 	if owner == runtimepreparation.OwnerExecution {
 		v := authority.Values
 		plan.BackendIdentity, plan.BackendConfigFingerprint, plan.BackendSource, plan.BackendKind = v.BackendIdentity, v.BackendConfigFingerprint, v.BackendSource, v.BackendKind
 		plan.Model, plan.ReasoningEffort, plan.CodexFastMode, plan.ServiceTier = v.Model, v.ReasoningEffort, v.CodexFastMode, v.ServiceTier
+		plan.AgentID, plan.ExecutionPolicy, plan.AgentConfigFingerprint = v.AgentID, v.ExecutionPolicy, v.AgentConfigFingerprint
 		plan.RuntimeAdapterIdentity, plan.RuntimeProtocolIdentity = v.RuntimeAdapterIdentity, v.RuntimeProtocolIdentity
 		plan.AuthoritySnapshotHash, err = plan.ComputeAuthoritySnapshotHash()
 		if err != nil {

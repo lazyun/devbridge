@@ -32,6 +32,9 @@ func (f *Facade) enrichFeatureAreaActionCapabilities(ctx context.Context, sessio
 	}
 	if preWork != nil {
 		setFeatureAreaCapability(out, preWork.Action, true, "", preWork.Target)
+		if reader, ok := f.deps.AgentConversations.(agentconversation.EligibilityReader); ok {
+			return enrichObservedRecoveryCapability(ctx, current, op, out, reader, true)
+		}
 		return nil
 	}
 	reader, ok := f.deps.AgentConversations.(agentconversation.EligibilityReader)
@@ -71,6 +74,13 @@ func (f *Facade) enrichFeatureAreaActionCapabilities(ctx context.Context, sessio
 		cancelTarget.TaskID = current.Task.ID
 	}
 	setFeatureAreaCapability(out, "CANCEL_EXECUTION", cancel.Available, cancel.Reason, cancelTarget)
+	return enrichObservedRecoveryCapability(ctx, current, op, out, reader, false)
+}
+
+// Area recovery facts remain relevant when a different selected Task has its
+// own pre-work cancellation capability. That capability must not short-circuit
+// the interrupted area owner's authoritative recovery refusal.
+func enrichObservedRecoveryCapability(ctx context.Context, current CurrentWorkflow, op agentconversation.State, out *presentation.Projection, reader agentconversation.EligibilityReader, workerOnly bool) error {
 	if out.Recovery == nil {
 		return nil
 	}
@@ -78,11 +88,23 @@ func (f *Facade) enrichFeatureAreaActionCapabilities(ctx context.Context, sessio
 	if err != nil {
 		return MapError(err)
 	}
+	if workerOnly && recover.ReasonCode != agentconversation.ReasonUpperWorkerContinuationUnsupported {
+		return nil
+	}
 	if recover.Available && !sameObservedActionTarget(current, op, recover.Target) {
 		recover = agentconversation.Eligibility{Reason: "The recovery target changed during projection; refresh its exact identity."}
 	}
 	out.Recovery.Prerequisite = recover.Prerequisite
 	setFeatureAreaCapability(out, "RECOVER", recover.Available, recover.Reason, presentationActionTarget(recover.Target))
+	// Required attention is not evidence that same-Run recovery is supported.
+	// Preserve Core's structured worker refusal regardless of which Task is
+	// selected, rather than the generic Upper reauthorization copy.
+	if !recover.Available && recover.ReasonCode == agentconversation.ReasonUpperWorkerContinuationUnsupported {
+		out.Recovery.Reason = recover.ReasonCode
+		out.Recovery.Summary = recover.Reason
+		out.Recovery.Prerequisite = ""
+	}
+
 	return nil
 }
 

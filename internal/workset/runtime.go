@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/runtimepermission"
 	"path/filepath"
 	"strings"
@@ -65,6 +66,9 @@ type RuntimeMemberBinding struct {
 // Implementation or Verification Run. Project/Workspace inventories never
 // expand Members after this value has been frozen.
 type RuntimeWorkset struct {
+	AgentID                string `json:"agentId,omitempty"`
+	AgentConfigFingerprint string `json:"agentConfigFingerprint,omitempty"`
+	ExecutionPolicy        string `json:"executionPolicy,omitempty"`
 	// Execution environment has its own Run-bound hash. It never changes the
 	// historical engineering-authority hash shared by both phases.
 	TaskPermissions          *runtimepermission.TaskPermissions `json:"taskPermissions,omitempty"`
@@ -98,6 +102,16 @@ type RuntimeWorkset struct {
 }
 
 func (w RuntimeWorkset) Validate() error {
+	if err := agentpolicy.ValidateFrozenSelection(w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint); err != nil {
+		return err
+	}
+	if w.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (w.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || w.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return errors.New("cooperative workset requires explicit cooperative runtime identities")
+	}
+	if w.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && w.TaskPermissions != nil {
+		return errors.New("cooperative workset cannot carry native task permissions")
+	}
+
 	if err := w.validateTaskPermissions(); err != nil {
 		return err
 	}
@@ -190,7 +204,7 @@ func (w RuntimeWorkset) computeV1ContentHash() (string, error) {
 		Members                                                                                                                         []memberAuthority
 		BackendConfigID, BackendConfigFingerprint, Model, ReasoningEffort, ServiceTier, RuntimeAdapterIdentity, RuntimeProtocolIdentity string
 	}{w.ProtocolVersion, w.ProjectID, w.FeatureAreaID, w.TaskID, w.ReviewID, w.TaskDefinitionRevisionID, w.ExecutionID, w.WorkspaceID, w.PrimaryMemberID, members, w.BackendConfigID, w.BackendConfigFingerprint, w.Model, w.ReasoningEffort, w.ServiceTier, w.RuntimeAdapterIdentity, w.RuntimeProtocolIdentity}
-	raw, err := json.Marshal(material)
+	raw, err := marshalRuntimeAuthority(material, w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint)
 	if err != nil {
 		return "", err
 	}
@@ -255,7 +269,7 @@ func (w RuntimeWorkset) computeProjectInspectionContentHash() (string, error) {
 		Members                                                                                                                         []memberAuthority
 		BackendConfigID, BackendConfigFingerprint, Model, ReasoningEffort, ServiceTier, RuntimeAdapterIdentity, RuntimeProtocolIdentity string
 	}{w.ProtocolVersion, w.OwnerKind, w.ProjectID, w.InspectionOwnerTaskID, w.InspectionOperationID, w.WorkspaceID, w.PrimaryMemberID, members, w.BackendConfigID, w.BackendConfigFingerprint, w.Model, w.ReasoningEffort, w.ServiceTier, w.RuntimeAdapterIdentity, w.RuntimeProtocolIdentity}
-	raw, err := json.Marshal(material)
+	raw, err := marshalRuntimeAuthority(material, w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint)
 	if err != nil {
 		return "", err
 	}
@@ -325,7 +339,7 @@ func (w RuntimeWorkset) computeRecoveryStatusContentHash() (string, error) {
 		ReasoningEffort, ServiceTier, RuntimeAdapterIdentity string
 		RuntimeProtocolIdentity                              string
 	}{w.ProtocolVersion, w.OwnerKind, w.ProjectID, w.FeatureAreaID, w.TaskID, w.RecoveryStatusID, w.RecoverySourceRunID, w.WorkspaceID, w.PrimaryMemberID, members, w.BackendConfigID, w.BackendConfigFingerprint, w.Model, w.ReasoningEffort, w.ServiceTier, w.RuntimeAdapterIdentity, w.RuntimeProtocolIdentity}
-	raw, err := json.Marshal(material)
+	raw, err := marshalRuntimeAuthority(material, w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint)
 	if err != nil {
 		return "", err
 	}
@@ -380,4 +394,36 @@ func ValidateProjectInspectionReadScope(scope ReadScope) error {
 		return nil
 	}
 	return errors.New("Project Inspection read scope must be REPOSITORY or bounded PATHS")
+}
+
+// Empty prospective fields retain the exact historical material bytes. New
+// selections bind both identity and policy without rewriting old workset hashes.
+func marshalRuntimeAuthority(material any, agentID, policy, fingerprint string) ([]byte, error) {
+	raw, err := json.Marshal(material)
+	if err != nil || agentID == "" && policy == "" && fingerprint == "" {
+		return raw, err
+	}
+	var value map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	if agentID != "" {
+		value["AgentID"], err = json.Marshal(agentID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if policy != "" {
+		value["ExecutionPolicy"], err = json.Marshal(policy)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if fingerprint != "" {
+		value["AgentConfigFingerprint"], err = json.Marshal(fingerprint)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return json.Marshal(value)
 }

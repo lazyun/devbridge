@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lazyun/devbridge/internal/agent"
 	"github.com/lazyun/devbridge/internal/agentexecution"
 	"github.com/lazyun/devbridge/internal/workflowevents"
 	"path/filepath"
@@ -81,6 +82,7 @@ type ControlPlane struct {
 	RecoveryPurposeConsumers *sqlite.RecoveryPurposeStore
 	UpperReviewAccess        *sqlite.UpperReviewAccessStore
 	UpperReviewResults       *sqlite.UpperReviewResultStore
+	UpperReviewWorkers       *sqlite.UpperReviewWorkerStore
 	WorktreeInventory        *worktreeinventory.Service
 	DirectFiles              *directfile.Service
 	AgentExecutions          agentexecution.Store
@@ -340,6 +342,18 @@ func OpenWithDataRoot(ctx context.Context, config Config, opened dataroot.DataRo
 	if config.PiAgent != nil {
 		coordinator.PiAgent = &piagent.Factory{PiPath: piagent.Resolve(config.PiAgent.PiPath), Model: config.PiAgent.Model, ThinkingLevel: config.PiAgent.ThinkingLevel, SessionDir: config.PiAgent.SessionDir, ExtraArgs: config.PiAgent.ExtraArgs}
 	}
+	// Register only factories implementing the separate neutral launch seam.
+	// No native Codex launch is silently repurposed as cooperative policy.
+	var agentEntries []agent.Registration[agent.Factory]
+	for _, configured := range []any{coordinator.Codex, coordinator.PiAgent} {
+		if factory, ok := configured.(agent.Factory); ok {
+			agentEntries = append(agentEntries, agent.Registration[agent.Factory]{Descriptor: factory.AgentDescriptor(), Value: factory})
+		}
+	}
+	coordinator.Agents, err = agent.NewRegistry(agentEntries...)
+	if err != nil {
+		return fail(fmt.Errorf("register execution agents: %w", err))
+	}
 	reviewDrift, err := reviewdrift.New(reviews, reviewStore, repositories, gitClient)
 	if err != nil {
 		return fail(fmt.Errorf("construct review drift service: %w", err))
@@ -356,6 +370,16 @@ func OpenWithDataRoot(ctx context.Context, config Config, opened dataroot.DataRo
 	if err != nil {
 		return fail(fmt.Errorf("configure Codex runtime inventory: %w", err))
 	}
+	runtimeInventory.SetAgentConfigFingerprintProvider(func() map[string]string {
+		fingerprints := make(map[string]string)
+		for _, entry := range agentEntries {
+			descriptor := entry.Value.AgentDescriptor()
+			if descriptor.ID == entry.Descriptor.ID && descriptor.ConfigFingerprint != "" {
+				fingerprints[descriptor.ID] = descriptor.ConfigFingerprint
+			}
+		}
+		return fingerprints
+	})
 	workflowProgression.SetRuntimeConfigProvider(runtimeInventory.ExecutionAllowlist)
 	coordinator.RuntimeConfigProvider = runtimeInventory.ExecutionAllowlist
 	directFileAuthority := sqlite.NewDirectFileAuthority(db)
@@ -403,7 +427,7 @@ func OpenWithDataRoot(ctx context.Context, config Config, opened dataroot.DataRo
 		return owner.ProjectID, nil
 	})
 	eventService.Start(context.Background())
-	return &ControlPlane{WorkflowEvents: eventService, RuntimeQualification: runtimeQualification, RecoveryStatus: recoveryStatus, RepositoryUnlink: repositoryUnlink, Confirmations: sqlite.NewConfirmationStore(db), RecoveryPurposeConsumers: purposeConsumers, UpperReviewAccess: upperAccess, UpperReviewResults: sqlite.NewUpperReviewResultStore(db), WorktreeInventory: &worktreeinventory.Service{Dependencies: worktreeinventory.Dependencies{Repositories: repositories, Worktrees: worktreeStore, Workspaces: workspaces, Runs: runs, Conversations: agentConversations, DevelopmentCycles: sqlite.NewDevelopmentCycleStore(db), Git: gitClient}}, DirectFiles: directfile.NewService(directFileAuthority), AgentExecutions: sqlite.NewAgentExecutionStore(db), WorkflowProgression: workflowProgression, Retirement: retireCoordinator, ExecutionCancellations: executionCancellations, DevelopmentCycles: developmentCycles, DataPaths: paths, DB: db, AgentConversations: agentConversations, Projects: projects, ProjectAuthorizations: projectAuthorizations, ProjectRegistration: projectRegistration, ProjectSelection: projectSelection, AIProjectSelections: aiProjectSelections, AISessions: aiSessions, AIContext: aiContext, Repositories: repositories, Modules: modules, ProjectContexts: projectContexts, ContextProbes: contextProbes, ContextProbeRunner: contextProbeRunner, Classifications: classifications, CodexConfigs: codexConfigs, FeatureAreas: featureAreas, Documents: documents, DecisionResolutions: decisionResolutions, Reviews: reviews, Tasks: tasks, TaskPlans: taskPlans, ScopeReviews: scopeReviews, ReviewGrants: reviewGrants, ScopeExpansions: scopeExpansions, ExecutionProposals: executionProposals, ExecutionGoals: executionGoalService, Runs: runs, Approvals: approvals, Events: events, Evidence: evidenceStore, Artifacts: artifactStore, Worktrees: worktreeStore, Workspaces: workspaces, Coordinator: coordinator, Supervisor: supervisor, ReviewDrift: reviewDrift, CodexRuntime: runtimeInventory, Ready: true}, nil
+	return &ControlPlane{WorkflowEvents: eventService, RuntimeQualification: runtimeQualification, RecoveryStatus: recoveryStatus, RepositoryUnlink: repositoryUnlink, Confirmations: sqlite.NewConfirmationStore(db), RecoveryPurposeConsumers: purposeConsumers, UpperReviewAccess: upperAccess, UpperReviewResults: sqlite.NewUpperReviewResultStore(db), UpperReviewWorkers: sqlite.NewUpperReviewWorkerStore(db), WorktreeInventory: &worktreeinventory.Service{Dependencies: worktreeinventory.Dependencies{Repositories: repositories, Worktrees: worktreeStore, Workspaces: workspaces, Runs: runs, Conversations: agentConversations, DevelopmentCycles: sqlite.NewDevelopmentCycleStore(db), Git: gitClient}}, DirectFiles: directfile.NewService(directFileAuthority), AgentExecutions: sqlite.NewAgentExecutionStore(db), WorkflowProgression: workflowProgression, Retirement: retireCoordinator, ExecutionCancellations: executionCancellations, DevelopmentCycles: developmentCycles, DataPaths: paths, DB: db, AgentConversations: agentConversations, Projects: projects, ProjectAuthorizations: projectAuthorizations, ProjectRegistration: projectRegistration, ProjectSelection: projectSelection, AIProjectSelections: aiProjectSelections, AISessions: aiSessions, AIContext: aiContext, Repositories: repositories, Modules: modules, ProjectContexts: projectContexts, ContextProbes: contextProbes, ContextProbeRunner: contextProbeRunner, Classifications: classifications, CodexConfigs: codexConfigs, FeatureAreas: featureAreas, Documents: documents, DecisionResolutions: decisionResolutions, Reviews: reviews, Tasks: tasks, TaskPlans: taskPlans, ScopeReviews: scopeReviews, ReviewGrants: reviewGrants, ScopeExpansions: scopeExpansions, ExecutionProposals: executionProposals, ExecutionGoals: executionGoalService, Runs: runs, Approvals: approvals, Events: events, Evidence: evidenceStore, Artifacts: artifactStore, Worktrees: worktreeStore, Workspaces: workspaces, Coordinator: coordinator, Supervisor: supervisor, ReviewDrift: reviewDrift, CodexRuntime: runtimeInventory, Ready: true}, nil
 }
 
 func (c *ControlPlane) Close() error {

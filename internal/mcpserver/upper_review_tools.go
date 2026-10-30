@@ -65,6 +65,7 @@ func ReviewResultSubmitSchema() json.RawMessage {
 	props := schema["properties"].(map[string]any)
 	props["requestId"] = json.RawMessage(upperIDSchema)
 	props["report"] = ReviewReportSchema()
+	props["workerClaim"] = ReviewWorkerClaimIdentitySchema()
 	schema["required"] = append(schema["required"].([]any), "requestId", "report")
 	raw, _ := json.Marshal(schema)
 	return raw
@@ -76,7 +77,8 @@ type ReviewAccessGetOutput struct {
 }
 
 func RegisterUpperReviewTools(server *sdkmcp.Server, service BridgeService) {
-	sdkmcp.AddTool(server, &sdkmcp.Tool{Name: "review_result_submit", Description: "Submit the exact UPPER_LLM Review structured report. Core persists it and closes read authorization and claim atomically before COMPLETED. This does not approve implementation or validate engineering correctness. Replay the same requestId and payload after response loss. Do not ask GPT to analyze its own submitted report again.", InputSchema: ReviewResultSubmitSchema(), Annotations: stateChangingAnnotations("Submit Review report", false)}, func(ctx context.Context, _ *sdkmcp.CallToolRequest, in review.SubmitInput) (*sdkmcp.CallToolResult, review.ReportReceipt, error) {
+	RegisterUpperReviewWorkerTools(server, service)
+	sdkmcp.AddTool(server, &sdkmcp.Tool{Name: "review_result_submit", Description: "Submit the exact UPPER_LLM Review structured report. Core persists it and closes read authorization and claim atomically before COMPLETED. This does not approve implementation or validate engineering correctness. Replay the same requestId and payload after response loss. For an enrolled pull Review, include its exact workerClaim; omitting or changing it is refused. Do not ask GPT to analyze its own submitted report again.", InputSchema: ReviewResultSubmitSchema(), Annotations: stateChangingAnnotations("Submit Review report", false)}, func(ctx context.Context, _ *sdkmcp.CallToolRequest, in review.SubmitInput) (*sdkmcp.CallToolResult, review.ReportReceipt, error) {
 		p, ok := service.(upperReviewService)
 		if !ok {
 			return nil, review.ReportReceipt{}, errors.New("UPPER_LLM Review result service unavailable")

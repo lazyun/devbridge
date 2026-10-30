@@ -23,7 +23,7 @@ func (s *Service) VerifiedExecutionLaunch(ctx context.Context, execution taskgoa
 		return nil, err
 	}
 	b, r, v := execution.BackendSelection, execution.RuntimeConfig, authority.Values
-	if authority.Owner != owner || v.BackendIdentity != b.ConfigID || v.BackendConfigFingerprint != b.ConfigFingerprint || v.BackendSource != b.Source || v.BackendKind != "CODEX" || v.Model != r.Model || v.ReasoningEffort != r.ReasoningEffort || v.CodexFastMode != r.CodexFastMode || v.ServiceTier != r.ServiceTier || v.RuntimeAdapterIdentity != execution.RuntimeAdapterIdentity || v.RuntimeProtocolIdentity != execution.RuntimeProtocolIdentity {
+	if authority.Owner != owner || v.BackendIdentity != b.ConfigID || v.BackendConfigFingerprint != b.ConfigFingerprint || v.BackendSource != b.Source || v.BackendKind != "CODEX" || v.Model != r.Model || v.ReasoningEffort != r.ReasoningEffort || v.CodexFastMode != r.CodexFastMode || v.ServiceTier != r.ServiceTier || v.AgentID != r.AgentID || v.AgentConfigFingerprint != r.AgentConfigFingerprint || v.ExecutionPolicy != r.ExecutionPolicy || v.RuntimeAdapterIdentity != execution.RuntimeAdapterIdentity || v.RuntimeProtocolIdentity != execution.RuntimeProtocolIdentity {
 		return nil, runtimeplatform.ErrIdentityMismatch
 	}
 	config, err := currentLaunchBackend(ctx, s.Configurations, authority)

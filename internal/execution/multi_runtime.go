@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/codex"
 	"github.com/lazyun/devbridge/internal/review"
 	"github.com/lazyun/devbridge/internal/run"
@@ -39,6 +40,9 @@ type MultiRuntimeOwner struct {
 // workspace layout. None of these values are inferred from a configuration
 // default by this helper.
 type MultiRuntimeIdentity struct {
+	AgentConfigFingerprint   string
+	AgentID                  string
+	ExecutionPolicy          string
 	BackendConfigID          string
 	BackendConfigFingerprint string
 	Model                    string
@@ -250,7 +254,7 @@ func (c *Coordinator) PrepareMultiRuntime(ctx context.Context, in MultiRuntimePr
 	if err := value.ValidateWorkset(set); err != nil {
 		return PreparedMultiRuntime{}, err
 	}
-	frozen := workset.RuntimeWorkset{ProtocolVersion: workset.RuntimeProtocolVersion, ProjectID: in.Owner.ProjectID, FeatureAreaID: in.Owner.FeatureAreaID, TaskID: in.Owner.TaskID, ReviewID: in.Owner.ReviewID, TaskDefinitionRevisionID: in.Owner.TaskDefinitionRevisionID, ExecutionID: in.Owner.ExecutionID, RunID: in.Owner.RunID, WorkspaceID: in.WorkspaceID, PrimaryMemberID: in.PrimaryMemberID, Members: members, BackendConfigID: in.Runtime.BackendConfigID, BackendConfigFingerprint: in.Runtime.BackendConfigFingerprint, Model: in.Runtime.Model, ReasoningEffort: in.Runtime.ReasoningEffort, ServiceTier: in.Runtime.ServiceTier, RuntimeAdapterIdentity: in.Runtime.RuntimeAdapterIdentity, RuntimeProtocolIdentity: in.Runtime.RuntimeProtocolIdentity, CreatedAt: in.Runtime.CreatedAt.UTC()}
+	frozen := workset.RuntimeWorkset{AgentConfigFingerprint: in.Runtime.AgentConfigFingerprint, AgentID: in.Runtime.AgentID, ExecutionPolicy: in.Runtime.ExecutionPolicy, ProtocolVersion: workset.RuntimeProtocolVersion, ProjectID: in.Owner.ProjectID, FeatureAreaID: in.Owner.FeatureAreaID, TaskID: in.Owner.TaskID, ReviewID: in.Owner.ReviewID, TaskDefinitionRevisionID: in.Owner.TaskDefinitionRevisionID, ExecutionID: in.Owner.ExecutionID, RunID: in.Owner.RunID, WorkspaceID: in.WorkspaceID, PrimaryMemberID: in.PrimaryMemberID, Members: members, BackendConfigID: in.Runtime.BackendConfigID, BackendConfigFingerprint: in.Runtime.BackendConfigFingerprint, Model: in.Runtime.Model, ReasoningEffort: in.Runtime.ReasoningEffort, ServiceTier: in.Runtime.ServiceTier, RuntimeAdapterIdentity: in.Runtime.RuntimeAdapterIdentity, RuntimeProtocolIdentity: in.Runtime.RuntimeProtocolIdentity, CreatedAt: in.Runtime.CreatedAt.UTC()}
 	frozen, err = frozen.WithHash()
 	if err != nil {
 		return PreparedMultiRuntime{}, err
@@ -312,8 +316,13 @@ func readCanonicalMultiRuntime(ctx context.Context, runs RunService, canonical c
 		return PreparedMultiRuntime{}, errors.New("durable RuntimeWorkset readback unavailable")
 	}
 	frozen, err := reader.RuntimeWorkset(ctx, in.Owner.RunID)
-	if err != nil || frozen.RunID != in.Owner.RunID || frozen.ExecutionID != in.Owner.ExecutionID {
+	if err != nil || frozen.RunID != in.Owner.RunID || frozen.ExecutionID != in.Owner.ExecutionID || frozen.AgentConfigFingerprint != in.Runtime.AgentConfigFingerprint || frozen.AgentID != in.Runtime.AgentID || frozen.ExecutionPolicy != in.Runtime.ExecutionPolicy {
 		return PreparedMultiRuntime{}, errors.Join(err, errors.New("RUNTIME_WORKSET_BINDING_OUTCOME_UNKNOWN"))
+	}
+	if frozen.AgentID != "" || frozen.ExecutionPolicy != "" {
+		if err := frozen.Validate(); err != nil {
+			return PreparedMultiRuntime{}, err
+		}
 	}
 	cwd, binding, err := multiRuntimeClientBinding(frozen)
 	if err != nil {
@@ -371,6 +380,10 @@ func (c *Coordinator) multiRuntimeWorktree(ctx context.Context, value workspace.
 // Inspection failures become durable UNKNOWN observations; root/head/scope
 // failures become SCOPE_CONFLICT observations and are returned to the caller.
 func (c *Coordinator) ObserveMultiRuntime(ctx context.Context, prepared PreparedMultiRuntime) error {
+	return c.observeMultiRuntime(ctx, prepared, nil)
+}
+
+func (c *Coordinator) observeMultiRuntime(ctx context.Context, prepared PreparedMultiRuntime, reviewSources map[string]cooperativeReviewSource) error {
 	if c == nil || c.Runs == nil || c.Evidence == nil {
 		return errors.New("multi-runtime observation dependencies are required")
 	}
@@ -409,6 +422,14 @@ func (c *Coordinator) ObserveMultiRuntime(ctx context.Context, prepared Prepared
 		observation, observedState, observedErr := c.observeMultiRuntimeMember(ctx, frozen, member, prepared.ReadOnly)
 		if observedErr != nil && observation.ObservationState == "" {
 			observation = run.RepositoryObservation{RunID: frozen.RunID, RepositoryID: member.RepositoryID, ObservationState: observedState, ObservedAt: time.Now().UTC()}
+		}
+		if before, ok := reviewSources[member.CanonicalRoot]; ok {
+			after, metadataErr := observeCooperativeReviewSource(ctx, member.CanonicalRoot)
+			var mutation error
+			if metadataErr == nil {
+				mutation = before.changed(after)
+			}
+			observation, observedState, observedErr = mergeReviewMetadataObservation(observation, observedState, observedErr, metadataErr, mutation)
 		}
 		if putErr := observer.ObserveRepositoryBinding(context.WithoutCancel(ctx), observation); putErr != nil {
 			return putErr
@@ -598,6 +619,13 @@ func sameRuntimeBinding(a, b codex.RuntimeBinding) bool {
 }
 
 func validateMultiRuntimeInput(in MultiRuntimePrepareInput) error {
+	if err := agentpolicy.ValidateFrozenSelection(in.Runtime.AgentID, in.Runtime.ExecutionPolicy, in.Runtime.AgentConfigFingerprint); err != nil {
+		return err
+	}
+	if in.Runtime.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (in.Runtime.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || in.Runtime.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return errors.New("cooperative runtime requires explicit cooperative identities")
+	}
+
 	if in.UpperReview && (in.Owner.ReviewID == "" || !in.ReadOnly) {
 		return errors.New("Upper Review preparation requires a read-only Review owner")
 	}

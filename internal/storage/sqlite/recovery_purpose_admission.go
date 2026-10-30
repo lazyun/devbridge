@@ -36,7 +36,7 @@ func insertRecoveryPurposeExecutionTx(ctx context.Context, tx *sql.Tx, intent co
 		ID: out.ExecutionID, AISessionID: in.AISessionID, ProjectID: current.ProjectID, TaskID: current.ID,
 		TaskPlanID: current.ConfirmedTaskPlanID, TaskDefinitionRevisionID: out.TaskDefinitionRevisionID,
 		WorkSpec: current.WorkSpec, VerificationSpec: current.VerificationSpec,
-		RuntimeConfig:    codexruntime.NextRunRuntimeConfig{Model: v.Model, ReasoningEffort: v.ReasoningEffort, CodexFastMode: v.CodexFastMode, ServiceTier: v.ServiceTier},
+		RuntimeConfig:    codexruntime.NextRunRuntimeConfig{Model: v.Model, ReasoningEffort: v.ReasoningEffort, CodexFastMode: v.CodexFastMode, ServiceTier: v.ServiceTier, AgentID: v.AgentID, AgentConfigFingerprint: v.AgentConfigFingerprint, ExecutionPolicy: v.ExecutionPolicy},
 		BackendSelection: &backend, RuntimeAdapterIdentity: v.RuntimeAdapterIdentity, RuntimeProtocolIdentity: v.RuntimeProtocolIdentity,
 	}
 	if err := bindExecutionDefinitionTx(ctx, tx, &candidate); err != nil {
@@ -90,7 +90,7 @@ func admitRecoveryPurposeExecutionTx(ctx context.Context, tx *sql.Tx, intent con
 		return err
 	}
 	b, r := candidate.BackendSelection, candidate.RuntimeConfig
-	if candidate.Status != executionproposal.StatusConfirmed || candidate.Outcome != executionproposal.OutcomePending || candidate.RunID != "" || candidate.ProjectID != intent.ProjectID || candidate.TaskID != out.TaskID || candidate.TaskDefinitionRevisionID != out.TaskDefinitionRevisionID || b == nil || b.ConfigID != plan.BackendIdentity || b.ConfigFingerprint != plan.BackendConfigFingerprint || b.Source != plan.BackendSource || plan.BackendKind != "CODEX" || r.Model != plan.Model || r.ReasoningEffort != plan.ReasoningEffort || r.CodexFastMode != plan.CodexFastMode || r.ServiceTier != plan.ServiceTier || candidate.RuntimeAdapterIdentity != plan.RuntimeAdapterIdentity || candidate.RuntimeProtocolIdentity != plan.RuntimeProtocolIdentity {
+	if candidate.Status != executionproposal.StatusConfirmed || candidate.Outcome != executionproposal.OutcomePending || candidate.RunID != "" || candidate.ProjectID != intent.ProjectID || candidate.TaskID != out.TaskID || candidate.TaskDefinitionRevisionID != out.TaskDefinitionRevisionID || b == nil || b.ConfigID != plan.BackendIdentity || b.ConfigFingerprint != plan.BackendConfigFingerprint || b.Source != plan.BackendSource || plan.BackendKind != "CODEX" || r.Model != plan.Model || r.ReasoningEffort != plan.ReasoningEffort || r.CodexFastMode != plan.CodexFastMode || r.ServiceTier != plan.ServiceTier || r.AgentID != plan.AgentID || r.AgentConfigFingerprint != plan.AgentConfigFingerprint || r.ExecutionPolicy != plan.ExecutionPolicy || candidate.RuntimeAdapterIdentity != plan.RuntimeAdapterIdentity || candidate.RuntimeProtocolIdentity != plan.RuntimeProtocolIdentity {
 		return rs.ErrPurposeReceiptMismatch
 	}
 	if err = requireExecutionStartAuthorizationTx(ctx, tx, candidate); err != nil {

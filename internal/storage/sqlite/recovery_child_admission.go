@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"reflect"
 	"time"
 
@@ -81,7 +82,10 @@ func (s *RecoveryStatusStore) AdmitRecoveryChild(ctx context.Context, recoveryID
 	if err != nil {
 		return "", err
 	}
-	plan := runtimepreparation.Plan{ID: "runtime_scope_recovery_child_" + workflowHash(recoveryID + "\x00" + requestID)[:32], Generation: v.Spec.Generation, OwnerKind: runtimepreparation.OwnerRecoveryStatus, OwnerID: recoveryID, ProjectID: v.Spec.ProjectID, FeatureAreaID: v.Spec.FeatureAreaID, TaskID: v.Spec.TaskID, SourceCommand: "RECOVERY_STATUS_CHILD", SourceReceiptID: requestID, ProposalHash: v.Spec.PayloadHash, TaskDefinitionRevisionID: v.Spec.TaskDefinitionRevisionID, RepositoryTargets: targets, PrimaryMemberID: primaryMemberID, BackendIdentity: w.BackendConfigID, Model: w.Model, ReasoningEffort: w.ReasoningEffort, RuntimeAdapterIdentity: w.RuntimeAdapterIdentity, TopologyRevision: topology, DevelopmentContextHash: development, DevelopmentRefs: refs, ExpectedSourceHEADs: heads, WriteScopes: scopes, PreparationRequestID: requestID, PreparationPayloadHash: payloadSHA256, CreatedAt: now.UTC()}
+	plan := runtimepreparation.Plan{ID: "runtime_scope_recovery_child_" + workflowHash(recoveryID + "\x00" + requestID)[:32], Generation: v.Spec.Generation, OwnerKind: runtimepreparation.OwnerRecoveryStatus, OwnerID: recoveryID, ProjectID: v.Spec.ProjectID, FeatureAreaID: v.Spec.FeatureAreaID, TaskID: v.Spec.TaskID, SourceCommand: "RECOVERY_STATUS_CHILD", SourceReceiptID: requestID, ProposalHash: v.Spec.PayloadHash, TaskDefinitionRevisionID: v.Spec.TaskDefinitionRevisionID, RepositoryTargets: targets, PrimaryMemberID: primaryMemberID, AgentID: w.AgentID, AgentConfigFingerprint: w.AgentConfigFingerprint, ExecutionPolicy: w.ExecutionPolicy, BackendIdentity: w.BackendConfigID, Model: w.Model, ReasoningEffort: w.ReasoningEffort, RuntimeAdapterIdentity: w.RuntimeAdapterIdentity, TopologyRevision: topology, DevelopmentContextHash: development, DevelopmentRefs: refs, ExpectedSourceHEADs: heads, WriteScopes: scopes, PreparationRequestID: requestID, PreparationPayloadHash: payloadSHA256, CreatedAt: now.UTC()}
+	if plan.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		plan.RuntimeProtocolIdentity = w.RuntimeProtocolIdentity
+	}
 	plan.ContentHash, err = plan.ComputeContentHash()
 	if err != nil {
 		return "", err

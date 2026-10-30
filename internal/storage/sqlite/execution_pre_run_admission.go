@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"time"
 
 	"github.com/lazyun/devbridge/internal/executionproposal"
@@ -75,6 +76,9 @@ func admitExecutionWithPlatformTx(ctx context.Context, tx *sql.Tx, proposalID, r
 		}
 		if descriptor != nil {
 			adapter, protocol := qualifiedRuntimeIdentities(*descriptor)
+			if value.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+				adapter, protocol = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
+			}
 			var exact bool
 			if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM runtime_scope_plans WHERE plan_id=? AND runtime_adapter_identity=? AND runtime_protocol_identity=? AND backend_kind='CODEX')`, savedPlan, adapter, protocol).Scan(&exact); err != nil {
 				return ExecutionAdmission{}, err
@@ -102,6 +106,9 @@ func admitExecutionWithPlatformTx(ctx context.Context, tx *sql.Tx, proposalID, r
 	t, err := scanTask(tx.QueryRowContext(ctx, selectTask+` WHERE id=? AND project_id=?`, value.TaskID, value.ProjectID))
 	if err != nil {
 		return ExecutionAdmission{}, executionProposalConflict(err)
+	}
+	if err = validatePiResumeRequirementTx(ctx, tx, t.FeatureAreaID, value.RuntimeConfig, value.VerificationSpec.Mode); err != nil {
+		return ExecutionAdmission{}, err
 	}
 	scalar := len(t.RepositoryTargets) == 0 && t.RepositoryID != ""
 	multiRepo := len(t.RepositoryTargets) > 0
@@ -175,12 +182,18 @@ func admitExecutionWithPlatformTx(ctx context.Context, tx *sql.Tx, proposalID, r
 			return ExecutionAdmission{}, executionproposal.ErrConflict
 		}
 		adapterIdentity, protocolIdentity = qualifiedRuntimeIdentities(*descriptor)
+		if value.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+			adapterIdentity, protocolIdentity = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
+		}
 		if value.RuntimeAdapterIdentity != adapterIdentity || value.RuntimeProtocolIdentity != protocolIdentity {
 			return ExecutionAdmission{}, runtimeplatform.ErrIdentityMismatch
 		}
 		backendKind = "CODEX"
 	}
-	plan := runtimepreparation.Plan{ID: "runtime_scope_execution_" + workflowHash(proposalID + "\x00" + requestID)[:32], Generation: 1, OwnerKind: runtimepreparation.OwnerExecution, OwnerID: value.ID, ProjectID: value.ProjectID, FeatureAreaID: t.FeatureAreaID, TaskID: value.TaskID, SourceCommand: "EXECUTION_ADMISSION", SourceReceiptID: requestID, TaskDefinitionRevisionID: value.TaskDefinitionRevisionID, RepositoryTargets: targets, PrimaryMemberID: primaryMemberID, BackendIdentity: backendIdentity, BackendConfigFingerprint: backendFingerprint, BackendSource: backendSource, BackendKind: backendKind, Model: model, ReasoningEffort: reasoningEffort, CodexFastMode: value.RuntimeConfig.CodexFastMode, ServiceTier: value.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: adapterIdentity, RuntimeProtocolIdentity: protocolIdentity, TopologyRevision: topology, DevelopmentContextHash: contextHash, DevelopmentRefs: refs, ExpectedSourceHEADs: heads, WriteScopes: scopes, PreparationRequestID: requestID, PreparationPayloadHash: payloadSHA256, CreatedAt: now.UTC()}
+	if value.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (adapterIdentity != agentpolicy.CooperativeAdapterIdentity || protocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return ExecutionAdmission{}, runtimeplatform.ErrIdentityMismatch
+	}
+	plan := runtimepreparation.Plan{ID: "runtime_scope_execution_" + workflowHash(proposalID + "\x00" + requestID)[:32], Generation: 1, OwnerKind: runtimepreparation.OwnerExecution, OwnerID: value.ID, ProjectID: value.ProjectID, FeatureAreaID: t.FeatureAreaID, TaskID: value.TaskID, SourceCommand: "EXECUTION_ADMISSION", SourceReceiptID: requestID, TaskDefinitionRevisionID: value.TaskDefinitionRevisionID, RepositoryTargets: targets, PrimaryMemberID: primaryMemberID, BackendIdentity: backendIdentity, BackendConfigFingerprint: backendFingerprint, BackendSource: backendSource, BackendKind: backendKind, Model: model, ReasoningEffort: reasoningEffort, CodexFastMode: value.RuntimeConfig.CodexFastMode, ServiceTier: value.RuntimeConfig.ServiceTier, AgentID: value.RuntimeConfig.AgentID, AgentConfigFingerprint: value.RuntimeConfig.AgentConfigFingerprint, ExecutionPolicy: value.RuntimeConfig.ExecutionPolicy, RuntimeAdapterIdentity: adapterIdentity, RuntimeProtocolIdentity: protocolIdentity, TopologyRevision: topology, DevelopmentContextHash: contextHash, DevelopmentRefs: refs, ExpectedSourceHEADs: heads, WriteScopes: scopes, PreparationRequestID: requestID, PreparationPayloadHash: payloadSHA256, CreatedAt: now.UTC()}
 	plan.AuthoritySnapshotHash, err = plan.ComputeAuthoritySnapshotHash()
 	if err != nil {
 		return ExecutionAdmission{}, err

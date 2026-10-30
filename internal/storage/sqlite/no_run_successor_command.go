@@ -177,6 +177,7 @@ func (s *WorkflowProgressionStore) PrepareSuccessorExecution(ctx context.Context
 	plan.ReasoningEffort = currentAuthority.ReasoningEffort
 	plan.CodexFastMode = currentAuthority.CodexFastMode
 	plan.ServiceTier = currentAuthority.ServiceTier
+	plan.AgentID, plan.ExecutionPolicy, plan.AgentConfigFingerprint = currentAuthority.AgentID, currentAuthority.ExecutionPolicy, currentAuthority.AgentConfigFingerprint
 	plan.RuntimeAdapterIdentity = currentAuthority.RuntimeAdapterIdentity
 	plan.RuntimeProtocolIdentity = currentAuthority.RuntimeProtocolIdentity
 	plan.AuthoritySnapshotHash = currentAuthority.AuthoritySnapshotHash
@@ -235,7 +236,7 @@ func noRunAuthorityDriftCode(source, current runtimepreparation.Plan) string {
 	if source.BackendIdentity != current.BackendIdentity || source.BackendConfigFingerprint != current.BackendConfigFingerprint || source.BackendSource != current.BackendSource || source.BackendKind != current.BackendKind {
 		return "BACKEND_CONFIGURATION_CHANGED"
 	}
-	if source.Model != current.Model || source.ReasoningEffort != current.ReasoningEffort || source.CodexFastMode != current.CodexFastMode || source.ServiceTier != current.ServiceTier {
+	if source.Model != current.Model || source.ReasoningEffort != current.ReasoningEffort || source.CodexFastMode != current.CodexFastMode || source.ServiceTier != current.ServiceTier || source.AgentID != current.AgentID || source.AgentConfigFingerprint != current.AgentConfigFingerprint || source.ExecutionPolicy != current.ExecutionPolicy {
 		return "RUNTIME_CONFIGURATION_CHANGED"
 	}
 	if source.RuntimeAdapterIdentity != current.RuntimeAdapterIdentity {
@@ -276,7 +277,7 @@ func validateSuccessorSourceScopeTx(ctx context.Context, tx *sql.Tx, in wp.Prepa
 	if predecessor.BackendSelection != nil && source.BackendIdentity != predecessor.BackendSelection.ConfigID {
 		return successorReject("RUNTIME_SCOPE_SOURCE_STALE", in)
 	}
-	if predecessor.RuntimeConfig.Model != "" && source.Model != predecessor.RuntimeConfig.Model || predecessor.RuntimeConfig.ReasoningEffort != "" && source.ReasoningEffort != predecessor.RuntimeConfig.ReasoningEffort {
+	if source.AgentID != predecessor.RuntimeConfig.AgentID || source.AgentConfigFingerprint != predecessor.RuntimeConfig.AgentConfigFingerprint || source.ExecutionPolicy != predecessor.RuntimeConfig.ExecutionPolicy || predecessor.RuntimeConfig.Model != "" && source.Model != predecessor.RuntimeConfig.Model || predecessor.RuntimeConfig.ReasoningEffort != "" && source.ReasoningEffort != predecessor.RuntimeConfig.ReasoningEffort {
 		return successorReject("RUNTIME_SCOPE_SOURCE_STALE", in)
 	}
 	return nil
@@ -341,7 +342,7 @@ func readSuccessorSourcePlanWithOwner(ctx context.Context, tx definitionQuerier,
 	var targets, refs, heads, scopes, created string
 	var fast int
 	var admittedPlanID, authorityPlanID, authorityOwnerKind, authorityOwnerID, authorityDisposition string
-	err := tx.QueryRowContext(ctx, `SELECT p.plan_id,p.generation,p.owner_kind,p.owner_id,p.project_id,COALESCE(p.feature_area_id,''),COALESCE(p.task_id,''),p.source_command,p.source_receipt_id,p.selected_variant_id,p.proposal_hash,p.task_definition_revision_id,p.source_execution_id,p.source_review_id,p.successor_execution_id,p.successor_review_id,p.repository_targets_json,p.primary_member_id,p.backend_identity,p.model,p.reasoning_effort,p.runtime_adapter_identity,p.topology_revision,p.development_context_hash,p.development_refs_json,p.expected_source_heads_json,p.write_scopes_json,p.preparation_request_id,p.preparation_payload_hash,p.content_hash,p.created_at,p.backend_config_fingerprint,p.backend_source,p.backend_kind,p.codex_fast_mode,p.service_tier,p.runtime_protocol_identity,p.authority_snapshot_hash,a.runtime_scope_plan_id,a.runtime_preparation_authority_id,auth.owner_kind,auth.owner_id,auth.disposition FROM runtime_scope_plans p JOIN execution_proposal_admissions a ON a.runtime_scope_plan_id=p.plan_id JOIN runtime_preparation_authorities auth ON auth.plan_id=a.runtime_preparation_authority_id WHERE a.proposal_id=?`, predecessorID).Scan(&p.ID, &p.Generation, &p.OwnerKind, &p.OwnerID, &p.ProjectID, &p.FeatureAreaID, &p.TaskID, &p.SourceCommand, &p.SourceReceiptID, &p.SelectedVariantID, &p.ProposalHash, &p.TaskDefinitionRevisionID, &p.SourceExecutionID, &p.SourceReviewID, &p.SuccessorExecutionID, &p.SuccessorReviewID, &targets, &p.PrimaryMemberID, &p.BackendIdentity, &p.Model, &p.ReasoningEffort, &p.RuntimeAdapterIdentity, &p.TopologyRevision, &p.DevelopmentContextHash, &refs, &heads, &scopes, &p.PreparationRequestID, &p.PreparationPayloadHash, &p.ContentHash, &created, &p.BackendConfigFingerprint, &p.BackendSource, &p.BackendKind, &fast, &p.ServiceTier, &p.RuntimeProtocolIdentity, &p.AuthoritySnapshotHash, &admittedPlanID, &authorityPlanID, &authorityOwnerKind, &authorityOwnerID, &authorityDisposition)
+	err := tx.QueryRowContext(ctx, `SELECT p.plan_id,p.generation,p.owner_kind,p.owner_id,p.project_id,COALESCE(p.feature_area_id,''),COALESCE(p.task_id,''),p.source_command,p.source_receipt_id,p.selected_variant_id,p.proposal_hash,p.task_definition_revision_id,p.source_execution_id,p.source_review_id,p.successor_execution_id,p.successor_review_id,p.repository_targets_json,p.primary_member_id,p.backend_identity,p.model,p.reasoning_effort,p.runtime_adapter_identity,p.topology_revision,p.development_context_hash,p.development_refs_json,p.expected_source_heads_json,p.write_scopes_json,p.preparation_request_id,p.preparation_payload_hash,p.content_hash,p.created_at,p.backend_config_fingerprint,p.backend_source,p.backend_kind,p.codex_fast_mode,p.service_tier,p.runtime_protocol_identity,p.authority_snapshot_hash,p.agent_id,p.execution_policy,p.agent_config_fingerprint,a.runtime_scope_plan_id,a.runtime_preparation_authority_id,auth.owner_kind,auth.owner_id,auth.disposition FROM runtime_scope_plans p JOIN execution_proposal_admissions a ON a.runtime_scope_plan_id=p.plan_id JOIN runtime_preparation_authorities auth ON auth.plan_id=a.runtime_preparation_authority_id WHERE a.proposal_id=?`, predecessorID).Scan(&p.ID, &p.Generation, &p.OwnerKind, &p.OwnerID, &p.ProjectID, &p.FeatureAreaID, &p.TaskID, &p.SourceCommand, &p.SourceReceiptID, &p.SelectedVariantID, &p.ProposalHash, &p.TaskDefinitionRevisionID, &p.SourceExecutionID, &p.SourceReviewID, &p.SuccessorExecutionID, &p.SuccessorReviewID, &targets, &p.PrimaryMemberID, &p.BackendIdentity, &p.Model, &p.ReasoningEffort, &p.RuntimeAdapterIdentity, &p.TopologyRevision, &p.DevelopmentContextHash, &refs, &heads, &scopes, &p.PreparationRequestID, &p.PreparationPayloadHash, &p.ContentHash, &created, &p.BackendConfigFingerprint, &p.BackendSource, &p.BackendKind, &fast, &p.ServiceTier, &p.RuntimeProtocolIdentity, &p.AuthoritySnapshotHash, &p.AgentID, &p.ExecutionPolicy, &p.AgentConfigFingerprint, &admittedPlanID, &authorityPlanID, &authorityOwnerKind, &authorityOwnerID, &authorityDisposition)
 	if err != nil {
 		return p, err
 	}

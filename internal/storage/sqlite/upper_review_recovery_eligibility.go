@@ -27,7 +27,10 @@ func reviewClaimExecutorTx(ctx context.Context, tx *sql.Tx, claim agentconversat
 	return executor, nil
 }
 
+const upperWorkerContinuationGuidance = "Same-Run Upper Review worker continuation is unsupported. Use the existing explicit Review cancellation flow; any successor requires separate user authorization. Cancellation does not prove that the external worker stopped."
+
 type upperReviewRecoveryFacts struct {
+	workerEnrolled      bool
 	epoch               string
 	generation          int64
 	state               string
@@ -92,6 +95,9 @@ func upperReviewOperationFactsTx(ctx context.Context, tx *sql.Tx, claim agentcon
 	if err != nil {
 		return f, err
 	}
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM upper_review_worker_claims WHERE run_id=? AND review_id=?)`, claim.RunID, claim.OperationID).Scan(&f.workerEnrolled); err != nil {
+		return f, err
+	}
 	if !f.workspaceBound {
 		canonical, canonicalErr := canonicalUpperReviewWorkspaceAtEpochTx(ctx, tx, claim.OperationID, claim.RunID, true, true)
 		if canonicalErr == nil && canonical {
@@ -121,7 +127,9 @@ func upperReviewRecoveryFactsTx(ctx context.Context, tx *sql.Tx, claim agentconv
 	if err != nil || f.reason != "" {
 		return f, err
 	}
-	if !f.lifecycleAllowed || !f.currentOwner {
+	if f.workerEnrolled {
+		f.reason = upperWorkerContinuationGuidance
+	} else if !f.lifecycleAllowed || !f.currentOwner {
 		f.reason = "Upper Review recovery requires a current ACTIVE Task Review in a DISCOVERING or ACTIVE FeatureArea."
 	} else if f.pendingCancellation {
 		f.reason = "The exact Upper Review has an accepted cancellation awaiting convergence."

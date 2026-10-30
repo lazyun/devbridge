@@ -41,7 +41,14 @@ func confirmationRaw(raw string) any {
 	return v
 }
 func confirmationRuntimeSchema() any {
-	return confirmationObject(map[string]any{"model": confirmationString(1, 128), "reasoningEffort": confirmationString(1, 64), "codexFastMode": map[string]any{"type": "boolean"}}, "model", "reasoningEffort", "codexFastMode")
+	schema := confirmationObject(map[string]any{"model": confirmationString(1, 128), "reasoningEffort": confirmationString(1, 64), "codexFastMode": map[string]any{"type": "boolean"}, "agentId": confirmationEnum("codex", "pi"), "agentConfigFingerprint": map[string]any{"type": "string", "pattern": "^[a-f0-9]{64}$"}, "executionPolicy": confirmationEnum("TASK_SANDBOX_V1", "COOPERATIVE_TRUSTED_V1")}, "model", "reasoningEffort", "codexFastMode")
+	schema["description"] = "Agent and execution policy are prospective explicit user selections, frozen for this work. Missing fields preserve historical Codex/native semantics. COOPERATIVE_TRUSTED_V1 trusts the selected agent to follow Core policy context and does not provide TASK_SANDBOX_V1 native isolation guarantees. Recommendations are not authorization."
+	schema["allOf"] = []any{
+		map[string]any{"if": map[string]any{"required": []string{"agentConfigFingerprint"}}, "then": map[string]any{"required": []string{"executionPolicy"}, "properties": map[string]any{"executionPolicy": map[string]any{"const": "COOPERATIVE_TRUSTED_V1"}}}},
+		map[string]any{"if": map[string]any{"required": []string{"executionPolicy"}, "properties": map[string]any{"executionPolicy": map[string]any{"const": "COOPERATIVE_TRUSTED_V1"}}}, "then": map[string]any{"required": []string{"agentId", "agentConfigFingerprint"}}},
+		map[string]any{"if": map[string]any{"required": []string{"agentId"}, "properties": map[string]any{"agentId": map[string]any{"const": "pi"}}}, "then": map[string]any{"required": []string{"executionPolicy"}, "properties": map[string]any{"executionPolicy": map[string]any{"const": "COOPERATIVE_TRUSTED_V1"}}}},
+	}
+	return schema
 }
 func confirmationBackendSchema() any {
 	return confirmationObject(map[string]any{"configId": confirmationString(1, 128), "configFingerprint": map[string]any{"type": "string", "pattern": "^[a-f0-9]{64}$"}}, "configId", "configFingerprint")

@@ -46,7 +46,11 @@ type ActionTarget struct {
 
 // Eligibility is a read-only observation. Available is never an authorization
 // grant and commands must revalidate the target against their durable guards.
+const ReasonUpperWorkerContinuationUnsupported = "UPPER_WORKER_CONTINUATION_UNSUPPORTED"
+
 type Eligibility struct {
+	// ReasonCode is a structured observed refusal, never execution authority.
+	ReasonCode string `json:"reasonCode,omitempty"`
 	// Prerequisite describes an existing read-only eligibility guard, never a new rule.
 	Prerequisite string
 	Available    bool

@@ -2,6 +2,8 @@ package controlapi
 
 import (
 	"context"
+	"fmt"
+	"github.com/lazyun/devbridge/internal/task"
 	"testing"
 	"time"
 
@@ -206,6 +208,43 @@ func TestEnrichFeatureAreaActionCapabilitiesProjectsReceiptTruth(t *testing.T) {
 			}
 			if out.Cancellation == nil || out.Cancellation.State != tc.want || out.Cancellation.RunID != "run" || out.Cancellation.RecoveryRequired != tc.required {
 				t.Fatalf("receipt projection=%+v", out.Cancellation)
+			}
+		})
+	}
+}
+
+func TestWorkerUnsupportedRecoveryProjectsAcrossSelectedOtherTask(t *testing.T) {
+	for _, historical := range []bool{false, true} {
+		t.Run(fmt.Sprintf("historical-%t", historical), func(t *testing.T) {
+			const reason = "Same-Run worker continuation is unsupported; inspect the current owner and use explicit cancellation."
+			f := &Facade{deps: Dependencies{AgentConversations: capabilityConversationStub{recover: agentconversation.Eligibility{ReasonCode: agentconversation.ReasonUpperWorkerContinuationUnsupported, Reason: reason}}}}
+			f.deps.ExecutionCancellations = &preWorkCancellationRead{available: !historical}
+			selected := &task.Task{Type: task.TypeDevelopment, ID: "other-task", ProjectID: "project", FeatureAreaID: "area", Status: task.StatusActive, Phase: task.PhaseReviewRequired}
+			if historical {
+				selected.Status = task.StatusSucceeded
+			}
+			current := CurrentWorkflow{Topic: &featurearea.FeatureArea{ID: "area"}, Task: selected}
+			op := agentconversation.State{Status: "RECOVERY_REQUIRED", Claim: &agentconversation.Claim{Kind: agentconversation.Review, OperationID: "worker-review", RunID: "worker-run"}}
+			out := presentation.Projection{Recovery: &presentation.Recovery{Required: true, Status: "RECOVERY_REQUIRED", Reason: "GPT_REVIEW_AUTHORIZATION_REQUIRED", Summary: "reauthorize"}, CurrentOperation: &presentation.Operation{Kind: "REVIEW", ID: "worker-review", RunID: "worker-run"}}
+			if err := f.enrichFeatureAreaActionCapabilities(context.Background(), "session", current, op, &out); err != nil {
+				t.Fatal(err)
+			}
+			if out.Recovery.Reason != agentconversation.ReasonUpperWorkerContinuationUnsupported || out.Recovery.Summary != reason || !out.Recovery.Required {
+				t.Fatalf("recovery=%+v", out.Recovery)
+			}
+			if !historical {
+				found := false
+				for _, cap := range out.Capabilities {
+					if cap.Action == "CANCEL_EXECUTION" && cap.Available && cap.Target != nil && cap.Target.OperationKind == "TASK" && cap.Target.OperationID == selected.ID {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatal("pre-work selected Task cancellation capability was lost")
+				}
+			}
+			if action := presentation.CurrentAction(out); action.Code != "REFRESH" {
+				t.Fatalf("foreign selected Task action=%+v", action)
 			}
 		})
 	}

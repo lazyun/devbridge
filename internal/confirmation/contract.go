@@ -315,6 +315,7 @@ type Options struct {
 	Repositories              []Choice                             `json:"repositories"`
 	Branches                  []Choice                             `json:"branches"`
 	Variants                  []Choice                             `json:"variants"`
+	AgentConfigFingerprints   map[string]string                    `json:"agentConfigFingerprints,omitempty"`
 	RuntimeOptions            []codexruntime.RuntimeOption         `json:"runtimeOptions"`
 	RuntimeInventoryRevision  uint64                               `json:"runtimeInventoryRevision"`
 	RuntimeInventoryReadError string                               `json:"runtimeInventoryReadError,omitempty"`

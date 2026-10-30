@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"reflect"
 	"strings"
 	"time"
@@ -100,6 +101,9 @@ type ApprovedSource struct {
 }
 
 type AuthorityValues struct {
+	AgentID                  string `json:"agentId,omitempty"`
+	AgentConfigFingerprint   string `json:"agentConfigFingerprint,omitempty"`
+	ExecutionPolicy          string `json:"executionPolicy,omitempty"`
 	BackendIdentity          string `json:"backendIdentity"`
 	BackendConfigFingerprint string `json:"backendConfigFingerprint"`
 	BackendSource            string `json:"backendSource"`
@@ -199,6 +203,9 @@ func SourceIdentity(session, request, result string) string {
 }
 func (s ApprovedSource) ComputeHash() string { s.SourcePayloadHash = ""; return HashValue(s) }
 func (s ApprovedSource) Validate() error {
+	if err := agentpolicy.ValidateFrozenSelection(s.Runtime.AgentID, s.Runtime.ExecutionPolicy, s.Runtime.AgentConfigFingerprint); err != nil {
+		return ErrCorrupt
+	}
 	if s.Owner.Validate() != nil || s.Owner.RuntimeRole != "IMPLEMENTATION" || s.Platform.Validate() != nil || !s.Current || !ValidEntry(s.Entry) || s.OriginalPurpose != "EXECUTION" || s.IntentVersion < 1 {
 		return ErrCorrupt
 	}
@@ -248,7 +255,11 @@ func (s ApprovedSource) Values(d runtimeplatform.Descriptor) (AuthorityValues, e
 	}
 	adapter, _ := json.Marshal(map[string]string{"adapterId": d.AdapterID, "adapterImplementationDigest": d.AdapterImplementationDigest})
 	protocol, _ := json.Marshal(map[string]string{"protocolId": d.ProtocolID, "protocolSchemaDigest": d.ProtocolSchemaDigest})
-	return AuthorityValues{BackendIdentity: s.Backend.Identity, BackendConfigFingerprint: s.Backend.Fingerprint, BackendSource: s.Backend.Source, BackendKind: s.Backend.Kind, Model: s.Runtime.Model, ReasoningEffort: s.Runtime.ReasoningEffort, CodexFastMode: s.Runtime.CodexFastMode, ServiceTier: s.Runtime.ServiceTier, RuntimeAdapterIdentity: string(adapter), RuntimeProtocolIdentity: string(protocol)}, nil
+	adapterIdentity, protocolIdentity := string(adapter), string(protocol)
+	if s.Runtime.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		adapterIdentity, protocolIdentity = agentpolicy.CooperativeAdapterIdentity, agentpolicy.CooperativeProtocolIdentity
+	}
+	return AuthorityValues{BackendIdentity: s.Backend.Identity, BackendConfigFingerprint: s.Backend.Fingerprint, BackendSource: s.Backend.Source, BackendKind: s.Backend.Kind, Model: s.Runtime.Model, ReasoningEffort: s.Runtime.ReasoningEffort, CodexFastMode: s.Runtime.CodexFastMode, ServiceTier: s.Runtime.ServiceTier, AgentID: s.Runtime.AgentID, AgentConfigFingerprint: s.Runtime.AgentConfigFingerprint, ExecutionPolicy: s.Runtime.ExecutionPolicy, RuntimeAdapterIdentity: adapterIdentity, RuntimeProtocolIdentity: protocolIdentity}, nil
 }
 func (in BindingInput) Validate() error {
 	if !exactText(in.RequestID) || in.Owner.Validate() != nil || !runtimeplatform.ValidDigest(in.SourceID) || !runtimeplatform.ValidDigest(in.SourcePayloadHash) || !ValidEntry(in.Entry) || in.ExpectedLineageVersion < 0 {

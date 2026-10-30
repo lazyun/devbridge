@@ -11,6 +11,7 @@ import (
 	"github.com/lazyun/devbridge/internal/agentruntime"
 	"github.com/lazyun/devbridge/internal/appserver"
 	"github.com/lazyun/devbridge/internal/codex"
+	"github.com/lazyun/devbridge/internal/codexagent"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/executionproposal"
 	"github.com/lazyun/devbridge/internal/repository"
@@ -214,28 +215,10 @@ func (f DefaultCodexFactory) StartForBoundRun(ctx context.Context, runID string,
 		}
 		return nil, err
 	}
-	return &codexSession{client: client, model: model, reasoningEffort: reasoning, serviceTier: tier, authorizationCeiling: ceiling, independent: true, appServerInstance: binding, idleCleanup: f.cleanupIdleAppServer(binding, config)}, nil
+	return &codexSession{Session: codexagent.NewSession(client, codexagent.Options{Model: model, ReasoningEffort: reasoning, ServiceTier: tier, AuthorizationCeiling: ceiling}), independent: true, appServerInstance: binding, idleCleanup: f.cleanupIdleAppServer(binding, config)}, nil
 }
 func (s codexSession) independentlyOwned() bool             { return s.independent }
 func (s codexSession) continuityBinding() appserver.Binding { return s.appServerInstance }
-func (s codexSession) RejoinTurn(ctx context.Context, threadID, turnID string, runtime *agentruntime.Session) (CodexTurnResult, error) {
-	var tier *string
-	if s.serviceTier != "" {
-		tier = &s.serviceTier
-	}
-	result, err := s.client.RejoinTurn(ctx, codex.TurnRejoinOptions{TurnOptions: codex.TurnOptions{RunID: s.usageRunID, ThreadID: threadID, Model: s.model, ReasoningEffort: s.reasoningEffort, ServiceTier: tier, AuthorizationCeiling: s.authorizationCeiling, RuntimeBinding: s.runtimeBinding}, TurnID: turnID, RuntimeSession: runtime, DynamicTools: s.dynamicTools})
-	value := CodexTurnResult{TurnID: result.TurnID, Message: result.FinalMessage, Commands: make([]ObservedCommand, 0, len(result.Commands))}
-	for _, command := range result.Commands {
-		value.Commands = append(value.Commands, ObservedCommand{ItemID: command.ItemID, Command: command.Command, CWD: command.CWD, Status: command.Status, ExitCode: command.ExitCode, Actions: append([]string(nil), command.Actions...), Output: command.Output, OutputTruncated: command.OutputTruncated, DurationMillis: command.DurationMS, StartedAt: command.StartedAt, FinishedAt: command.FinishedAt})
-	}
-	if err != nil {
-		var terminal *codex.TurnError
-		if errors.As(err, &terminal) {
-			err = &TaskExecutionError{Err: err}
-		}
-	}
-	return value, err
-}
 
 // RecoverAppServerRun attaches the canonical executor to an already verified,
 // adopted loaded Turn. It neither reserves a Run nor emits a prompt/turn start.
@@ -350,7 +333,7 @@ func (s *RuntimeSupervisor) recoverAppServerRun(ctx context.Context, runID strin
 		runtime.Close()
 		return current, err
 	}
-	attached := &codexSession{client: client, authorizationCeiling: ceiling, independent: true, appServerInstance: binding, idleCleanup: factory.cleanupIdleAppServer(binding, config)}
+	attached := &codexSession{Session: codexagent.NewSession(client, codexagent.Options{AuthorizationCeiling: ceiling}), independent: true, appServerInstance: binding, idleCleanup: factory.cleanupIdleAppServer(binding, config)}
 	p := PreparedRun{Run: current, qualifiedExecution: qualifiedExecution, multiRuntime: cp.MultiRuntime, task: cp.Task, review: cp.Review, repository: cp.Repository, config: cp.Config, backendSelection: cp.BackendSelection, instruction: cp.Instruction, executionScope: cp.ExecutionScope, purpose: cp.Purpose, verificationSpec: cp.VerificationSpec, reviewScope: cp.ReviewScope, rejoin: &rejoinExecution{Checkpoint: cp, Binding: binding, Runtime: runtime, Client: attached}}
 	owner := runtimeOwner{TaskID: current.TaskID}
 	if current.ReviewID != "" {

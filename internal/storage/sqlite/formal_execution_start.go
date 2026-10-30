@@ -96,7 +96,7 @@ func requireExactExecutionRuntimeSelectionTx(ctx context.Context, q definitionQu
 		return err
 	}
 	b, v, r := value.BackendSelection, authority.Values, value.RuntimeConfig
-	if b == nil || v.BackendIdentity != b.ConfigID || v.BackendConfigFingerprint != b.ConfigFingerprint || v.BackendSource != b.Source || v.BackendKind != "CODEX" || v.Model != r.Model || v.ReasoningEffort != r.ReasoningEffort || v.CodexFastMode != r.CodexFastMode || v.ServiceTier != r.ServiceTier || v.RuntimeAdapterIdentity != value.RuntimeAdapterIdentity || v.RuntimeProtocolIdentity != value.RuntimeProtocolIdentity {
+	if b == nil || v.BackendIdentity != b.ConfigID || v.BackendConfigFingerprint != b.ConfigFingerprint || v.BackendSource != b.Source || v.BackendKind != "CODEX" || v.Model != r.Model || v.ReasoningEffort != r.ReasoningEffort || v.CodexFastMode != r.CodexFastMode || v.ServiceTier != r.ServiceTier || v.AgentID != r.AgentID || v.AgentConfigFingerprint != r.AgentConfigFingerprint || v.ExecutionPolicy != r.ExecutionPolicy || v.RuntimeAdapterIdentity != value.RuntimeAdapterIdentity || v.RuntimeProtocolIdentity != value.RuntimeProtocolIdentity {
 		return fe.ErrConflict
 	}
 	return nil

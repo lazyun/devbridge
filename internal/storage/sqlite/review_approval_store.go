@@ -252,6 +252,18 @@ func workflowTaskStateTx(ctx context.Context, q definitionQuerier, projectID, ar
 			if err == nil {
 				if authority.RecoveryRequired {
 					blockProgressionGuidance(&g, "RECOVERY_REQUIRED", "RECOVER_AGENT_OPERATION", "Resolve the exact interrupted agent operation before progression.")
+					var workerRun, workerReview string
+					e := q.QueryRowContext(ctx, `SELECT c.run_id,c.operation_id FROM feature_area_agent_claims c JOIN upper_review_worker_claims w ON w.run_id=c.run_id AND w.review_id=c.operation_id JOIN reviews v ON v.id=c.operation_id AND v.linked_run_id=c.run_id JOIN review_grants rg ON rg.review_id=v.id AND rg.run_id=c.run_id JOIN tasks wt ON wt.id=v.task_id AND wt.current_review_id=v.id AND wt.status='ACTIVE' AND wt.phase='REVIEWING' WHERE c.feature_area_id=? AND c.operation_kind='REVIEW' AND v.executor_kind='UPPER_LLM' AND (c.runtime_epoch<>(SELECT epoch_id FROM runtime_authority WHERE singleton=1) OR rg.state='RECOVERY_REQUIRED')`, areaID).Scan(&workerRun, &workerReview)
+					if e == nil {
+						action := "WAIT_FOR_AGENT_OPERATION"
+						if g.RunID == workerRun && g.ReviewID == workerReview {
+							action = "CANCEL_REVIEW"
+						}
+						blockProgressionGuidance(&g, "RECOVERY_REQUIRED", action, upperWorkerContinuationGuidance)
+					} else if !errors.Is(e, sql.ErrNoRows) {
+						err = e
+					}
+
 				} else if authority.Busy && progressionActionNeedsIdle(g.NextAction.Code) {
 					// Successful Implementation retains this exact Execution's claim
 					// for serial Verification. This is continuation of the owner,

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"github.com/lazyun/devbridge/internal/codex"
 	"github.com/lazyun/devbridge/internal/codexconfig"
 	"github.com/lazyun/devbridge/internal/executionproposal"
@@ -66,6 +67,13 @@ func validateCheckpointTaskBinding(cp executionCheckpoint) error {
 // prepareTaskPermissions runs before durable workset binding and before any
 // model effects. Existing bindings are read back, never upgraded or rebuilt.
 func (c *Coordinator) prepareTaskPermissions(ctx context.Context, w workset.RuntimeWorkset, verification bool) (workset.RuntimeWorkset, error) {
+	if err := agentpolicy.ValidateFrozenSelection(w.AgentID, w.ExecutionPolicy, w.AgentConfigFingerprint); err != nil {
+		return w, err
+	}
+	if w.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		return c.prepareCooperativeWorkset(ctx, w)
+	}
+
 	enabled, ok := c.Codex.(interface{ TaskPermissionsEnabled() bool })
 	if !ok || !enabled.TaskPermissionsEnabled() || (w.TaskID == "" || w.ExecutionID == "") && w.ReviewID == "" {
 		return w, nil
@@ -505,6 +513,10 @@ func (c *Coordinator) prepareScalarVerificationSandbox(ctx context.Context, prep
 	if execution.ID != r.ExecutionProposalID || execution.VerificationRunID != r.ID || execution.TaskID != r.TaskID || execution.TaskDefinitionRevisionID != prepared.task.CurrentDefinitionRevisionID || execution.BackendSelection == nil {
 		return errors.New("TASK_PERMISSION_VERIFICATION_OWNER_MISMATCH")
 	}
+	if execution.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && (execution.RunID == "" || execution.RuntimeAdapterIdentity != agentpolicy.CooperativeAdapterIdentity || execution.RuntimeProtocolIdentity != agentpolicy.CooperativeProtocolIdentity) {
+		return errors.New("COOPERATIVE_IMPLEMENTATION_AUTHORITY_UNAVAILABLE")
+	}
+
 	root, identity, err := multiRuntimeRootIdentity(tree.Path)
 	if err != nil {
 		return err
@@ -513,7 +525,7 @@ func (c *Coordinator) prepareScalarVerificationSandbox(ctx context.Context, prep
 	if err != nil {
 		return err
 	}
-	w := workset.RuntimeWorkset{ProtocolVersion: 1, ProjectID: r.ProjectID, FeatureAreaID: r.FeatureAreaID, TaskID: r.TaskID, TaskDefinitionRevisionID: execution.TaskDefinitionRevisionID, ExecutionID: execution.ID, RunID: r.ID, WorkspaceID: r.WorkspaceID, PrimaryMemberID: prepared.repository.ID, Members: []workset.RuntimeMemberBinding{{RepositoryID: prepared.repository.ID, RepositoryAlias: prepared.repository.ID, MemberID: prepared.repository.ID, MemberVersion: 1, WorktreeID: tree.ID, CanonicalRoot: root, RootFileIdentity: identity, OriginCommit: tree.BaseCommit, StartHEAD: state.HeadCommit, StartSnapshot: snapshot, Read: true, Write: workset.WriteScope{Kind: "NONE"}, RuntimeRootIdentity: identity}}, BackendConfigID: execution.BackendSelection.ConfigID, BackendConfigFingerprint: execution.BackendSelection.ConfigFingerprint, Model: execution.RuntimeConfig.Model, ReasoningEffort: execution.RuntimeConfig.ReasoningEffort, ServiceTier: execution.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: execution.RuntimeAdapterIdentity, RuntimeProtocolIdentity: execution.RuntimeProtocolIdentity, CreatedAt: r.CreatedAt}
+	w := workset.RuntimeWorkset{ProtocolVersion: 1, ProjectID: r.ProjectID, FeatureAreaID: r.FeatureAreaID, TaskID: r.TaskID, TaskDefinitionRevisionID: execution.TaskDefinitionRevisionID, ExecutionID: execution.ID, RunID: r.ID, WorkspaceID: r.WorkspaceID, PrimaryMemberID: prepared.repository.ID, Members: []workset.RuntimeMemberBinding{{RepositoryID: prepared.repository.ID, RepositoryAlias: prepared.repository.ID, MemberID: prepared.repository.ID, MemberVersion: 1, WorktreeID: tree.ID, CanonicalRoot: root, RootFileIdentity: identity, OriginCommit: tree.BaseCommit, StartHEAD: state.HeadCommit, StartSnapshot: snapshot, Read: true, Write: workset.WriteScope{Kind: "NONE"}, RuntimeRootIdentity: identity}}, BackendConfigID: execution.BackendSelection.ConfigID, BackendConfigFingerprint: execution.BackendSelection.ConfigFingerprint, Model: execution.RuntimeConfig.Model, ReasoningEffort: execution.RuntimeConfig.ReasoningEffort, ServiceTier: execution.RuntimeConfig.ServiceTier, AgentConfigFingerprint: execution.RuntimeConfig.AgentConfigFingerprint, AgentID: execution.RuntimeConfig.AgentID, ExecutionPolicy: execution.RuntimeConfig.ExecutionPolicy, RuntimeAdapterIdentity: execution.RuntimeAdapterIdentity, RuntimeProtocolIdentity: execution.RuntimeProtocolIdentity, CreatedAt: r.CreatedAt}
 	if w.RuntimeProtocolIdentity == "" {
 		w.RuntimeProtocolIdentity = "codex-app-server-0.149.0"
 	}
@@ -528,8 +540,11 @@ func (c *Coordinator) prepareScalarVerificationSandbox(ctx context.Context, prep
 		if readErr != nil {
 			return readErr
 		}
+		if execution.RuntimeConfig.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 && source.RuntimeWorkset == nil {
+			return errors.New("COOPERATIVE_IMPLEMENTATION_WORKSET_UNAVAILABLE")
+		}
 		if frozen := source.RuntimeWorkset; frozen != nil {
-			if frozen.Validate() != nil || frozen.ExecutionID != execution.ID || frozen.TaskID != r.TaskID || frozen.TaskDefinitionRevisionID != execution.TaskDefinitionRevisionID || len(frozen.Members) != 1 || frozen.Members[0].CanonicalRoot != root || frozen.Members[0].RootFileIdentity != identity {
+			if frozen.AgentConfigFingerprint != execution.RuntimeConfig.AgentConfigFingerprint || frozen.AgentID != execution.RuntimeConfig.AgentID || frozen.ExecutionPolicy != execution.RuntimeConfig.ExecutionPolicy || frozen.Validate() != nil || frozen.ExecutionID != execution.ID || frozen.TaskID != r.TaskID || frozen.TaskDefinitionRevisionID != execution.TaskDefinitionRevisionID || len(frozen.Members) != 1 || frozen.Members[0].CanonicalRoot != root || frozen.Members[0].RootFileIdentity != identity {
 				return errors.New("TASK_PERMISSION_IMPLEMENTATION_SOURCE_MISMATCH")
 			}
 			w = *frozen
@@ -563,6 +578,9 @@ func (c *Coordinator) prepareScalarVerificationSandbox(ctx context.Context, prep
 	if err != nil {
 		return err
 	}
+	if w.TaskPermissions == nil {
+		binding.WritableRoots = nil
+	}
 	prepared.Run = stored
 	prepared.scalarRuntime = &PreparedMultiRuntime{Workset: w, CWD: cwd, Binding: binding, ReadOnly: true}
 	return nil
@@ -570,7 +588,7 @@ func (c *Coordinator) prepareScalarVerificationSandbox(ctx context.Context, prep
 
 func (c *Coordinator) prepareScalarReviewSandbox(ctx context.Context, prepared *PreparedRun, tree worktree.Worktree, snapshot string) error {
 	enabled, ok := c.Codex.(interface{ TaskPermissionsEnabled() bool })
-	if !ok || !enabled.TaskPermissionsEnabled() || prepared.multiRuntime != nil || prepared.scalarRuntime != nil || prepared.purpose != run.PurposeScopeReview || prepared.review == nil || prepared.review.ExecutorKind != review.ExecutorCodingAgent {
+	if !ok || !enabled.TaskPermissionsEnabled() || prepared.multiRuntime != nil || prepared.scalarRuntime != nil || prepared.purpose != run.PurposeScopeReview || prepared.review == nil || (prepared.review.ExecutorKind != review.ExecutorCodingAgent && prepared.review.RuntimeConfig.ExecutionPolicy != agentpolicy.PolicyCooperativeTrustedV1) {
 		return nil
 	}
 	v, r := prepared.review, prepared.Run
@@ -585,7 +603,11 @@ func (c *Coordinator) prepareScalarReviewSandbox(ctx context.Context, prepared *
 	if err != nil {
 		return err
 	}
-	w := workset.RuntimeWorkset{ProtocolVersion: 1, ProjectID: r.ProjectID, FeatureAreaID: r.FeatureAreaID, ReviewID: v.ID, RunID: r.ID, WorkspaceID: r.WorkspaceID, PrimaryMemberID: prepared.repository.ID, Members: []workset.RuntimeMemberBinding{{RepositoryID: prepared.repository.ID, RepositoryAlias: prepared.repository.ID, MemberID: prepared.repository.ID, MemberVersion: 1, WorktreeID: tree.ID, CanonicalRoot: root, RootFileIdentity: identity, OriginCommit: tree.BaseCommit, StartHEAD: state.HeadCommit, StartSnapshot: snapshot, Read: true, Write: workset.WriteScope{Kind: "NONE"}, RuntimeRootIdentity: identity}}, BackendConfigID: v.BackendSelection.ConfigID, BackendConfigFingerprint: v.BackendSelection.ConfigFingerprint, Model: v.RuntimeConfig.Model, ReasoningEffort: v.RuntimeConfig.ReasoningEffort, ServiceTier: v.RuntimeConfig.ServiceTier, RuntimeAdapterIdentity: executionproposal.RuntimeAdapterCodexAppServerV1, RuntimeProtocolIdentity: executionproposal.RuntimeProtocolCodex0149, CreatedAt: r.CreatedAt}
+	w := workset.RuntimeWorkset{ProtocolVersion: 1, ProjectID: r.ProjectID, FeatureAreaID: r.FeatureAreaID, ReviewID: v.ID, RunID: r.ID, WorkspaceID: r.WorkspaceID, PrimaryMemberID: prepared.repository.ID, Members: []workset.RuntimeMemberBinding{{RepositoryID: prepared.repository.ID, RepositoryAlias: prepared.repository.ID, MemberID: prepared.repository.ID, MemberVersion: 1, WorktreeID: tree.ID, CanonicalRoot: root, RootFileIdentity: identity, OriginCommit: tree.BaseCommit, StartHEAD: state.HeadCommit, StartSnapshot: snapshot, Read: true, Write: workset.WriteScope{Kind: "NONE"}, RuntimeRootIdentity: identity}}, BackendConfigID: v.BackendSelection.ConfigID, BackendConfigFingerprint: v.BackendSelection.ConfigFingerprint, Model: v.RuntimeConfig.Model, ReasoningEffort: v.RuntimeConfig.ReasoningEffort, ServiceTier: v.RuntimeConfig.ServiceTier, AgentConfigFingerprint: v.RuntimeConfig.AgentConfigFingerprint, AgentID: v.RuntimeConfig.AgentID, ExecutionPolicy: v.RuntimeConfig.ExecutionPolicy, RuntimeAdapterIdentity: executionproposal.RuntimeAdapterCodexAppServerV1, RuntimeProtocolIdentity: executionproposal.RuntimeProtocolCodex0149, CreatedAt: r.CreatedAt}
+	if w.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		w.RuntimeAdapterIdentity = agentpolicy.CooperativeAdapterIdentity
+		w.RuntimeProtocolIdentity = agentpolicy.CooperativeProtocolIdentity
+	}
 	w, err = w.WithHash()
 	if err != nil {
 		return err
@@ -608,7 +630,38 @@ func (c *Coordinator) prepareScalarReviewSandbox(ctx context.Context, prepared *
 	if err != nil {
 		return err
 	}
+	if w.TaskPermissions == nil {
+		binding.WritableRoots = nil
+	}
 	prepared.Run = stored
 	prepared.scalarRuntime = &PreparedMultiRuntime{Workset: w, CWD: cwd, Binding: binding, ReadOnly: true}
 	return nil
+}
+
+// Cooperative policy is a separate prospective contract. It never inherits a
+// native manifest or infers a mode from a project's trusted-execution toggle.
+func (c *Coordinator) prepareCooperativeWorkset(ctx context.Context, w workset.RuntimeWorkset) (workset.RuntimeWorkset, error) {
+	if err := w.Validate(); err != nil {
+		return w, err
+	}
+	if reader, ok := c.Runs.(interface {
+		RuntimeWorkset(context.Context, string) (workset.RuntimeWorkset, error)
+	}); ok {
+		old, err := reader.RuntimeWorkset(ctx, w.RunID)
+		if err == nil {
+			if old.Validate() != nil || old.AgentConfigFingerprint != w.AgentConfigFingerprint || old.AgentID != w.AgentID || old.ExecutionPolicy != w.ExecutionPolicy || old.ContentHash != w.ContentHash || old.RunID != w.RunID || old.TaskPermissions != nil {
+				return w, errors.New("COOPERATIVE_WORKSET_REPLAY_CONFLICT")
+			}
+			w = old
+		} else if !errors.Is(err, run.ErrNotFound) {
+			return w, err
+		}
+	}
+	base := filepath.Join(filepath.Dir(w.Members[0].CanonicalRoot), ".task-runtime", "run-"+runtimepermission.EnvironmentID(w.RunID))
+	if _, err := os.Lstat(filepath.Join(base, "permissions.json")); err == nil {
+		return w, errors.New("COOPERATIVE_NATIVE_MANIFEST_CONFLICT")
+	} else if !os.IsNotExist(err) {
+		return w, err
+	}
+	return w, nil
 }

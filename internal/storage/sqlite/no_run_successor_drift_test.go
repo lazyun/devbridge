@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/lazyun/devbridge/internal/runtimeplatform"
@@ -23,6 +24,9 @@ func TestNoRunAuthorityDriftPriority(t *testing.T) {
 		change     func(*runtimepreparation.Plan)
 	}{
 		{"backend", "BACKEND_CONFIGURATION_CHANGED", func(p *runtimepreparation.Plan) { p.BackendIdentity = "changed" }},
+		{"agent-config", "RUNTIME_CONFIGURATION_CHANGED", func(p *runtimepreparation.Plan) { p.AgentConfigFingerprint = strings.Repeat("f", 64) }},
+		{"agent", "RUNTIME_CONFIGURATION_CHANGED", func(p *runtimepreparation.Plan) { p.AgentID = "pi" }},
+		{"policy", "RUNTIME_CONFIGURATION_CHANGED", func(p *runtimepreparation.Plan) { p.ExecutionPolicy = "COOPERATIVE_TRUSTED_V1" }},
 		{"runtime", "RUNTIME_CONFIGURATION_CHANGED", func(p *runtimepreparation.Plan) { p.CodexFastMode = true }},
 		{"adapter", "RUNTIME_ADAPTER_IDENTITY_CHANGED", func(p *runtimepreparation.Plan) { p.RuntimeAdapterIdentity = "changed" }},
 		{"protocol", "RUNTIME_PROTOCOL_IDENTITY_CHANGED", func(p *runtimepreparation.Plan) { p.RuntimeProtocolIdentity = "changed" }},

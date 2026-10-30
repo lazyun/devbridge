@@ -25,7 +25,10 @@ func TestRuntimeSelectionRejectsRehashedMissingOrSubstitutedAuthority(t *testing
 	if err := s.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	cases := map[string]func(*ApprovedSource){"missing qualification": func(s *ApprovedSource) { s.Platform.QualificationID = "" }, "operator source": func(s *ApprovedSource) { s.ProducerKind = "LOCAL_OPERATOR" }, "consumption as source": func(s *ApprovedSource) { s.ProducerKind = "CONSUMED" }, "unrelated lineage": func(s *ApprovedSource) { s.Backend.PlatformLineageID = "other" }, "receipt identity": func(s *ApprovedSource) { s.SourceReceiptIdentity = HashValue("other") }, "adoption without prior": func(s *ApprovedSource) {
+	cases := map[string]func(*ApprovedSource){"cooperative missing launch fingerprint": func(s *ApprovedSource) {
+		s.Runtime.AgentID = "pi"
+		s.Runtime.ExecutionPolicy = "COOPERATIVE_TRUSTED_V1"
+	}, "missing qualification": func(s *ApprovedSource) { s.Platform.QualificationID = "" }, "operator source": func(s *ApprovedSource) { s.ProducerKind = "LOCAL_OPERATOR" }, "consumption as source": func(s *ApprovedSource) { s.ProducerKind = "CONSUMED" }, "unrelated lineage": func(s *ApprovedSource) { s.Backend.PlatformLineageID = "other" }, "receipt identity": func(s *ApprovedSource) { s.SourceReceiptIdentity = HashValue("other") }, "adoption without prior": func(s *ApprovedSource) {
 		s.OriginalAction = "START_APPROVED"
 		s.ProducerKind = "FORMAL_CONFIRMATION_COMMIT"
 		s.Entry = EntryDefinitionOnlyAdoption
@@ -64,6 +67,36 @@ func TestRuntimeSelectionAuthoritySnapshotMatchesPlanAndRejectsDrift(t *testing.
 		t.Fatal(err)
 	}
 	b.Values.Model = "different"
+	b.AuthoritySnapshotHash = HashValue(b.Values)
+	if b.Validate(s, d) == nil {
+		t.Fatal("rehashed binding substituted selection")
+	}
+	d.AdapterImplementationDigest = HashValue("new binary")
+	if _, err = s.Values(d); err == nil {
+		t.Fatal("new binary substituted exact descriptor")
+	}
+}
+
+func TestCooperativePolicyAuthoritySnapshotMatchesPlanAndRejectsDrift(t *testing.T) {
+	s, d := selectionDecoderFixture()
+	s.Runtime.AgentID = "pi"
+	s.Runtime.ExecutionPolicy = "COOPERATIVE_TRUSTED_V1"
+	s.Runtime.AgentConfigFingerprint = strings.Repeat("c", 64)
+	s.SourcePayloadHash = s.ComputeHash()
+	v, err := s.Values(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := runtimepreparation.Plan{BackendIdentity: v.BackendIdentity, BackendConfigFingerprint: v.BackendConfigFingerprint, BackendSource: v.BackendSource, BackendKind: v.BackendKind, Model: v.Model, ReasoningEffort: v.ReasoningEffort, CodexFastMode: v.CodexFastMode, ServiceTier: v.ServiceTier, AgentID: v.AgentID, AgentConfigFingerprint: v.AgentConfigFingerprint, ExecutionPolicy: v.ExecutionPolicy, RuntimeAdapterIdentity: v.RuntimeAdapterIdentity, RuntimeProtocolIdentity: v.RuntimeProtocolIdentity}
+	got, err := p.ComputeAuthoritySnapshotHash()
+	if err != nil || got != HashValue(v) {
+		t.Fatalf("snapshot domains differ %s %s %v", got, HashValue(v), err)
+	}
+	b := Binding{BindingID: "binding", Owner: s.Owner, Platform: s.Platform, SourceID: s.SourceID, SourcePayloadHash: s.SourcePayloadHash, Entry: s.Entry, IssuanceRequestID: "issue", IssuancePayloadHash: s.BindingPayload(), SnapshotSchemaID: SnapshotSchemaID, AuthoritySnapshotHash: HashValue(v), Values: v, CreatedAt: time.Now()}
+	if err = b.Validate(s, d); err != nil {
+		t.Fatal(err)
+	}
+	b.Values.AgentConfigFingerprint = strings.Repeat("d", 64)
 	b.AuthoritySnapshotHash = HashValue(b.Values)
 	if b.Validate(s, d) == nil {
 		t.Fatal("rehashed binding substituted selection")

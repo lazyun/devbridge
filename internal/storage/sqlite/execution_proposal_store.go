@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"time"
 
 	"github.com/lazyun/devbridge/internal/codexconfig"
@@ -561,7 +562,13 @@ func executionProposalConflict(err error) error {
 }
 
 func encodeExecutionRuntimeConfig(value codexruntime.NextRunRuntimeConfig) (any, error) {
+	if err := agentpolicy.ValidateFrozenSelection(value.AgentID, value.ExecutionPolicy, value.AgentConfigFingerprint); err != nil {
+		return nil, executionproposal.ErrConflict
+	}
 	if value.Model == "" {
+		if value.AgentID != "" || value.AgentConfigFingerprint != "" || value.ExecutionPolicy != "" {
+			return nil, executionproposal.ErrConflict
+		}
 		return nil, nil
 	}
 	if value.ReasoningEffort == "" || (value.CodexFastMode && value.ServiceTier != "priority") || (!value.CodexFastMode && value.ServiceTier != "") {

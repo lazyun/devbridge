@@ -1,41 +1,41 @@
 {
   "_meta": {
     "capturedBy": "internal/controlapi/continuation_rejection_recovery_test.go",
-    "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+    "mainScriptSHA256": "cd8e62e4dab63ae15b7b7e9470e89aaf6f59bb41553db9a8bd6e739e634d7790",
     "singleSourceOfTruth": "Actual MCP wire after original REQUEST_CHANGES rollback and retired worker readback. Never hand-edit an envelope."
   },
   "entry": {
     "display": {
-      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
-      "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+      "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
+      "featureAreaId": "feature_area_71984763cf75283b0a0f01a9da164623",
       "featureAreaName": "Lifecycle area",
-      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
       "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "projectId": "project_eb43f359-72f4-4190-94ec-d5ce47009742",
       "projectName": "Upper lifecycle",
       "purpose": "EXECUTION",
       "repositoryCount": 3,
       "status": "AVAILABLE",
-      "taskId": "task_b55a7980beb6e685047fe1a471bc4678",
+      "taskId": "task_d331d5daab901d51b749b13950a7c5fb",
       "taskName": "Lifecycle intent",
       "topologyRevision": 4,
       "version": 1
     },
     "intent": {
       "action": "REQUEST_CHANGES",
-      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
       "canResume": false,
       "commit": {
         "action": "REQUEST_CHANGES",
-        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
         "backendSelection": {
           "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
           "configId": "codex_config_default",
           "configName": "Default Codex configuration",
           "source": "SESSION_INVENTORY"
         },
-        "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-        "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+        "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+        "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
         "purpose": "EXECUTION",
         "requestId": "historical-change-commit",
         "selection": {
@@ -55,15 +55,15 @@
       },
       "content": {
         "action": "REQUEST_CHANGES",
-        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
         "execution": {
           "action": "REQUEST_CHANGES",
-          "decisionId": "TASK_ACCEPTANCE:execution_approved_43a215da11ce46a43cbe432dc67545e1",
-          "executionId": "execution_approved_43a215da11ce46a43cbe432dc67545e1",
-          "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
-          "reviewId": "review_e7506bcd9cbc7e2751ff3bbfd11d0be3",
-          "taskDefinitionRevisionId": "task_definition_task_b55a7980beb6e685047fe1a471bc4678_2_5c3d56cd016b415c",
-          "taskId": "task_b55a7980beb6e685047fe1a471bc4678"
+          "decisionId": "TASK_ACCEPTANCE:execution_approved_7007bcfc9fa8a77192054c07502dc6d3",
+          "executionId": "execution_approved_7007bcfc9fa8a77192054c07502dc6d3",
+          "featureAreaId": "feature_area_71984763cf75283b0a0f01a9da164623",
+          "reviewId": "review_27896e8509cef6c0e88ee354f7574700",
+          "taskDefinitionRevisionId": "task_definition_task_d331d5daab901d51b749b13950a7c5fb_2_5bac76b503a8d84c",
+          "taskId": "task_d331d5daab901d51b749b13950a7c5fb"
         },
         "purpose": "EXECUTION",
         "requestId": "historical-change-prepare",
@@ -72,18 +72,18 @@
             "id": "revised",
             "implementationMode": "CODING_AGENT",
             "label": "",
-            "primaryMemberId": "member_ba039ed949dfb8f83350c580993b7f02",
+            "primaryMemberId": "member_d95b12a55ceb60f681a08e6cf7ceeece",
             "repositoryTargets": [
               {
-                "memberId": "member_ba039ed949dfb8f83350c580993b7f02",
+                "memberId": "member_d95b12a55ceb60f681a08e6cf7ceeece",
                 "memberVersion": 1,
-                "originCommit": "36192be2df95dd10a247b1712d27763b3324e42d",
-                "originRef": "refs/heads/sdk-development",
+                "originCommit": "d3a12f35693c41383d92f2c07a6a1b3dc68305a2",
+                "originRef": "refs/heads/app-development",
                 "read": true,
                 "readScope": {
                   "kind": ""
                 },
-                "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                "repositoryId": "repository_310468f1-38e9-4cae-aa69-edf613c1edf5",
                 "write": {
                   "kind": "PATHS",
                   "paths": [
@@ -92,15 +92,15 @@
                 }
               },
               {
-                "memberId": "member_af4450a8f42e34b4f8b96eff197b0884",
+                "memberId": "member_414892f6ccd57983d136ee7420f8e5bb",
                 "memberVersion": 1,
-                "originCommit": "1caf3c66b55ab5944bbbd2962a7f0e075d60cc47",
-                "originRef": "refs/heads/app-development",
+                "originCommit": "b67be9234424d59acfb6d6c79957dc77d8cd89bc",
+                "originRef": "refs/heads/sdk-development",
                 "read": true,
                 "readScope": {
                   "kind": ""
                 },
-                "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                "repositoryId": "repository_e2c65fca-b4ae-436a-af45-4ec606b84043",
                 "write": {
                   "kind": "PATHS",
                   "paths": [
@@ -118,9 +118,9 @@
                 {
                   "command": "test -f same.txt",
                   "kind": "TEST_COMMAND",
-                  "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                  "repositoryId": "repository_310468f1-38e9-4cae-aa69-edf613c1edf5",
                   "repositoryIds": [
-                    "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f"
+                    "repository_310468f1-38e9-4cae-aa69-edf613c1edf5"
                   ],
                   "required": true,
                   "workingDirectory": "."
@@ -128,9 +128,9 @@
                 {
                   "command": "test -f same.txt",
                   "kind": "TEST_COMMAND",
-                  "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                  "repositoryId": "repository_e2c65fca-b4ae-436a-af45-4ec606b84043",
                   "repositoryIds": [
-                    "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f"
+                    "repository_e2c65fca-b4ae-436a-af45-4ec606b84043"
                   ],
                   "required": true,
                   "workingDirectory": "."
@@ -154,12 +154,12 @@
           }
         ]
       },
-      "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-      "createdAt": "2026-10-25T17:52:10.573645Z",
+      "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+      "createdAt": "2026-10-30T06:58:08.149291715Z",
       "currentUpperReadAvailable": false,
-      "expiresAt": "2026-10-26T17:52:10.573645Z",
-      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
-      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "expiresAt": "2026-10-31T06:58:08.149291715Z",
+      "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
+      "projectId": "project_eb43f359-72f4-4190-94ec-d5ce47009742",
       "purpose": "EXECUTION",
       "state": "REJECTED",
       "steps": [
@@ -176,12 +176,12 @@
           },
           "kind": "RESOLVE_CONTINUATION",
           "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
-          "requestId": "confirmation_8f674fddd9e2da7b6a657d5550c55cbf",
+          "requestId": "confirmation_28d81dd165330e7f64970e9c90175138",
           "state": "REJECTED"
         },
         {
           "kind": "START_IMPLEMENTATION",
-          "requestId": "confirmation_cd50e55fb999ccd19dec278c5e935a42",
+          "requestId": "confirmation_7fcfcd55301df18d353337c98715ccea",
           "state": "PENDING"
         }
       ],
@@ -191,16 +191,16 @@
         "consumptionDisposition": "CONSUMED",
         "nextAction": "READ_CURRENT_TARGET",
         "outcome": "CONSUMED",
-        "payloadSHA256": "b53b15286ceee490cbc1035a49b830041caea75c4416c36ccf3e9b34df8181bf",
+        "payloadSHA256": "5b18ee8095215d5fceb05ebb2ccb663f8a2663bf20f6f2b21effd8371c97e419",
         "receiptRequestId": "historical-change-commit",
         "recorded": true,
         "redispatchSameIntent": false,
         "reprepareAllowed": false,
         "request": {
           "action": "REQUEST_CHANGES",
-          "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
-          "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-          "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+          "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
+          "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+          "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
           "purpose": "EXECUTION",
           "requestId": "historical-change-commit",
           "selection": {
@@ -225,36 +225,36 @@
   },
   "read": {
     "display": {
-      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
-      "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
+      "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
+      "featureAreaId": "feature_area_71984763cf75283b0a0f01a9da164623",
       "featureAreaName": "Lifecycle area",
-      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+      "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
       "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "projectId": "project_eb43f359-72f4-4190-94ec-d5ce47009742",
       "projectName": "Upper lifecycle",
       "purpose": "EXECUTION",
       "repositoryCount": 3,
       "status": "AVAILABLE",
-      "taskId": "task_b55a7980beb6e685047fe1a471bc4678",
+      "taskId": "task_d331d5daab901d51b749b13950a7c5fb",
       "taskName": "Lifecycle intent",
       "topologyRevision": 4,
       "version": 1
     },
     "intent": {
       "action": "REQUEST_CHANGES",
-      "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+      "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
       "canResume": false,
       "commit": {
         "action": "REQUEST_CHANGES",
-        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
         "backendSelection": {
           "configFingerprint": "6e38ba1c816f8ab955f3a15f3171c6ca96b79f7603f1cf6917d3927906c07237",
           "configId": "codex_config_default",
           "configName": "Default Codex configuration",
           "source": "SESSION_INVENTORY"
         },
-        "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-        "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+        "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+        "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
         "purpose": "EXECUTION",
         "requestId": "historical-change-commit",
         "selection": {
@@ -274,15 +274,15 @@
       },
       "content": {
         "action": "REQUEST_CHANGES",
-        "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
+        "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
         "execution": {
           "action": "REQUEST_CHANGES",
-          "decisionId": "TASK_ACCEPTANCE:execution_approved_43a215da11ce46a43cbe432dc67545e1",
-          "executionId": "execution_approved_43a215da11ce46a43cbe432dc67545e1",
-          "featureAreaId": "feature_area_25db2bf13133423b827b2b7b148f44b3",
-          "reviewId": "review_e7506bcd9cbc7e2751ff3bbfd11d0be3",
-          "taskDefinitionRevisionId": "task_definition_task_b55a7980beb6e685047fe1a471bc4678_2_5c3d56cd016b415c",
-          "taskId": "task_b55a7980beb6e685047fe1a471bc4678"
+          "decisionId": "TASK_ACCEPTANCE:execution_approved_7007bcfc9fa8a77192054c07502dc6d3",
+          "executionId": "execution_approved_7007bcfc9fa8a77192054c07502dc6d3",
+          "featureAreaId": "feature_area_71984763cf75283b0a0f01a9da164623",
+          "reviewId": "review_27896e8509cef6c0e88ee354f7574700",
+          "taskDefinitionRevisionId": "task_definition_task_d331d5daab901d51b749b13950a7c5fb_2_5bac76b503a8d84c",
+          "taskId": "task_d331d5daab901d51b749b13950a7c5fb"
         },
         "purpose": "EXECUTION",
         "requestId": "historical-change-prepare",
@@ -291,18 +291,18 @@
             "id": "revised",
             "implementationMode": "CODING_AGENT",
             "label": "",
-            "primaryMemberId": "member_ba039ed949dfb8f83350c580993b7f02",
+            "primaryMemberId": "member_d95b12a55ceb60f681a08e6cf7ceeece",
             "repositoryTargets": [
               {
-                "memberId": "member_ba039ed949dfb8f83350c580993b7f02",
+                "memberId": "member_d95b12a55ceb60f681a08e6cf7ceeece",
                 "memberVersion": 1,
-                "originCommit": "36192be2df95dd10a247b1712d27763b3324e42d",
-                "originRef": "refs/heads/sdk-development",
+                "originCommit": "d3a12f35693c41383d92f2c07a6a1b3dc68305a2",
+                "originRef": "refs/heads/app-development",
                 "read": true,
                 "readScope": {
                   "kind": ""
                 },
-                "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                "repositoryId": "repository_310468f1-38e9-4cae-aa69-edf613c1edf5",
                 "write": {
                   "kind": "PATHS",
                   "paths": [
@@ -311,15 +311,15 @@
                 }
               },
               {
-                "memberId": "member_af4450a8f42e34b4f8b96eff197b0884",
+                "memberId": "member_414892f6ccd57983d136ee7420f8e5bb",
                 "memberVersion": 1,
-                "originCommit": "1caf3c66b55ab5944bbbd2962a7f0e075d60cc47",
-                "originRef": "refs/heads/app-development",
+                "originCommit": "b67be9234424d59acfb6d6c79957dc77d8cd89bc",
+                "originRef": "refs/heads/sdk-development",
                 "read": true,
                 "readScope": {
                   "kind": ""
                 },
-                "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                "repositoryId": "repository_e2c65fca-b4ae-436a-af45-4ec606b84043",
                 "write": {
                   "kind": "PATHS",
                   "paths": [
@@ -337,9 +337,9 @@
                 {
                   "command": "test -f same.txt",
                   "kind": "TEST_COMMAND",
-                  "repositoryId": "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f",
+                  "repositoryId": "repository_310468f1-38e9-4cae-aa69-edf613c1edf5",
                   "repositoryIds": [
-                    "repository_2f86b4c5-c3be-4485-a788-c74adc2f437f"
+                    "repository_310468f1-38e9-4cae-aa69-edf613c1edf5"
                   ],
                   "required": true,
                   "workingDirectory": "."
@@ -347,9 +347,9 @@
                 {
                   "command": "test -f same.txt",
                   "kind": "TEST_COMMAND",
-                  "repositoryId": "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f",
+                  "repositoryId": "repository_e2c65fca-b4ae-436a-af45-4ec606b84043",
                   "repositoryIds": [
-                    "repository_a31658a7-1226-4caf-8cc2-2610ca39c68f"
+                    "repository_e2c65fca-b4ae-436a-af45-4ec606b84043"
                   ],
                   "required": true,
                   "workingDirectory": "."
@@ -373,12 +373,12 @@
           }
         ]
       },
-      "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-      "createdAt": "2026-10-25T17:52:10.573645Z",
+      "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+      "createdAt": "2026-10-30T06:58:08.149291715Z",
       "currentUpperReadAvailable": false,
-      "expiresAt": "2026-10-26T17:52:10.573645Z",
-      "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
-      "projectId": "project_fe208e89-fc00-4bf3-97af-11f28a60f25e",
+      "expiresAt": "2026-10-31T06:58:08.149291715Z",
+      "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
+      "projectId": "project_eb43f359-72f4-4190-94ec-d5ce47009742",
       "purpose": "EXECUTION",
       "state": "REJECTED",
       "steps": [
@@ -395,12 +395,12 @@
           },
           "kind": "RESOLVE_CONTINUATION",
           "message": "The retired continuation writer committed no business result. Request a supplemental Review and a new formal approval for this Coding definition.",
-          "requestId": "confirmation_8f674fddd9e2da7b6a657d5550c55cbf",
+          "requestId": "confirmation_28d81dd165330e7f64970e9c90175138",
           "state": "REJECTED"
         },
         {
           "kind": "START_IMPLEMENTATION",
-          "requestId": "confirmation_cd50e55fb999ccd19dec278c5e935a42",
+          "requestId": "confirmation_7fcfcd55301df18d353337c98715ccea",
           "state": "PENDING"
         }
       ],
@@ -410,16 +410,16 @@
         "consumptionDisposition": "CONSUMED",
         "nextAction": "READ_CURRENT_TARGET",
         "outcome": "CONSUMED",
-        "payloadSHA256": "b53b15286ceee490cbc1035a49b830041caea75c4416c36ccf3e9b34df8181bf",
+        "payloadSHA256": "5b18ee8095215d5fceb05ebb2ccb663f8a2663bf20f6f2b21effd8371c97e419",
         "receiptRequestId": "historical-change-commit",
         "recorded": true,
         "redispatchSameIntent": false,
         "reprepareAllowed": false,
         "request": {
           "action": "REQUEST_CHANGES",
-          "aiSessionId": "ai_session_653dea58ada54197884aaba1ca67c2c4",
-          "contentHash": "fe856e185e0204923e52b1a5c5d1b54932f59235dc0bdce34469295c1e3b6f27",
-          "intentId": "confirm_c693c3fa09abc3f02e3ce12c04fba82a",
+          "aiSessionId": "ai_session_e502768b3560fee718ddcd925cfbd15b",
+          "contentHash": "0a6403b4d53cae1197a9ef0ef61e2b46058dec28fe4941987beb6e9f3657e401",
+          "intentId": "confirm_d912c6b04b91a446f9d6915f45c79827",
           "purpose": "EXECUTION",
           "requestId": "historical-change-commit",
           "selection": {

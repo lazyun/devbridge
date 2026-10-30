@@ -27,6 +27,9 @@ func (s *RunStore) BindRuntimeWorkset(ctx context.Context, value workset.Runtime
 		return run.Run{}, err
 	}
 	defer tx.Rollback()
+	if err = validateDirectAgentPolicyAuthorityTx(ctx, tx, value); err != nil {
+		return run.Run{}, err
+	}
 	if err = validateTaskPermissionAuthorityTx(ctx, tx, value); err != nil {
 		return run.Run{}, err
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agent"
 	"github.com/lazyun/devbridge/internal/agentconversation"
 	"github.com/lazyun/devbridge/internal/agentruntime"
 	"github.com/lazyun/devbridge/internal/executionproposal"
@@ -19,7 +20,7 @@ import (
 )
 
 // RunSession is the live, in-memory ownership record for one managed run. It
-// owns the execution context, cancellation, Codex client and join signal.
+// owns the execution context, cancellation, agent session and join signal.
 // Durable run state remains authoritative after the session is gone.
 type RunSession struct {
 	RunID string
@@ -33,7 +34,7 @@ type RunSession struct {
 	turnTerminal chan struct{}
 
 	mu     sync.RWMutex
-	client CodexSession
+	client agent.Session
 	result run.Run
 	err    error
 }
@@ -55,13 +56,13 @@ func (s *RunSession) Wait(waitCtx context.Context) (run.Run, error) {
 	}
 }
 
-func (s *RunSession) attachClient(client CodexSession) {
+func (s *RunSession) attachClient(client agent.Session) {
 	s.mu.Lock()
 	s.client = client
 	s.mu.Unlock()
 }
 
-func (s *RunSession) detachClient(client CodexSession) {
+func (s *RunSession) detachClient(client agent.Session) {
 	s.mu.Lock()
 	if s.client == client {
 		s.client = nil

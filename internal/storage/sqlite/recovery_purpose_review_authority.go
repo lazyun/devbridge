@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"encoding/json"
+	"github.com/lazyun/devbridge/internal/agentpolicy"
 	"reflect"
 
 	"github.com/lazyun/devbridge/internal/confirmation"
@@ -195,11 +196,14 @@ func readRecoveryReviewPurposeEvidenceTx(ctx context.Context, q definitionQuerie
 	if runtime := intent.Content.RecommendedRuntimeConfig; runtime != nil {
 		model, effort = runtime.Model, runtime.ReasoningEffort
 	}
-	expected := runtimepreparation.Plan{ID: plan.ID, Generation: 1, OwnerKind: runtimepreparation.OwnerReview, OwnerID: successorID, ProjectID: project, FeatureAreaID: areaID, TaskID: p.TaskID, SourceCommand: in.Action, SourceReceiptID: in.IntentID, SelectedVariantID: variantID, ProposalHash: proposalHash, SourceReviewID: p.SourceReviewID, SuccessorReviewID: successorID, RepositoryTargets: workset.CloneTargets(b.RepositoryTargets), PrimaryMemberID: w.PrimaryMemberID, BackendIdentity: w.BackendConfigID, Model: model, ReasoningEffort: effort, RuntimeAdapterIdentity: w.RuntimeAdapterIdentity, TopologyRevision: intent.Content.RecoveryPurpose.PreparedTopologyRevision, DevelopmentContextHash: intent.Content.RecoveryPurpose.PreparedDevelopmentContextHash, DevelopmentRefs: map[string]string{}, ExpectedSourceHEADs: map[string]string{}, WriteScopes: map[string]workset.WriteScope{}, PreparationRequestID: "runtime_prepare_recovery_purpose_" + identity, PreparationPayloadHash: workflowHash(in.Action + "\x00" + in.PayloadHash + "\x00" + variantID), CreatedAt: successor.CreatedAt}
+	expected := runtimepreparation.Plan{ID: plan.ID, Generation: 1, OwnerKind: runtimepreparation.OwnerReview, OwnerID: successorID, ProjectID: project, FeatureAreaID: areaID, TaskID: p.TaskID, SourceCommand: in.Action, SourceReceiptID: in.IntentID, SelectedVariantID: variantID, ProposalHash: proposalHash, SourceReviewID: p.SourceReviewID, SuccessorReviewID: successorID, RepositoryTargets: workset.CloneTargets(b.RepositoryTargets), PrimaryMemberID: w.PrimaryMemberID, AgentID: w.AgentID, AgentConfigFingerprint: w.AgentConfigFingerprint, ExecutionPolicy: w.ExecutionPolicy, BackendIdentity: w.BackendConfigID, Model: model, ReasoningEffort: effort, RuntimeAdapterIdentity: w.RuntimeAdapterIdentity, TopologyRevision: intent.Content.RecoveryPurpose.PreparedTopologyRevision, DevelopmentContextHash: intent.Content.RecoveryPurpose.PreparedDevelopmentContextHash, DevelopmentRefs: map[string]string{}, ExpectedSourceHEADs: map[string]string{}, WriteScopes: map[string]workset.WriteScope{}, PreparationRequestID: "runtime_prepare_recovery_purpose_" + identity, PreparationPayloadHash: workflowHash(in.Action + "\x00" + in.PayloadHash + "\x00" + variantID), CreatedAt: successor.CreatedAt}
 	for _, target := range expected.RepositoryTargets {
 		expected.DevelopmentRefs[target.MemberID] = target.OriginRef
 		expected.ExpectedSourceHEADs[target.MemberID] = target.OriginCommit
 		expected.WriteScopes[target.MemberID] = target.Write
+	}
+	if expected.ExecutionPolicy == agentpolicy.PolicyCooperativeTrustedV1 {
+		expected.RuntimeProtocolIdentity = w.RuntimeProtocolIdentity
 	}
 	expected.ContentHash, err = expected.ComputeContentHash()
 	if err != nil {

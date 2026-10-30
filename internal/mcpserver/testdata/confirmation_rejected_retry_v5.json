@@ -3,7 +3,7 @@
     "capturedBy": "internal/controlapi/confirmation_rejected_retry_lifecycle_test.go",
     "cardCopy": "本次确认未被消费。请修改选择或重新确认。",
     "componentVersion": "PURPOSE_CONFIRMATION_V14",
-    "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+    "mainScriptSHA256": "cd8e62e4dab63ae15b7b7e9470e89aaf6f59bb41553db9a8bd6e739e634d7790",
     "rejectionTrigger": "A Review REVISE decision intent submitted with a Coding Agent backend selection the executor cannot accept; Core refuses in CONFIRMATION_PREFLIGHT before any canonical business command and records the refusal.",
     "schema": "devbridge/confirmation-rejected-retry/v5",
     "singleSourceOfTruth": "Every envelope here is the exact production structuredContent of confirmation_show, confirmation_options_get, confirmation_commit and confirmation_get, captured over the real Streamable HTTP MCP wire, the production middleware stack and the real SQLite store by internal/controlapi/confirmation_rejected_retry_lifecycle_test.go. The Go guard and the Card JavaScript replay load this SAME file. Never hand-edit an envelope; re-capture with DEVBRIDGE_REJECTED_RETRY_FIXTURE_DIR.",
@@ -11,57 +11,57 @@
     "unlockPredicate": "recorded \u0026\u0026 outcome==REJECTED_NOT_CONSUMED \u0026\u0026 businessOutcome==REJECTED_NOT_CONSUMED \u0026\u0026 consumptionDisposition==NOT_CONSUMED \u0026\u0026 consumed==false \u0026\u0026 nextAction==EDIT_SELECTION \u0026\u0026 retryDisposition==EDIT_SELECTION_AND_RESUBMIT \u0026\u0026 intent.state==PENDING \u0026\u0026 receipt identity matches the pending commit"
   },
   "pending": {
-    "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+    "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
     "entry": {
       "display": {
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+        "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
         "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
-        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
         "featureAreaName": "Lifecycle area",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
         "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "projectName": "Upper lifecycle",
         "purpose": "REVIEW",
         "related": {
           "availability": "AVAILABLE",
-          "id": "review_397003ab14273f12a524471b1805d30e",
+          "id": "review_927253ebd4d036f51981764952b0f0fd",
           "kind": "REVIEW",
           "outcome": "SUCCEEDED",
           "reviewRun": {
-            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "id": "run_178ba72e6c7f8dda0780ca6ae14325e0",
             "status": "SUCCEEDED"
           },
           "state": "SUCCEEDED"
         },
         "repositoryCount": 3,
-        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
         "reviewOrdinal": 1,
         "status": "AVAILABLE",
-        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d",
         "taskName": "Lifecycle intent",
         "topologyRevision": 4,
         "version": 1
       },
       "intent": {
         "action": "REVISE",
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
         "canResume": false,
         "content": {
           "action": "REVISE",
-          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
           "purpose": "REVIEW",
           "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
           "review": {
-            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
-            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
-            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
-            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
+            "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
+            "preparedDecisionVersion": "c463080c4a335af5cde25ac9345836312706b6b7534060de9c711a28c2dda80e",
+            "preparedDevelopmentContextHash": "029d12186bd3210a1fec5eca6634370ec9ea590e9113a4dd69a319412d8fe668",
             "preparedTopologyRevision": 4,
             "reviewDepth": "",
             "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
-            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
             "reviewPlan": {
               "initialScope": {
                 "kind": ""
@@ -69,7 +69,7 @@
               "mode": "",
               "selectedModules": null
             },
-            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+            "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d"
           },
           "variants": [
             {
@@ -79,34 +79,34 @@
             }
           ]
         },
-        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+        "createdAt": "2026-10-30T06:58:07.178282593Z",
         "currentUpperReadAvailable": false,
-        "expiresAt": "2026-10-26T17:52:08.872635Z",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "expiresAt": "2026-10-31T06:58:07.178282593Z",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "purpose": "REVIEW",
         "state": "PENDING",
         "steps": [],
         "version": 1
       }
     },
-    "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+    "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
     "meta": {
-      "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+      "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
       "componentVersion": "PURPOSE_CONFIRMATION_V14",
-      "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-      "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
-      "mainScriptSHA256": "ae792ee485ea30b86b66b220f400a1094726b0aa64503553e1b20531885b5325",
+      "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+      "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
+      "mainScriptSHA256": "cd8e62e4dab63ae15b7b7e9470e89aaf6f59bb41553db9a8bd6e739e634d7790",
       "outputTemplate": "ui://devbridge/confirmation/v14",
-      "presentationInstanceId": "07b76874e2bb61f89d8c12e77024d54f29689e5972ae351a6ba4ece2cc0555ae",
+      "presentationInstanceId": "61a2fc6a2f474955c5cb6769240debadaa6327ffcf4214fbe246ff741c5df40b",
       "resourceUri": "ui://devbridge/confirmation/v14",
       "version": 1
     },
     "options": {
       "entry": {
         "options": {
-          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
           "backendInventoryComplete": false,
           "branches": [],
           "conversationModelDefault": {
@@ -116,16 +116,16 @@
           "eligibility": {
             "attemptState": "NOT_ATTEMPTED",
             "available": true,
-            "currentDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
-            "currentGeneration": "ed09a437bff4711bd3e77737557c831ec17e02bd0015bcdb88156c705fb5db12",
+            "currentDecisionVersion": "c463080c4a335af5cde25ac9345836312706b6b7534060de9c711a28c2dda80e",
+            "currentGeneration": "2c259a4d0bd180103e57e7da2fdc1829f5a7488cbeba897a4e49268df33e6c44",
             "currentTopologyRevision": 4,
-            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
-            "preparedGeneration": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+            "preparedDecisionVersion": "c463080c4a335af5cde25ac9345836312706b6b7534060de9c711a28c2dda80e",
+            "preparedGeneration": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
             "preparedTopologyRevision": 4,
             "receiptState": "NOT_OBSERVED",
             "reprepareAllowed": false
           },
-          "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+          "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
           "projectId": "",
           "projects": [],
           "purpose": "REVIEW",
@@ -198,61 +198,61 @@
         }
       }
     },
-    "presentationInstanceId": "07b76874e2bb61f89d8c12e77024d54f29689e5972ae351a6ba4ece2cc0555ae",
+    "presentationInstanceId": "61a2fc6a2f474955c5cb6769240debadaa6327ffcf4214fbe246ff741c5df40b",
     "state": "PENDING",
     "version": 1
   },
   "receiptReadback": {
     "entry": {
       "display": {
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+        "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
         "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
-        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
         "featureAreaName": "Lifecycle area",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
         "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "projectName": "Upper lifecycle",
         "purpose": "REVIEW",
         "related": {
           "availability": "AVAILABLE",
-          "id": "review_397003ab14273f12a524471b1805d30e",
+          "id": "review_927253ebd4d036f51981764952b0f0fd",
           "kind": "REVIEW",
           "outcome": "SUCCEEDED",
           "reviewRun": {
-            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "id": "run_178ba72e6c7f8dda0780ca6ae14325e0",
             "status": "SUCCEEDED"
           },
           "state": "SUCCEEDED"
         },
         "repositoryCount": 3,
-        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
         "reviewOrdinal": 1,
         "status": "AVAILABLE",
-        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d",
         "taskName": "Lifecycle intent",
         "topologyRevision": 4,
         "version": 1
       },
       "intent": {
         "action": "REVISE",
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
         "canResume": false,
         "content": {
           "action": "REVISE",
-          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
           "purpose": "REVIEW",
           "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
           "review": {
-            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
-            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
-            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
-            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
+            "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
+            "preparedDecisionVersion": "c463080c4a335af5cde25ac9345836312706b6b7534060de9c711a28c2dda80e",
+            "preparedDevelopmentContextHash": "029d12186bd3210a1fec5eca6634370ec9ea590e9113a4dd69a319412d8fe668",
             "preparedTopologyRevision": 4,
             "reviewDepth": "",
             "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
-            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
             "reviewPlan": {
               "initialScope": {
                 "kind": ""
@@ -260,7 +260,7 @@
               "mode": "",
               "selectedModules": null
             },
-            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+            "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d"
           },
           "variants": [
             {
@@ -270,12 +270,12 @@
             }
           ]
         },
-        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+        "createdAt": "2026-10-30T06:58:07.178282593Z",
         "currentUpperReadAvailable": false,
-        "expiresAt": "2026-10-26T17:52:08.872635Z",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "expiresAt": "2026-10-31T06:58:07.178282593Z",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "purpose": "REVIEW",
         "state": "PENDING",
         "steps": [],
@@ -293,16 +293,16 @@
           },
           "nextAction": "EDIT_SELECTION",
           "outcome": "REJECTED_NOT_CONSUMED",
-          "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+          "payloadSHA256": "6d13aee038cafb65b46ea4e98ab62620bbf6338ed9008671e5a09381c95ce071",
           "receiptRequestId": "",
           "recorded": true,
           "redispatchSameIntent": false,
           "reprepareAllowed": true,
           "request": {
             "action": "REVISE",
-            "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-            "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-            "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+            "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+            "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+            "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
             "purpose": "REVIEW",
             "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
             "selection": {
@@ -323,32 +323,32 @@
   "rejection": {
     "entry": {
       "display": {
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-        "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+        "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
         "decisionPurpose": "REVIEW_RESULT_RESOLUTION",
-        "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
+        "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
         "featureAreaName": "Lifecycle area",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
         "objectNameSource": "CURRENT_AUTHORIZED_OBJECT",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "projectName": "Upper lifecycle",
         "purpose": "REVIEW",
         "related": {
           "availability": "AVAILABLE",
-          "id": "review_397003ab14273f12a524471b1805d30e",
+          "id": "review_927253ebd4d036f51981764952b0f0fd",
           "kind": "REVIEW",
           "outcome": "SUCCEEDED",
           "reviewRun": {
-            "id": "run_0b714477603a55411a95fe28d93ba4a4",
+            "id": "run_178ba72e6c7f8dda0780ca6ae14325e0",
             "status": "SUCCEEDED"
           },
           "state": "SUCCEEDED"
         },
         "repositoryCount": 3,
-        "reviewId": "review_397003ab14273f12a524471b1805d30e",
+        "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
         "reviewOrdinal": 1,
         "status": "AVAILABLE",
-        "taskId": "task_76412b66612d600e7a4088e5e8a60472",
+        "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d",
         "taskName": "Lifecycle intent",
         "topologyRevision": 4,
         "version": 1
@@ -363,22 +363,22 @@
       },
       "intent": {
         "action": "REVISE",
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
         "canResume": false,
         "content": {
           "action": "REVISE",
-          "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
+          "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
           "purpose": "REVIEW",
           "requestId": "prepare-rejected-retry-testconfirmationrejectednotconsumedleavesthesameintenteditable-1",
           "review": {
-            "decisionId": "REVIEW_APPROVAL:review_397003ab14273f12a524471b1805d30e",
-            "featureAreaId": "feature_area_79f6af10a545ec29ed7152a355537fcc",
-            "preparedDecisionVersion": "ba58adc8b55dae0371965cf4f7e710705bdfce2e435c8bdaf212aceddeac7039",
-            "preparedDevelopmentContextHash": "848cf91db7f52a2dbffa5fd6c5cd60e9470a05f68809daeb05e9e219e4885dd7",
+            "decisionId": "REVIEW_APPROVAL:review_927253ebd4d036f51981764952b0f0fd",
+            "featureAreaId": "feature_area_216351a5faf532eeac8e985cdce881ef",
+            "preparedDecisionVersion": "c463080c4a335af5cde25ac9345836312706b6b7534060de9c711a28c2dda80e",
+            "preparedDevelopmentContextHash": "029d12186bd3210a1fec5eca6634370ec9ea590e9113a4dd69a319412d8fe668",
             "preparedTopologyRevision": 4,
             "reviewDepth": "",
             "reviewFeedback": "Re-review the exact formal result and address its unresolved findings.",
-            "reviewId": "review_397003ab14273f12a524471b1805d30e",
+            "reviewId": "review_927253ebd4d036f51981764952b0f0fd",
             "reviewPlan": {
               "initialScope": {
                 "kind": ""
@@ -386,7 +386,7 @@
               "mode": "",
               "selectedModules": null
             },
-            "taskId": "task_76412b66612d600e7a4088e5e8a60472"
+            "taskId": "task_6edcf0a25687c4842ad04e8583d28a0d"
           },
           "variants": [
             {
@@ -396,12 +396,12 @@
             }
           ]
         },
-        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-        "createdAt": "2026-10-25T17:52:08.872635Z",
+        "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+        "createdAt": "2026-10-30T06:58:07.178282593Z",
         "currentUpperReadAvailable": false,
-        "expiresAt": "2026-10-26T17:52:08.872635Z",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
-        "projectId": "project_432142fc-a1db-463e-bd38-ccebaf1c8cc6",
+        "expiresAt": "2026-10-31T06:58:07.178282593Z",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
+        "projectId": "project_99632917-0d65-47b4-8905-9893a2df3ac7",
         "purpose": "REVIEW",
         "state": "PENDING",
         "steps": [],
@@ -419,16 +419,16 @@
           },
           "nextAction": "EDIT_SELECTION",
           "outcome": "REJECTED_NOT_CONSUMED",
-          "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+          "payloadSHA256": "6d13aee038cafb65b46ea4e98ab62620bbf6338ed9008671e5a09381c95ce071",
           "receiptRequestId": "",
           "recorded": true,
           "redispatchSameIntent": false,
           "reprepareAllowed": true,
           "request": {
             "action": "REVISE",
-            "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-            "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
-            "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+            "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+            "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
+            "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
             "purpose": "REVIEW",
             "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
             "selection": {
@@ -447,13 +447,13 @@
     },
     "facts": {
       "request": {
-        "aiSessionId": "ai_session_99bf2f847c60d2cc40bd62ade285d4a9",
-        "intentId": "confirm_809cd34e865d16b18df3edff9d832a1c",
+        "aiSessionId": "ai_session_2027ccdbc63e393c90f21b3e170577b8",
+        "intentId": "confirm_a1f4228db144a830c025e1b097332c6a",
         "version": 1,
         "purpose": "REVIEW",
         "action": "REVISE",
         "requestId": "rejected-retry-commit-testconfirmationrejectednotconsumedleavesthesameintenteditable-2",
-        "contentHash": "defd55431de370fae6daa8e738a0fae2f046c0a2673150843dccc4a6966bba7c",
+        "contentHash": "7a818b165f685bc521f176b164d1351c6e0a7d0fed25687a7b4274472566c05b",
         "variantId": "revise",
         "selection": {
           "backend": {
@@ -462,7 +462,7 @@
           }
         }
       },
-      "payloadSHA256": "aac8a38168b602509423929274907efc54a340433141d52fe59f0586872eaf31",
+      "payloadSHA256": "6d13aee038cafb65b46ea4e98ab62620bbf6338ed9008671e5a09381c95ce071",
       "outcome": "REJECTED_NOT_CONSUMED",
       "recorded": true,
       "failure": {

@@ -26,7 +26,7 @@ func (s *WorkflowProgressionStore) resolveCurrentNoRunAuthorityTx(ctx context.Co
 	return runtimepreparation.Plan{
 		BackendIdentity: v.BackendIdentity, BackendConfigFingerprint: v.BackendConfigFingerprint,
 		BackendSource: v.BackendSource, BackendKind: v.BackendKind,
-		Model: v.Model, ReasoningEffort: v.ReasoningEffort, CodexFastMode: v.CodexFastMode, ServiceTier: v.ServiceTier,
+		Model: v.Model, ReasoningEffort: v.ReasoningEffort, CodexFastMode: v.CodexFastMode, ServiceTier: v.ServiceTier, AgentID: v.AgentID, AgentConfigFingerprint: v.AgentConfigFingerprint, ExecutionPolicy: v.ExecutionPolicy,
 		RuntimeAdapterIdentity: v.RuntimeAdapterIdentity, RuntimeProtocolIdentity: v.RuntimeProtocolIdentity,
 		AuthoritySnapshotHash: authority.AuthoritySnapshotHash,
 	}, nil
