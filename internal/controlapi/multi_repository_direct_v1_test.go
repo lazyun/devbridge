@@ -13,7 +13,7 @@ import (
 )
 
 func TestMultiRepositoryDirectG8V1FileResultCommitMergeCompatibility(t *testing.T) {
-	f := newUpperLifecycleFixture(t)
+	f := newUpperLifecycleFixtureScoped(t, "data-instance-local")
 	commit := func(in c.PrepareInput) c.Intent {
 		t.Helper()
 		in.AISessionID = f.session
@@ -82,6 +82,14 @@ func TestMultiRepositoryDirectG8V1FileResultCommitMergeCompatibility(t *testing.
 	}
 	if replay, err := f.facade.SubmitFileImplementationResult(f.ctx, resultInput); err != nil || replay.ID != result.ID {
 		t.Fatalf("v1 result replay %v", err)
+	}
+	// Legacy formal results remain readable and use the existing explicit
+	// acceptance operation; do not manufacture a v2 workflow or an Execution.
+	ctx, session := compositionGPTClient(t, f)
+	legacyRead := callUpperMCP(t, ctx, session, "file_implementation_result_get", mcpObject(t, directfile.ImplementationResultReadInput{AISessionID: f.session, TaskID: taskID, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID}))
+	assertNoExecutionAcceptanceProjection(t, legacyRead)
+	if legacyRead["result"].(map[string]any)["id"] != result.ID || legacyRead["workflow"].(map[string]any)["nextAction"].(map[string]any)["code"] != "READ_TASK_EVIDENCE" {
+		t.Fatalf("legacy read was reinterpreted as v2: %+v", legacyRead)
 	}
 	accept := directfile.ImplementationAcceptInput{AISessionID: f.session, TaskID: taskID, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: state.WorkflowID, ResultID: result.ID, RequestID: "v1-accept-files"}
 	accepted, err := f.facade.AcceptFileImplementationResult(f.ctx, accept)

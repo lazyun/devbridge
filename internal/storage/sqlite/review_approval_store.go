@@ -531,8 +531,15 @@ func workflowTaskStateTx(ctx context.Context, q definitionQuerier, projectID, ar
 	case task.PhaseVerifying:
 		g.Set(string(phase), "WAIT_FOR_VERIFICATION", "Wait for verification.")
 	case task.PhaseAcceptancePending:
-		g.DecisionID = decisionresolution.TaskAcceptanceDecisionID(g.ExecutionID)
-		g.Set(string(phase), "RESOLVE_TASK_ACCEPTANCE", "Assess the exact current Execution evidence.")
+		if g.ExecutionID != "" {
+			g.DecisionID = decisionresolution.TaskAcceptanceDecisionID(g.ExecutionID)
+			g.Set(string(phase), "RESOLVE_TASK_ACCEPTANCE", "Assess the exact current Execution evidence.")
+		} else {
+			// A file-only result need not create an Execution. The durable
+			// acceptance phase alone is not an Execution acceptance decision.
+			g.DecisionID = ""
+			g.Set(string(phase), "READ_TASK_EVIDENCE", "Read the exact current Task result and its acceptance requirements; no current Execution is recorded.")
+		}
 	case task.PhaseDelivering:
 		g.Set("TASK_DELIVERING", "RETRY_GIT_FINALIZATION", "Acceptance is durable; observe or retry the exact frozen Git finalization. No new agent work is admitted.")
 	case task.PhaseRecoveryRequired:

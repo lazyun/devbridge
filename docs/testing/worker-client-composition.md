@@ -80,3 +80,8 @@ or authorize deployment, acceptance or merging.
   and unchanged raw durable rows, rather than accepting any transport/schema
   error. Those assertions were corrected and approved before the frozen runs;
   the review also corrected the documented test selector and observation scope.
+
+The subsequent [assistant-authored local MCP acceptance](assistant-authored-local-mcp.md)
+uses actual assistant-authored review and implementation requests instead of these
+deterministic callbacks. It also records the discovered file-only acceptance
+projection defect and its narrowly scoped regression.

@@ -3,7 +3,9 @@ package sqlite
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
+	"github.com/lazyun/devbridge/internal/task"
 	wp "github.com/lazyun/devbridge/internal/workflowprogression"
 )
 
@@ -17,7 +19,7 @@ type runtimeAuthorityState struct {
 
 func progressionActionNeedsIdle(action string) bool {
 	switch action {
-	case "CREATE_TASK", "START_TASK_REVIEW", "START_EXECUTION", "START_VERIFICATION", "RESOLVE_REVIEW_APPROVAL", "RESOLVE_TASK_ACCEPTANCE", "RETRY_GIT_FINALIZATION":
+	case "CREATE_TASK", "START_TASK_REVIEW", "START_EXECUTION", "START_VERIFICATION", "RESOLVE_REVIEW_APPROVAL", "RESOLVE_TASK_ACCEPTANCE", "READ_TASK_EVIDENCE", "READ_DIRECT_FILE_RESULT", "RETRY_GIT_FINALIZATION":
 		return true
 	}
 	return false
@@ -50,6 +52,38 @@ func (s *WorkflowProgressionStore) applyDirectFileGuidance(ctx context.Context, 
 			encoded, _ := json.Marshal(g)
 			g.Generation = workflowHash(string(encoded))
 			return nil
+		}
+	}
+	// Refine only the unblocked no-Execution fallback. Retirement, recovery,
+	// stale-worker and Git-finalization overlays retain their existing priority.
+	// This is read guidance, never an acceptance decision or new file authority.
+	if g.TaskPhase == task.PhaseAcceptancePending && g.ExecutionID == "" && g.TaskID != "" && g.TaskDefinitionRevisionID != "" && g.NextAction.Code == "READ_TASK_EVIDENCE" {
+		var workflowID string
+		if err := q.QueryRowContext(ctx, `SELECT COALESCE((
+ SELECT f.workflow_id FROM tasks t
+ JOIN task_definition_revisions d ON d.id=t.current_definition_revision_id AND d.task_id=t.id
+ JOIN direct_file_task_authorizations f ON f.task_id=t.id AND f.task_definition_revision_id=d.id AND f.project_id=t.project_id AND f.feature_area_id=t.feature_area_id
+ JOIN direct_file_implementation_results r ON r.workflow_id=f.workflow_id AND r.task_id=t.id AND r.revision_id=d.id AND r.project_id=t.project_id AND r.ai_session_id=f.ai_session_id
+ WHERE t.id=? AND t.project_id=? AND t.feature_area_id=? AND d.id=?
+ AND t.status='ACTIVE' AND t.phase='ACCEPTANCE_PENDING' AND COALESCE(t.current_execution_id,'')=''
+ AND json_extract(d.payload_json,'$.version')=2
+ AND json_extract(d.payload_json,'$.workSpec.implementationMode')='DIRECT_FILE'
+ AND json_extract(d.payload_json,'$.verificationSpec.mode')='NONE'
+ AND json_extract(d.payload_json,'$.verificationSpec.waiver.source')='USER_WAIVED'
+ AND f.protocol_version=2 AND f.state='CLOSED'
+ AND json_extract(r.result_json,'$.protocolVersion')=2
+ AND COALESCE(json_extract(r.result_json,'$.executionId'),'')=''
+ AND json_extract(r.result_json,'$.verificationStatus')='NOT_RUN'
+ AND NOT EXISTS(SELECT 1 FROM direct_file_implementation_acceptances a WHERE a.result_id=r.id)
+ ),'')`, g.TaskID, g.ProjectID, g.FeatureAreaID, g.TaskDefinitionRevisionID).Scan(&workflowID); err != nil {
+			return err
+		}
+		if workflowID != "" {
+			g.DecisionID = ""
+			g.Set(string(g.TaskPhase), "READ_DIRECT_FILE_RESULT", fmt.Sprintf("Read file_implementation_result_get for Task %s, revision %s, workflow %s. The recorded DIRECT_FILE result uses an explicit NONE verification waiver; no current Execution is recorded. Result recording is not acceptance; any acceptance requires a separate explicit user decision.", g.TaskID, g.TaskDefinitionRevisionID, workflowID))
+			g.Generation = ""
+			encoded, _ := json.Marshal(g)
+			g.Generation = workflowHash(string(encoded))
 		}
 	}
 	if g.TaskID != "" && g.NextAction.Code == "START_EXECUTION" {

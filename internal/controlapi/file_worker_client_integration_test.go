@@ -572,6 +572,19 @@ func TestFileWorkerClientRealCoreVerificationHandoff(t *testing.T) {
 	if err != nil || exactErr != nil || observed.ResultReceipt == nil || observed.ResultReceipt.ExecutionID != exact.ExecutionID || observed.ResultReceipt.VerificationRunID != exact.VerificationRunID || observed.ResultReceipt.VerificationStatus != exact.VerificationStatus || observed.ResultReceipt.Accepted {
 		t.Fatalf("readback hides real verification %+v exact=%+v errors=%v/%v", observed, exact, err, exactErr)
 	}
+	// A genuine RUN handoff still exposes its actual Execution acceptance.
+	resultEnvelope := callUpperMCP(t, ctx, session, "file_implementation_result_get", mcpObject(t, directfile.ImplementationResultReadInput{AISessionID: f.session, TaskID: f.task, TaskDefinitionRevisionID: current.CurrentDefinitionRevisionID, WorkflowID: req.Claim.WorkflowID}))
+	resultWorkflow := resultEnvelope["workflow"].(map[string]any)
+	pending := resultWorkflow["pendingDecisions"].([]any)
+	if resultWorkflow["nextAction"].(map[string]any)["code"] != "RESOLVE_TASK_ACCEPTANCE" || len(pending) != 1 || pending[0].(map[string]any)["decisionId"] != "TASK_ACCEPTANCE:"+receipt.ExecutionID {
+		t.Fatalf("real Execution result guidance changed: %+v", resultWorkflow)
+	}
+	workspace := callUpperMCP(t, ctx, session, "workspace_get", map[string]any{"aiSessionId": f.session, "featureAreaId": f.area, "taskId": f.task, "include": []string{"TASK"}})
+	workspaceWorkflow := workspace["workflow"].(map[string]any)
+	workspacePending := workspaceWorkflow["pendingDecisions"].([]any)
+	if workspaceWorkflow["nextAction"].(map[string]any)["code"] != "RESOLVE_DECISION" || len(workspacePending) != 1 || workspacePending[0].(map[string]any)["decision"].(map[string]any)["id"] != "TASK_ACCEPTANCE:"+receipt.ExecutionID {
+		t.Fatalf("real Execution workspace decision changed: %+v", workspaceWorkflow)
+	}
 	if wire.count("file_worker_claim") != 1 || wire.count("file_implementation_result_submit") != 1 || callbacks != 1 {
 		t.Fatal("observation retriggered handoff")
 	}
