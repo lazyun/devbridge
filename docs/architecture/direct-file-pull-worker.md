@@ -127,3 +127,8 @@ explicitly authorized; it is not a model-free operation. Event wakeups remain
 hints only. General dot command execution, supported
 Go-to-cloud dispatch, cloud interruption and persistent host continuation remain
 outside this file-based integration.
+
+The host-neutral [single-run file consumer](direct-file-worker-client.md) adds
+exact-target schema preflight, callback-scoped file APIs, an irreversible
+mutation-uncertainty latch and explicit result/verification observation. It does
+not install a live dot host or bypass the separate verification/acceptance gates.
