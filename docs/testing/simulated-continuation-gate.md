@@ -23,6 +23,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --withdraw-arbitration
 ./scripts/test-simulated-continuation.sh --cancel-late-completion
 ./scripts/test-simulated-continuation.sh --process-crash
+./scripts/test-simulated-continuation.sh --continue-process-crash
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -52,9 +53,10 @@ ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
 `--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
-`--withdraw-arbitration`, `--cancel-late-completion` and `--process-crash` select further
+`--withdraw-arbitration`, `--cancel-late-completion`, `--process-crash` and
+`--continue-process-crash` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All eleven scenarios retain the same request, pipeline,
+combines with `--race`. All twelve scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -93,7 +95,10 @@ context and process budgets.
   service wrapper, and actual public caller cancellation. `--process-crash` uses
   a precisely scoped final-journal barrier in a separate Core-hosting process,
   actual parent-issued SIGKILL, and read-only post-death SQL observations before
-  opening another Core. Other scenarios install no storage fault or writer barrier.
+  opening another Core. `--continue-process-crash` uses the same owned-process
+  driver but pauses inside the genuine CONTINUE business transaction after its
+  hold DELETE and before its receipt INSERT, then proves rollback after SIGKILL.
+  Other scenarios install no storage fault or writer barrier.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -838,6 +843,96 @@ exit 0 plus the thirteen receipt cases. These remain scoped functional/race
 results, not a fresh whole-root-suite pass, production-default timeout
 qualification or real-model/native acceptance.
 
+## Uncommitted CONTINUE process-crash scenario
+
+`--continue-process-crash` exercises the other side of the transaction boundary:
+Core dies **after deleting a genuine existing hold, before inserting CONTINUE's
+canonical receipt or committing that business transaction**. This is a real
+SIGKILL of the separate Core-owning process, not the earlier SQL `ABORT` test,
+not caller cancellation and not an ambiguous commit-point experiment.
+
+After the ordinary real implementation/verification/analysis lifecycle, the
+fixture user successfully commits DEFER. Its exact hold (including original
+note and `HeldAt`), canonical receipt/event and consumed completed journal are
+independently frozen before preparing CONTINUE. Preparing the later choice
+changes action ownership but must not change those business facts. The original
+CONTINUE intent/request and current action generation are retained separately.
+
+The shared owned-process driver performs the graceful parent-to-child Core
+handoff, sends that exact CONTINUE once, and kills only its own child at the
+scoped `BEFORE INSERT ON task_hold_receipts` barrier. The predicate binds the
+original actor, task, Execution, revision, durable canonical subrequest and
+`CONFIRMING / UNKNOWN` journal. A synced callback witness records SQLite
+`changes() == 1`, no transaction-local hold, and only the preceding DEFER
+receipt/event. The attempted receipt's payload digest is independently checked
+against the original frozen HoldInput. This proves an actual deleted row inside
+the uncommitted transaction, not a hold that was already absent.
+
+Before another Core can open, read-only SQLite observations must show rollback:
+**the exact old hold is present again**, and all original DEFER business bytes
+are unchanged. There is still exactly one choice receipt/event, neither belongs
+to CONTINUE, and no successor or completion exists. The consumed CONTINUE
+request and unfinished journal survive outside that rolled-back transaction,
+owned by the killed child's real epoch with the original action generation.
+The persistent test trigger must still exist until explicitly removed after
+reopen; no authority or business record is inserted, rewritten or repaired.
+
+A subtle but important difference from the SQL-abort case is asserted rather
+than normalized away: both raw storage and public readback remain **intent
+`CONFIRMING`, step `UNKNOWN`, blank effect, nil failure**. The killed handler
+never returned to persist an overall `UNKNOWN` state or a finalized business
+failure. No canonical receipt proves completed CONTINUE. Submission
+`CONSUMED / COMMITTED` refers only to confirmation consumption, not completed
+business work, and provides no resume, redispatch, reprepare or retry authority.
+Options explicitly expose `COMMIT_OUTCOME_UNKNOWN`; the task action remains
+blocking under the original intent/generation. A competing fresh CONTINUE
+prepare is refused with `TASK_ACTION_PENDING`. The original commit is never
+replayed. Neither reading completed DEFER history nor another cold Core epoch
+can settle the unfinished CONTINUE or erase its surviving hold.
+
+The pre-Open, post-read and subsequent cold snapshots must stay identical.
+Byte-for-byte Agent request/response logs, all original Runs/worksets/analysis,
+worktree bytes/HEADs and unaccepted/uncommitted state are preserved. The parent
+must observe a still-pending caller before killing; actual kernel SIGKILL status,
+a post-kill transport error with nil result, exactly one forwarded commit, the three-event
+trace, and bounded process/client/reader joins remain mandatory. The generic
+driver's scope field labels this in-transaction crash distinctly from the
+post-canonical-commit case. All existing budgets are unchanged.
+
+Evidence is under the `continue-process-crash` prefix: shared `-plan.json`,
+`-child.log`, `-child-events.jsonl`, `-core.jsonl`, `-trace.json`, `-death.json`,
+and `-epochs.json`; `-transaction.json` records the uncommitted witness;
+`-business-before.json` and `-business-after-death.json` preserve the original
+held business facts; `-before-open.json`, `-after-read.json` and `-after-cold.json`
+distinguish durable storage from public projection. The shared driver mechanics
+are reused without replacing either scenario's separate transaction oracle.
+This establishes one precisely known pre-commit crash point, not power-loss
+safety, arbitrary transaction timing, negative-outcome authority, real model
+behavior or native runtime qualification.
+
+On 2026-10-31, the frozen ordinary uncommitted-CONTINUE crash scenario **passed
+252 checks in 22.25 seconds** (`JP17ZT`), and its separate composed `--race`
+invocation **passed 252 checks in 292.50 seconds** (`MqAe3U`), both exit 0 plus
+all thirteen PREPARING-receipt oracle cases. The evidence prefixes are under
+`/workspace/scratch/e4799e9b8e60/devbridge-evidence/devbridge-test-only-continuation.`.
+All fifteen source hashes matched the final source and no race warning appeared.
+Both observed `deletedRows=1 / holds=0 / receipts=1 / events=1` inside the doomed
+transaction; after SIGKILL they preserved the exact original hold and DEFER
+business bytes, zero CONTINUE receipts, and identical unfinished-journal
+snapshots before Open, after public reads, and after another cold epoch.
+
+The extracted shared driver and read-only snapshot helper also passed their
+prior ordinary regressions on those same fifteen hashes: `--process-crash`
+**249 checks / 21.67 seconds** (`awh2ih`) and `--continue-unknown` **238 checks /
+13.98 seconds** (`H7Ymd9`), each exit 0 plus the thirteen receipt cases. These
+regressions preserve the distinction between post-commit crash reconciliation,
+pre-commit process-death rollback, and a returned SQL-abort failure. Root
+`go vet -p 2 ./...`, opt-out/receipt tests, script syntax, duplicate/conflicting
+selector refusal (exit 2) and `git diff --check` also passed. Independent review
+verified the process/transaction oracles and their evidence. No production code,
+model call, merge, deadline increase or unsafe business retry was required.
+The prior aggregate-suite and native/production-latency limitations remain.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -979,7 +1074,8 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal recovery beyond the
 labeled rollback, final-save abort, post-business-commit cancellation and exact
-post-business-commit process-crash cases, unmodeled response-loss/crash points, cross-principal
+post-business-commit process-crash and in-transaction CONTINUE crash cases,
+unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called

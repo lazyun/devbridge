@@ -117,7 +117,7 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if t.Name() != "TestSimulatedContinuationJournalUnknown" && t.Name() != "TestSimulatedContinuationContinueUnknown" && t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
 			notCovered = append(notCovered, "durable intent UNKNOWN after canonical-choice rollback")
 		}
-		if t.Name() != "TestSimulatedContinuationContinueUnknown" && t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
+		if t.Name() != "TestSimulatedContinuationContinueUnknown" && t.Name() != "TestSimulatedContinuationSubmissionWithdraw" && t.Name() != "TestSimulatedContinuationContinueProcessCrash" {
 			notCovered = append(notCovered, "CONTINUE rollback preserving an existing genuine hold")
 		}
 		if t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
@@ -134,6 +134,9 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		}
 		if t.Name() != "TestSimulatedContinuationProcessCrash" {
 			notCovered = append(notCovered, "actual Core process SIGKILL after canonical choice commit before final journal persistence")
+		}
+		if t.Name() != "TestSimulatedContinuationContinueProcessCrash" {
+			notCovered = append(notCovered, "actual Core process SIGKILL inside uncommitted CONTINUE transaction after hold deletion")
 		}
 		if t.Name() != "TestSimulatedContinuationResponseLoss" {
 			notCovered = append(notCovered, "response-loss injection")

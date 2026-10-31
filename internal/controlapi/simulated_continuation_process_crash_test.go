@@ -2,9 +2,9 @@
 
 package controlapi_test
 
-// Kill the separate Core-owning process after its real choice transaction
-// commits, while its final confirmation journal writer is blocked. The parent
-// owns all fixture directories and keeps the original pre-dispatch identities.
+// Kill the separate Core-owning process at an exactly witnessed choice writer
+// boundary. The parent owns all fixture directories and keeps the original
+// pre-dispatch identities. Each scenario defines its own transaction oracle.
 
 import (
 	"bytes"
@@ -44,8 +44,8 @@ const crashBarrierFunction = "devbridge_test_only_process_crash_barrier"
 const crashBarrierTrigger = "devbridge_test_only_process_crash"
 
 type processCrashPlan struct {
-	DataRoot, Evidence, Prefix, TriggerSQL string
-	Request                                c.CommitInput
+	DataRoot, Evidence, Prefix, TriggerSQL, Scope string
+	Request                                       c.CommitInput
 }
 type processCrashEvent struct {
 	Kind       string
@@ -253,7 +253,67 @@ func (s *continuationGate) crashChoice(pending c.Intent, in c.CommitInput, ordin
  AND json_extract(OLD.intent_json,'$.steps[0].requestId')=json_extract(NEW.intent_json,'$.steps[0].requestId')
  AND EXISTS(SELECT 1 FROM task_hold_receipts WHERE actor=%s AND request_id=json_extract(NEW.intent_json,'$.steps[0].requestId') AND task_id=%s AND execution_id=%s AND revision_id=%s AND action=%s)
  BEGIN SELECT %s(NEW.intent_id,NEW.ai_session_id,json_extract(NEW.intent_json,'$.commit.requestId'),json_extract(NEW.intent_json,'$.steps[0].requestId'),json_extract(NEW.intent_json,'$.action'),OLD.intent_json,NEW.intent_json); END`, crashBarrierTrigger, quote(in.IntentID), quote(in.AISessionID), quote(in.Action), quote(in.RequestID), quote(in.RequestID), quote("session:"+in.AISessionID), quote(s.f.task), quote(s.executionID), quote(s.revision), quote(in.Action), crashBarrierFunction)
-	plan := processCrashPlan{DataRoot: s.f.dataRoot, Evidence: s.evidence, Prefix: prefix, TriggerSQL: ddl, Request: in}
+	fault := s.killChoiceCore(in, prefix, ddl, "owned Core SIGKILL after canonical commit, before final journal persistence")
+	paused := fault.Paused
+	// First observation of persisted state occurs BEFORE Core startup/recovery.
+	dsn := (&url.URL{Scheme: "file", Path: filepath.Join(s.f.dataRoot, "state", "devbridge.db"), RawQuery: "mode=ro&_pragma=query_only(1)"}).String()
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	defer db.Close()
+	before := s.journalRecoverySnapshotFromDB(db, in, ordinal)
+	var triggerCount int
+	if err = db.QueryRowContext(s.ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name=?`, crashBarrierTrigger).Scan(&triggerCount); err != nil {
+		s.t.Fatal(err)
+	}
+	s.check(triggerCount == 1 && before.IntentJSON == paused.Witness[5] && before.ReceiptRequest == paused.Witness[3], "pre-Open raw WAL preserves unfinished journal and exact canonical receipt; barrier persisted through crash", before)
+	var attempted c.Intent
+	gateDecode(s.t, json.RawMessage(paused.Witness[6]), &attempted)
+	s.check(attempted.State == "COMPLETED" && len(attempted.Steps) == 1 && attempted.Steps[0].State == "COMPLETED" && attempted.Steps[0].RequestID == before.ReceiptRequest, "attempted final journal differs from durable pre-Open UNKNOWN", attempted)
+	s.save(prefix+"-before-open.json", before)
+	if err = db.Close(); err != nil {
+		s.t.Fatal(err)
+	}
+	reopenedEpoch := s.reopenKilledCore(fault)
+	s.check(reflect.DeepEqual(s.journalRecoverySnapshot(in, ordinal), before), "Core startup leaves original crashed journal, canonical receipt, hold and event unchanged", nil)
+	if _, err = s.f.plane.DB.SQL().ExecContext(s.ctx, "DROP TRIGGER "+crashBarrierTrigger); err != nil {
+		s.t.Fatal(err)
+	}
+	if err = s.f.plane.DB.SQL().QueryRowContext(s.ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name=?`, crashBarrierTrigger).Scan(&triggerCount); err != nil {
+		s.t.Fatal(err)
+	}
+	s.check(triggerCount == 0, "only scoped test barrier removed; no business row repaired", nil)
+	s.install()
+	s.connect()
+	// Recovery identities are the parent's pre-dispatch originals, never an
+	// identity selected from the oracle-only callback or the newest intent.
+	got := s.confirmationRead(pending, in.RequestID)
+	s.checkJournalRecoveredChoice(got, pending, in, before)
+	s.checkCheckpoint(in.Action == "DEFER_TASK", in.Action == "CONTINUE_TASK")
+	after := s.journalRecoverySnapshot(in, ordinal)
+	s.check(reflect.DeepEqual(after, before), "post-crash receipt/options/workspace recovery is read-only with no redispatch", after)
+	for name, want := range fault.AgentLogs {
+		got, err := os.ReadFile(filepath.Join(s.evidence, name))
+		s.check(err == nil && bytes.Equal(got, want), "crash/recovery emits no additional Agent protocol activity: "+name, err)
+	}
+	s.save(prefix+"-after-read.json", after)
+	s.save(prefix+"-epochs.json", []string{fault.PriorEpoch, fault.ChildEpoch, reopenedEpoch})
+	return before
+}
+
+// Shared process mechanics only: the caller supplies an exact test-only SQL
+// barrier and separately verifies whether the real business transaction committed
+// or rolled back. The driver never infers success from process loss.
+type killedChoiceCore struct {
+	Paused                                     processCrashEvent
+	PriorEpoch, ChildEpoch, DisabledExecutable string
+	AgentLogs                                  map[string][]byte
+}
+
+func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope string) killedChoiceCore {
+	s.t.Helper()
+	plan := processCrashPlan{DataRoot: s.f.dataRoot, Evidence: s.evidence, Prefix: prefix, TriggerSQL: ddl, Scope: scope, Request: in}
 	s.save(prefix+"-plan.json", plan)
 	// Capture Agent protocol logs before the handoff: continuation must never
 	// create another Agent request or response in any of the three Core epochs.
@@ -377,7 +437,7 @@ func (s *continuationGate) crashChoice(pending c.Intent, in c.CommitInput, ordin
 		}
 		s.save(prefix+"-trace.json", map[string]any{"events": trace, "processJoined": joined, "clientJoined": call != nil, "pid": cmd.Process.Pid})
 		if call != nil {
-			entry := map[string]any{"actor": "fixture_user", "tool": "confirmation_commit", "input": in, "startedAt": call.StartedAt, "finishedAt": call.FinishedAt, "result": call.Result, "testOnlyFault": "owned Core SIGKILL after canonical commit, before final journal persistence"}
+			entry := map[string]any{"actor": "fixture_user", "tool": "confirmation_commit", "input": in, "startedAt": call.StartedAt, "finishedAt": call.FinishedAt, "result": call.Result, "testOnlyFault": scope}
 			if call.Err != nil {
 				entry["transportError"] = call.Err.Error()
 			}
@@ -427,7 +487,7 @@ func (s *continuationGate) crashChoice(pending c.Intent, in c.CommitInput, ordin
 		results <- arbitrationCall{"confirmation_commit", at, time.Now().UTC(), result, err}
 	}()
 	paused := await("writer_paused", 10*time.Second)
-	s.check(paused.Entries == 1 && len(paused.Witness) == 7 && reflect.DeepEqual(paused.Witness[:3], []string{in.IntentID, in.AISessionID, in.RequestID}) && paused.Witness[4] == in.Action, "owned Core paused at exact original final journal writer", paused)
+	s.check(paused.Entries == 1 && len(paused.Witness) == 7 && reflect.DeepEqual(paused.Witness[:3], []string{in.IntentID, in.AISessionID, in.RequestID}) && paused.Witness[4] == in.Action, "owned Core paused at exact original transaction writer barrier", paused)
 	// The parent neither cancels the client nor asks Core to shut down. This is
 	// the actual fault: SIGKILL bypasses the writer's return and all Core cleanup.
 	select {
@@ -473,57 +533,20 @@ func (s *continuationGate) crashChoice(pending c.Intent, in c.CommitInput, ordin
 		kinds = append(kinds, event.Kind)
 	}
 	s.check(reflect.DeepEqual(kinds, []string{"ready", "service_entry", "writer_paused"}), "witnessed process death has no service return, barrier timeout or graceful helper cleanup", trace)
-	s.save(prefix+"-death.json", map[string]any{"pid": cmd.Process.Pid, "signal": status.Signal().String(), "signaled": status.Signaled(), "killedAt": killedAt, "joinedAt": time.Now().UTC(), "attempts": attempts, "forwarded": forwarded, "bootstrapHandoff": "parent wire and Core gracefully closed before child Open; only child death is the tested crash", "epochs": []string{oldEpoch, ready.Epoch}})
-	// First observation of persisted state occurs BEFORE Core startup/recovery.
-	dsn := (&url.URL{Scheme: "file", Path: filepath.Join(s.f.dataRoot, "state", "devbridge.db"), RawQuery: "mode=ro&_pragma=query_only(1)"}).String()
-	db, err := sql.Open("sqlite", dsn)
+	s.save(prefix+"-death.json", map[string]any{"scope": scope, "pid": cmd.Process.Pid, "signal": status.Signal().String(), "signaled": status.Signaled(), "killedAt": killedAt, "joinedAt": time.Now().UTC(), "attempts": attempts, "forwarded": forwarded, "bootstrapHandoff": "parent wire and Core gracefully closed before child Open; only child death is the tested crash", "epochs": []string{oldEpoch, ready.Epoch}})
+	return killedChoiceCore{Paused: paused, PriorEpoch: oldEpoch, ChildEpoch: ready.Epoch, DisabledExecutable: filepath.Join(home, "native-agent-disabled-does-not-exist"), AgentLogs: agentLogs}
+}
+
+func (s *continuationGate) reopenKilledCore(fault killedChoiceCore) string {
+	s.t.Helper()
+	var err error
+	s.f.plane, err = controlplane.Open(s.f.ctx, controlplane.Config{DataRoot: s.f.dataRoot, Codex: codex.Config{CodexPath: fault.DisabledExecutable}})
 	if err != nil {
 		s.t.Fatal(err)
 	}
-	defer db.Close()
-	before := s.journalRecoverySnapshotFromDB(db, in, ordinal)
-	var triggerCount int
-	if err = db.QueryRowContext(s.ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name=?`, crashBarrierTrigger).Scan(&triggerCount); err != nil {
-		s.t.Fatal(err)
-	}
-	s.check(triggerCount == 1 && before.IntentJSON == paused.Witness[5] && before.ReceiptRequest == paused.Witness[3], "pre-Open raw WAL preserves unfinished journal and exact canonical receipt; barrier persisted through crash", before)
-	var attempted c.Intent
-	gateDecode(s.t, json.RawMessage(paused.Witness[6]), &attempted)
-	s.check(attempted.State == "COMPLETED" && len(attempted.Steps) == 1 && attempted.Steps[0].State == "COMPLETED" && attempted.Steps[0].RequestID == before.ReceiptRequest, "attempted final journal differs from durable pre-Open UNKNOWN", attempted)
-	s.save(prefix+"-before-open.json", before)
-	if err = db.Close(); err != nil {
-		s.t.Fatal(err)
-	}
-	s.f.plane, err = controlplane.Open(s.f.ctx, controlplane.Config{DataRoot: s.f.dataRoot, Codex: codex.Config{CodexPath: filepath.Join(home, "native-agent-disabled-does-not-exist")}})
-	if err != nil {
-		s.t.Fatal(err)
-	}
-	reopenedEpoch := s.f.plane.DB.RuntimeEpoch()
-	s.check(reopenedEpoch != "" && reopenedEpoch != ready.Epoch && reopenedEpoch != oldEpoch, "post-SIGKILL Core obtains new writer lock and distinct epoch", reopenedEpoch)
-	s.check(reflect.DeepEqual(s.journalRecoverySnapshot(in, ordinal), before), "Core startup leaves original crashed journal, canonical receipt, hold and event unchanged", nil)
-	if _, err = s.f.plane.DB.SQL().ExecContext(s.ctx, "DROP TRIGGER "+crashBarrierTrigger); err != nil {
-		s.t.Fatal(err)
-	}
-	if err = s.f.plane.DB.SQL().QueryRowContext(s.ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name=?`, crashBarrierTrigger).Scan(&triggerCount); err != nil {
-		s.t.Fatal(err)
-	}
-	s.check(triggerCount == 0, "only scoped test barrier removed; no business row repaired", nil)
-	s.install()
-	s.connect()
-	// Recovery identities are the parent's pre-dispatch originals, never an
-	// identity selected from the oracle-only callback or the newest intent.
-	got := s.confirmationRead(pending, in.RequestID)
-	s.checkJournalRecoveredChoice(got, pending, in, before)
-	s.checkCheckpoint(in.Action == "DEFER_TASK", in.Action == "CONTINUE_TASK")
-	after := s.journalRecoverySnapshot(in, ordinal)
-	s.check(reflect.DeepEqual(after, before), "post-crash receipt/options/workspace recovery is read-only with no redispatch", after)
-	for name, want := range agentLogs {
-		got, err := os.ReadFile(filepath.Join(s.evidence, name))
-		s.check(err == nil && bytes.Equal(got, want), "crash/recovery emits no additional Agent protocol activity: "+name, err)
-	}
-	s.save(prefix+"-after-read.json", after)
-	s.save(prefix+"-epochs.json", []string{oldEpoch, ready.Epoch, reopenedEpoch})
-	return before
+	epoch := s.f.plane.DB.RuntimeEpoch()
+	s.check(epoch != "" && epoch != fault.ChildEpoch && epoch != fault.PriorEpoch, "post-SIGKILL Core obtains new writer lock and distinct epoch", epoch)
+	return epoch
 }
 
 func (s *continuationGate) exerciseProcessCrash() {

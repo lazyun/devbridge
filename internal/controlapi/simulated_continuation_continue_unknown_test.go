@@ -32,8 +32,14 @@ type continueUnknownBusinessSnapshot struct {
 // Only immutable business facts belong here: preparing the later CONTINUE
 // legitimately changes action ownership, which is separately frozen after fault.
 func (s *continuationGate) continueUnknownBusinessSnapshot(deferred c.Intent, input c.CommitInput) continueUnknownBusinessSnapshot {
+	return s.continueUnknownBusinessSnapshotFromDB(s.f.plane.DB.SQL(), deferred, input)
+}
+
+// The process-crash scenario can inspect exact prior business facts before Core
+// opens another epoch. The supplied handle may be SQLite mode=ro/query_only.
+func (s *continuationGate) continueUnknownBusinessSnapshotFromDB(db *sql.DB, deferred c.Intent, input c.CommitInput) continueUnknownBusinessSnapshot {
 	s.t.Helper()
-	tx, err := s.f.plane.DB.SQL().BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := db.BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		s.t.Fatal(err)
 	}
