@@ -113,7 +113,11 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if completed && !t.Failed() {
 			status = "PASSED"
 		}
-		s.save("report.json", map[string]any{"schemaVersion": 1, "scenario": t.Name(), "status": status, "startedAt": started, "finishedAt": time.Now().UTC(), "checks": s.checks, "trustBoundary": "TEST_ONLY_PROTOCOL_FIXTURE_V1: injected trusted resolver and deterministic Agent, not production native qualification", "bootstrap": "real typed project/session/confirmation/coordinator services; schema-only database template; no seeded business authority", "wire": "production GPT and Local MCP HTTP adapters after initial UPPER Review admission", "requestTimeoutSeconds": continuationRequestTimeout.Seconds(), "pipelineTimeoutSeconds": continuationPipelineTimeout.Seconds(), "postBootstrapTimeoutSeconds": continuationContextTimeout.Seconds(), "notCovered": []string{"real model", "native artifact qualification", "host sandbox enforcement", "unknown journal outcome or response-loss injection", "native conversation successor/resume", "acceptance, commit or merge"}})
+		notCovered := []string{"real model", "native artifact qualification", "host sandbox enforcement", "unknown durable journal outcome", "native conversation successor/resume", "acceptance, commit or merge"}
+		if t.Name() != "TestSimulatedContinuationResponseLoss" {
+			notCovered = append(notCovered, "response-loss injection")
+		}
+		s.save("report.json", map[string]any{"schemaVersion": 1, "scenario": t.Name(), "status": status, "startedAt": started, "finishedAt": time.Now().UTC(), "checks": s.checks, "trustBoundary": "TEST_ONLY_PROTOCOL_FIXTURE_V1: injected trusted resolver and deterministic Agent, not production native qualification", "bootstrap": "real typed project/session/confirmation/coordinator services; schema-only database template; no seeded business authority", "wire": "production GPT and Local MCP HTTP adapters after initial UPPER Review admission", "requestTimeoutSeconds": continuationRequestTimeout.Seconds(), "pipelineTimeoutSeconds": continuationPipelineTimeout.Seconds(), "postBootstrapTimeoutSeconds": continuationContextTimeout.Seconds(), "notCovered": notCovered})
 	}()
 	home := t.TempDir()
 	for _, key := range []string{"HOME", "CODEX_HOME", "XDG_CONFIG_HOME"} {

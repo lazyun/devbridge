@@ -14,6 +14,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh
 ./scripts/test-simulated-continuation.sh --race
 ./scripts/test-simulated-continuation.sh --sequential
+./scripts/test-simulated-continuation.sh --response-loss
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -41,6 +42,9 @@ to the original continuation gate or extend its time budgets. It may be combined
 with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
+`--response-loss` selects another independent lifecycle, mutually exclusive with
+`--sequential` and also combinable with `--race`. All three scenarios retain the
+same request, pipeline, context and process budgets.
 
 ## Exact trust boundary
 
@@ -140,6 +144,56 @@ The exact three-Run inventory, frozen definition, original verification evidence
 all owned worktree bytes/HEADs and unaccepted/uncommitted state are checked
 throughout. These are serial commands and exact replay, not injected response
 loss, native runtime qualification, production-data testing or real-user consent.
+
+## Response-loss readback scenario
+
+The original and sequential scenarios already cover exact replay, stale cards,
+request conflicts and consumed discard. This separate scenario adds the missing
+**post-handler / pre-client response-body loss**, not a second replay-only test:
+
+- After real implementation, verification and indexed analysis, an explicit
+  fixture-user `DEFER_TASK` commit traverses the production HTTP handler exactly
+  once. A dedicated test client drains/closes the real bounded JSON response and
+  validates the matching JSON-RPC ID and exact consumed original request. Only
+  then does its substitute response reader deliver a distinctive transport
+  error, with **zero response-body bytes** to the SDK. Genuine headers remain.
+- The client must receive that exact error and no usable result. Synchronized
+  forwarding counters require exactly one matching business POST, even if an SDK
+  retry were attempted. Unexpected or repeated business calls fail closed before
+  forwarding; protocol initialization/cleanup pass unchanged. `MaxRetries=-1`
+  is retained but is not used as proof of no resend.
+- A deliberately never-submitted request is probed by pure read only. Its
+  `UNKNOWN / recorded=false` result grants neither non-consumption evidence nor
+  retry authority, even though the same intent contains a different consumed
+  request. Exact `confirmation_get` using the **pre-dispatch** original identity
+  and request discovers the actual DEFER receipt and hold, without commit replay.
+- A cold Core reopen preserves that exact receipt. Then explicit fixture-user
+  `CONTINUE_TASK` loses its response in the same way; Core is cold-reopened before
+  its first readback. Only the original receipt establishes consumption and the
+  cleared hold. Re-reading old DEFER history cannot recreate the hold.
+
+Both losses retain `lost-response-<requestId>.json` with the genuine intercepted
+request/response and counters as **oracle-only evidence**, never as recovery
+input. The ordinary `mcp.jsonl` client record contains only the injected error and
+no result. Recovery uses the same real business Session/intent/request, not a new
+Session. The short-lived faulted MCP transport is closed; reads use the ordinary
+GPT transport (reconnected to the same Core data after cold reopen).
+
+The same exact-three-Run, frozen definition/evidence, owned-file/HEAD and
+unaccepted/uncommitted oracles run throughout. No Core outcome is fabricated, no
+business command is retried, and no unknown durable journal record is inserted.
+This establishes recovery from this precise response-stream loss point only,
+not arbitrary crash timing, journal `UNKNOWN` reconciliation, cross-business-
+Session authorization, native conversation resume, or production latency.
+
+On 2026-10-31, the ordinary response-loss script **passed 211 checks in 19.52
+seconds**, and its separate composed `--race` invocation **passed 210 checks in
+307.86 seconds** (both exit 0), plus all 13 PREPARING-receipt oracle cases. All
+six recorded source hashes were unchanged. Each dropped response had exactly
+one forwarded commit, one failed body read and a closed body; no usable commit
+result reached the SDK. Root `go vet -p 2 ./...` also passed. These are scoped
+response-loss results, not a new full-root-suite or production-latency claim; the
+aggregate limitations recorded below remain in force.
 
 ## Instrumentation budget and retained failures
 
@@ -280,7 +334,9 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal UNKNOWN/PENDING,
-actual response-loss injection, hostile runtime behavior, and terminal
-acceptance/delivery are outside this bounded gate. Ordinary exact replay is not
-called response-loss testing. The separate production-binary simulator retains
+unmodeled response-loss/crash points, cross-business-Session authorization,
+hostile runtime behavior, and terminal acceptance/delivery are outside this
+bounded gate. Only the explicit `--response-loss` scenario injects the documented
+post-handler response-stream failure; ordinary exact replay is not called
+response-loss testing. The separate production-binary simulator retains
 its own explicit NONE/NOT_RUN waiver boundaries and previous limitations.

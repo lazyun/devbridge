@@ -8,11 +8,12 @@ hash_cmd=(sha256sum)
 if ! command -v sha256sum >/dev/null 2>&1; then hash_cmd=(shasum -a 256); fi
 build_flags=()
 scenario=Gate
-usage() { echo "Usage: $0 [--race] [--sequential]" >&2; exit 2; }
+usage() { echo "Usage: $0 [--race] [--sequential | --response-loss]" >&2; exit 2; }
 while (($#)); do
   case "$1" in
     --race) ((${#build_flags[@]} == 0)) || usage; build_flags=(-race) ;;
     --sequential) [[ "$scenario" == Gate ]] || usage; scenario=SequentialAnomalies ;;
+    --response-loss) [[ "$scenario" == Gate ]] || usage; scenario=ResponseLoss ;;
     *) usage ;;
   esac
   shift
@@ -28,6 +29,7 @@ git status --short > "$root/source-status.txt"
 git diff --binary > "$root/tracked-source-diff.patch"
 go version > "$root/go-version.txt"
 "${hash_cmd[@]}" internal/controlapi/simulated_continuation_gate_test.go \
+  internal/controlapi/simulated_continuation_response_loss_test.go \
   internal/controlapi/protocol_platform_fixture_test.go \
   internal/controlapi/multi_repository_coding_admission_test.go \
   internal/controlapi/multi_repository_upper_lifecycle_test.go \
