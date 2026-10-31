@@ -8,7 +8,7 @@ hash_cmd=(sha256sum)
 if ! command -v sha256sum >/dev/null 2>&1; then hash_cmd=(shasum -a 256); fi
 build_flags=()
 scenario=Gate
-usage() { echo "Usage: $0 [--race] [--sequential | --response-loss | --cross-session | --journal-unknown | --journal-recovery | --continue-unknown | --submission-withdraw | --withdraw-arbitration | --cancel-late-completion | --process-crash | --continue-process-crash | --crash-submission-withdraw | --consumption-process-crash]" >&2; exit 2; }
+usage() { echo "Usage: $0 [--race] [--sequential | --response-loss | --cross-session | --journal-unknown | --journal-recovery | --continue-unknown | --submission-withdraw | --withdraw-arbitration | --cancel-late-completion | --process-crash | --continue-process-crash | --crash-submission-withdraw | --consumption-process-crash | --discard-process-crash]" >&2; exit 2; }
 while (($#)); do
   case "$1" in
     --race) ((${#build_flags[@]} == 0)) || usage; build_flags=(-race) ;;
@@ -25,6 +25,7 @@ while (($#)); do
     --continue-process-crash) [[ "$scenario" == Gate ]] || usage; scenario=ContinueProcessCrash ;;
     --crash-submission-withdraw) [[ "$scenario" == Gate ]] || usage; scenario=CrashSubmissionWithdraw ;;
     --consumption-process-crash) [[ "$scenario" == Gate ]] || usage; scenario=ConsumptionProcessCrash ;;
+    --discard-process-crash) [[ "$scenario" == Gate ]] || usage; scenario=DiscardProcessCrash ;;
     *) usage ;;
   esac
   shift
@@ -52,6 +53,7 @@ go version > "$root/go-version.txt"
   internal/controlapi/simulated_continuation_continue_process_crash_test.go \
   internal/controlapi/simulated_continuation_crash_submission_withdraw_test.go \
   internal/controlapi/simulated_continuation_consumption_process_crash_test.go \
+  internal/controlapi/simulated_continuation_discard_process_crash_test.go \
   internal/controlapi/protocol_platform_fixture_test.go \
   internal/controlapi/multi_repository_coding_admission_test.go \
   internal/controlapi/multi_repository_upper_lifecycle_test.go \

@@ -144,6 +144,9 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if t.Name() != "TestSimulatedContinuationConsumptionProcessCrash" {
 			notCovered = append(notCovered, "actual Core SIGKILL inside consumption transaction before durable admission, followed by explicit withdrawal fence")
 		}
+		if t.Name() != "TestSimulatedContinuationDiscardProcessCrash" {
+			notCovered = append(notCovered, "actual Core SIGKILL after staged pending retirement and action-head release before transaction commit")
+		}
 		if t.Name() != "TestSimulatedContinuationResponseLoss" {
 			notCovered = append(notCovered, "response-loss injection")
 		}

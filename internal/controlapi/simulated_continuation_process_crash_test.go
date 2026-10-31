@@ -45,8 +45,63 @@ const crashBarrierTrigger = "devbridge_test_only_process_crash"
 
 type processCrashPlan struct {
 	DataRoot, Evidence, Prefix, TriggerSQL, Scope string
-	Request                                       c.CommitInput
+	Request                                       *c.CommitInput `json:",omitempty"`
+	Discard                                       *c.ReadInput   `json:",omitempty"`
+	DiscardAction                                 string         `json:",omitempty"`
 }
+
+// Exactly one typed public command; discard has no invented submission requestId.
+func (p processCrashPlan) command() (tool string, input any, identity []string, action string, err error) {
+	if p.Request != nil && p.Discard == nil && p.DiscardAction == "" {
+		in := *p.Request
+		return "confirmation_commit", in, []string{in.IntentID, in.AISessionID, in.RequestID}, in.Action, nil
+	}
+	if p.Request == nil && p.Discard != nil && p.Discard.RequestID == "" && p.DiscardAction == "CONTINUE_TASK" {
+		in := *p.Discard
+		return "confirmation_discard", in, []string{in.IntentID, in.AISessionID, ""}, p.DiscardAction, nil
+	}
+	return "", nil, nil, "", errors.New("process-crash fixture requires exactly one supported typed command")
+}
+
+func TestSimulatedContinuationProcessCrashCommand(t *testing.T) {
+	commit := c.CommitInput{AISessionID: "session", IntentID: "intent", RequestID: "commit", Action: "CONTINUE_TASK"}
+	read := c.ReadInput{AISessionID: "session", IntentID: "intent"}
+	withRequest := read
+	withRequest.RequestID = "not-a-discard-identity"
+	for _, tc := range []struct {
+		name string
+		plan processCrashPlan
+		tool string
+	}{
+		{"commit", processCrashPlan{Request: &commit}, "confirmation_commit"},
+		{"discard", processCrashPlan{Discard: &read, DiscardAction: "CONTINUE_TASK"}, "confirmation_discard"},
+		{"missing", processCrashPlan{}, ""},
+		{"both", processCrashPlan{Request: &commit, Discard: &read, DiscardAction: "CONTINUE_TASK"}, ""},
+		{"discard_request", processCrashPlan{Discard: &withRequest, DiscardAction: "CONTINUE_TASK"}, ""},
+		{"unsupported_discard_action", processCrashPlan{Discard: &read, DiscardAction: "DEFER_TASK"}, ""},
+		{"commit_with_discard_action", processCrashPlan{Request: &commit, DiscardAction: "CONTINUE_TASK"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tool, input, identity, action, err := tc.plan.command()
+			if tc.tool == "" {
+				if err == nil {
+					t.Fatal("invalid command admitted")
+				}
+				return
+			}
+			request := ""
+			var expected any = read
+			if tc.tool == "confirmation_commit" {
+				request = commit.RequestID
+				expected = commit
+			}
+			if err != nil || tool != tc.tool || !reflect.DeepEqual(input, expected) || !reflect.DeepEqual(identity, []string{"intent", "session", request}) || action != "CONTINUE_TASK" {
+				t.Fatalf("wrong typed command: %s %#v %v %s %v", tool, input, identity, action, err)
+			}
+		})
+	}
+}
+
 type processCrashEvent struct {
 	Kind       string
 	PID        int
@@ -58,21 +113,35 @@ type processCrashEvent struct {
 }
 type processCrashService struct {
 	*mcpserver.StaticService
-	expected c.CommitInput
-	entries  atomic.Int32
-	emit     func(processCrashEvent) error
+	expectedTool, expectedHash string
+	entries                    atomic.Int32
+	emit                       func(processCrashEvent) error
 }
 
-func (s *processCrashService) CommitConfirmation(ctx context.Context, in c.CommitInput) (c.Intent, error) {
+func (s *processCrashService) enter(tool string, in any) error {
 	entries := s.entries.Add(1)
 	if err := s.emit(processCrashEvent{Kind: "service_entry", Entries: entries}); err != nil {
+		return err
+	}
+	if entries != 1 || tool != s.expectedTool || c.ValueHash(in) != s.expectedHash {
+		return errors.New("process-crash fixture refused unexpected or repeated command")
+	}
+	return nil
+}
+func (s *processCrashService) CommitConfirmation(ctx context.Context, in c.CommitInput) (c.Intent, error) {
+	if err := s.enter("confirmation_commit", in); err != nil {
 		return c.Intent{}, err
 	}
-	if entries != 1 || c.ValueHash(in) != c.ValueHash(s.expected) {
-		return c.Intent{}, errors.New("process-crash fixture refused unexpected or repeated commit")
-	}
 	out, err := s.StaticService.CommitConfirmation(ctx, in)
-	_ = s.emit(processCrashEvent{Kind: "service_return", Entries: entries})
+	_ = s.emit(processCrashEvent{Kind: "service_return", Entries: s.entries.Load()})
+	return out, err
+}
+func (s *processCrashService) DiscardConfirmationProposal(ctx context.Context, in c.ReadInput) (c.Intent, error) {
+	if err := s.enter("confirmation_discard", in); err != nil {
+		return c.Intent{}, err
+	}
+	out, err := s.StaticService.DiscardConfirmationProposal(ctx, in)
+	_ = s.emit(processCrashEvent{Kind: "service_return", Entries: s.entries.Load()})
 	return out, err
 }
 
@@ -92,6 +161,10 @@ func TestSimulatedContinuationProcessCrashHelper(t *testing.T) {
 	if err == nil {
 		err = json.Unmarshal(raw, &plan)
 	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	tool, input, _, _, err := plan.command()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +250,7 @@ func TestSimulatedContinuationProcessCrashHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service = &processCrashService{StaticService: base, expected: plan.Request, emit: emit}
+	service = &processCrashService{StaticService: base, expectedTool: tool, expectedHash: c.ValueHash(input), emit: emit}
 	server, err := mcpserver.New(mcpserver.Config{RequestTimeout: continuationRequestTimeout}, service)
 	if err != nil {
 		t.Fatal(err)
@@ -197,10 +270,10 @@ func TestSimulatedContinuationProcessCrashHelper(t *testing.T) {
 // Observation and duplicate protection only; do not replace response bytes,
 // cancel the request, or turn process death into a fabricated business result.
 type processCrashTransport struct {
-	base                http.RoundTripper
-	expected            c.CommitInput
-	mu                  sync.Mutex
-	attempts, forwarded int
+	base                       http.RoundTripper
+	expectedTool, expectedHash string
+	mu                         sync.Mutex
+	attempts, forwarded        int
 }
 
 func (p *processCrashTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -227,7 +300,7 @@ func (p *processCrashTransport) RoundTrip(req *http.Request) (*http.Response, er
 		p.mu.Lock()
 		p.attempts++
 		hash, err := c.InputHash(rpc.Params.Arguments)
-		exact := rpc.Params.Name == "confirmation_commit" && err == nil && hash == c.ValueHash(p.expected) && p.forwarded == 0
+		exact := rpc.Params.Name == p.expectedTool && err == nil && hash == p.expectedHash && p.forwarded == 0
 		if exact {
 			p.forwarded++
 		}
@@ -313,7 +386,16 @@ type killedChoiceCore struct {
 
 func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope string) killedChoiceCore {
 	s.t.Helper()
-	plan := processCrashPlan{DataRoot: s.f.dataRoot, Evidence: s.evidence, Prefix: prefix, TriggerSQL: ddl, Scope: scope, Request: in}
+	return s.killCoreCommand(processCrashPlan{DataRoot: s.f.dataRoot, Evidence: s.evidence, Prefix: prefix, TriggerSQL: ddl, Scope: scope, Request: &in})
+}
+
+func (s *continuationGate) killCoreCommand(plan processCrashPlan) killedChoiceCore {
+	s.t.Helper()
+	tool, input, identity, action, err := plan.command()
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	prefix, scope := plan.Prefix, plan.Scope
 	s.save(prefix+"-plan.json", plan)
 	// Capture Agent protocol logs before the handoff: continuation must never
 	// create another Agent request or response in any of the three Core epochs.
@@ -437,7 +519,7 @@ func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope s
 		}
 		s.save(prefix+"-trace.json", map[string]any{"events": trace, "processJoined": joined, "clientJoined": call != nil, "pid": cmd.Process.Pid})
 		if call != nil {
-			entry := map[string]any{"actor": "fixture_user", "tool": "confirmation_commit", "input": in, "startedAt": call.StartedAt, "finishedAt": call.FinishedAt, "result": call.Result, "testOnlyFault": scope}
+			entry := map[string]any{"actor": "fixture_user", "tool": tool, "input": input, "startedAt": call.StartedAt, "finishedAt": call.FinishedAt, "result": call.Result, "testOnlyFault": scope}
 			if call.Err != nil {
 				entry["transportError"] = call.Err.Error()
 			}
@@ -474,7 +556,7 @@ func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope s
 	}
 	ready := await("ready", 45*time.Second)
 	s.check(ready.Epoch != "" && ready.Epoch != oldEpoch, "separate Core process owns same durable data in a distinct epoch", ready)
-	transport := &processCrashTransport{base: &http.Transport{}, expected: in}
+	transport := &processCrashTransport{base: &http.Transport{}, expectedTool: tool, expectedHash: c.ValueHash(input)}
 	defer transport.base.(*http.Transport).CloseIdleConnections()
 	client, err = sdkmcp.NewClient(&sdkmcp.Implementation{Name: "fixture-user-process-crash", Version: "test-only"}, nil).Connect(callCtx, &sdkmcp.StreamableClientTransport{Endpoint: ready.URL, HTTPClient: &http.Client{Transport: transport}, DisableStandaloneSSE: true, MaxRetries: -1}, nil)
 	if err != nil {
@@ -483,11 +565,11 @@ func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope s
 	callStarted = true
 	go func() {
 		at := time.Now().UTC()
-		result, err := client.CallTool(callCtx, &sdkmcp.CallToolParams{Name: "confirmation_commit", Arguments: in})
-		results <- arbitrationCall{"confirmation_commit", at, time.Now().UTC(), result, err}
+		result, err := client.CallTool(callCtx, &sdkmcp.CallToolParams{Name: tool, Arguments: input})
+		results <- arbitrationCall{tool, at, time.Now().UTC(), result, err}
 	}()
 	paused := await("writer_paused", 10*time.Second)
-	s.check(paused.Entries == 1 && len(paused.Witness) == 7 && reflect.DeepEqual(paused.Witness[:3], []string{in.IntentID, in.AISessionID, in.RequestID}) && paused.Witness[4] == in.Action, "owned Core paused at exact original transaction writer barrier", paused)
+	s.check(paused.Entries == 1 && len(paused.Witness) == 7 && reflect.DeepEqual(paused.Witness[:3], identity) && paused.Witness[4] == action, "owned Core paused at exact original transaction writer barrier", paused)
 	// The parent neither cancels the client nor asks Core to shut down. This is
 	// the actual fault: SIGKILL bypasses the writer's return and all Core cleanup.
 	select {
@@ -521,7 +603,7 @@ func (s *continuationGate) killChoiceCore(in c.CommitInput, prefix, ddl, scope s
 	transport.mu.Lock()
 	attempts, forwarded := transport.attempts, transport.forwarded
 	transport.mu.Unlock()
-	s.check(attempts == 1 && forwarded == 1, "exact original commit forwarded once with no retry after process loss", []int{attempts, forwarded})
+	s.check(attempts == 1 && forwarded == 1, "exact original command forwarded once with no retry after process loss", []int{attempts, forwarded})
 	s.check(drainEvents(), "crash event stream closed within bounded drain", nil)
 	select {
 	case <-readerDone:

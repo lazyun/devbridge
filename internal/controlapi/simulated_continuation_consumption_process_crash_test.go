@@ -69,7 +69,7 @@ func (s *continuationGate) checkCrashedUnobserved(got, pending c.Intent, in c.Co
 
 // Compare every prior raw Session receipt, not just the count of this intent's
 // requests. Then independently validate the single new immutable request row.
-func (s *continuationGate) checkOneAddedCrashReceipt(before, after string, in c.CommitInput, outcome string) {
+func (s *continuationGate) checkOneAddedCrashReceipt(before, after string, in c.CommitInput, outcome, failureCode, failureStage string) {
 	s.t.Helper()
 	var prior, current []json.RawMessage
 	gateDecode(s.t, json.RawMessage(before), &prior)
@@ -91,10 +91,10 @@ func (s *continuationGate) checkOneAddedCrashReceipt(before, after string, in c.
 		gateDecode(s.t, json.RawMessage(row.Request), &request)
 		s.check(row.Session == in.AISessionID && row.IntentID == in.IntentID && row.Submitted == c.ValueHash(in) && reflect.DeepEqual(request, in) && row.Outcome == outcome, "added durable receipt retains exact originally submitted identity and outcome", row)
 		if outcome == "REJECTED_NOT_CONSUMED" {
-			s.check(row.Failure != nil, "withdrawal has durable negative authority rather than absence", row)
+			s.check(row.Failure != nil, "rejected request has durable negative authority rather than absence", row)
 			var failure c.Failure
 			gateDecode(s.t, json.RawMessage(*row.Failure), &failure)
-			s.check(failure.Code == "CONFIRMATION_SUBMISSION_WITHDRAWN" && failure.Stage == "SUBMISSION_WITHDRAWAL", "withdrawal receipt retains unnormalized durable failure origin", failure)
+			s.check(failure.Code == failureCode && failure.Stage == failureStage, "rejection receipt retains exact unnormalized durable failure origin", failure)
 		} else {
 			s.check(row.Failure == nil, "fresh consumed receipt has no withdrawal failure", row)
 		}
@@ -197,7 +197,7 @@ func (s *continuationGate) exerciseConsumptionProcessCrash() {
 	withdrawn := s.withdrawSubmission(in)
 	s.checkWithdrawnPending(withdrawn, pending, in)
 	sealed := s.consumptionCrashSnapshot(s.f.plane.DB.SQL(), in)
-	s.checkOneAddedCrashReceipt(baseline.Ledger.RequestsJSON, sealed.Ledger.RequestsJSON, in, "REJECTED_NOT_CONSUMED")
+	s.checkOneAddedCrashReceipt(baseline.Ledger.RequestsJSON, sealed.Ledger.RequestsJSON, in, "REJECTED_NOT_CONSUMED", "CONFIRMATION_SUBMISSION_WITHDRAWN", "SUBMISSION_WITHDRAWAL")
 	expected := baseline
 	expected.Ledger.RequestsJSON = sealed.Ledger.RequestsJSON
 	expected.Ledger.IntentRequests = 1
@@ -217,7 +217,7 @@ func (s *continuationGate) exerciseConsumptionProcessCrash() {
 	s.check(continued.State == "COMPLETED" && continued.Commit != nil && continued.Commit.RequestID == fresh.RequestID && continued.Submission != nil && continued.Submission.Outcome == c.Consumed, "new explicitly confirmed request, not crashed request, genuinely completes CONTINUE", continued)
 	s.checkCheckpoint(false, true)
 	completed := s.consumptionCrashSnapshot(s.f.plane.DB.SQL(), in)
-	s.checkOneAddedCrashReceipt(sealed.Ledger.RequestsJSON, completed.Ledger.RequestsJSON, fresh, "CONSUMED")
+	s.checkOneAddedCrashReceipt(sealed.Ledger.RequestsJSON, completed.Ledger.RequestsJSON, fresh, "CONSUMED", "", "")
 	s.check(completed.Ledger.IntentRequests == 2, "exactly one withdrawal rejection and one new consumed request survive", completed)
 	s.cold()
 	history := s.confirmationRead(pending, in.RequestID)
