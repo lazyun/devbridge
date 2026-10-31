@@ -30,8 +30,12 @@ type submissionWithdrawalSnapshot struct {
 // Read-only snapshot includes every request in this fixture Session, not only
 // the latest one: a withdrawal cannot erase or replace older receipt history.
 func (s *continuationGate) submissionWithdrawalSnapshot(in c.CommitInput) submissionWithdrawalSnapshot {
+	return s.submissionWithdrawalSnapshotFromDB(s.f.plane.DB.SQL(), in)
+}
+
+func (s *continuationGate) submissionWithdrawalSnapshotFromDB(db *sql.DB, in c.CommitInput) submissionWithdrawalSnapshot {
 	s.t.Helper()
-	tx, err := s.f.plane.DB.SQL().BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := db.BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		s.t.Fatal(err)
 	}
