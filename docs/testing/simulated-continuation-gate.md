@@ -16,6 +16,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --sequential
 ./scripts/test-simulated-continuation.sh --response-loss
 ./scripts/test-simulated-continuation.sh --cross-session
+./scripts/test-simulated-continuation.sh --journal-unknown
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -43,9 +44,10 @@ to the original continuation gate or extend its time budgets. It may be combined
 with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
-`--response-loss` and `--cross-session` select further independent lifecycles.
-All scenario selectors are mutually exclusive and each combines with `--race`.
-All four scenarios retain the same request, pipeline, context and process budgets.
+`--response-loss`, `--cross-session` and `--journal-unknown` select further
+independent lifecycles. All scenario selectors are mutually exclusive and each
+combines with `--race`. All five scenarios retain the same request, pipeline,
+context and process budgets.
 
 ## Exact trust boundary
 
@@ -68,8 +70,13 @@ All four scenarios retain the same request, pipeline, context and process budget
   services admit the initial UPPER Review. The shared database template contains
   schema only. Bootstrap is not claimed to have crossed HTTP. Afterwards all
   business writes use the real MCP HTTP adapters; a few read-only Core API
-  observations and supervisor joins support independent oracles. No raw SQL
-  mutation, result injection, fake approval row or fault trigger is used.
+  observations and supervisor joins support independent oracles. No business row
+  is seeded or manually rewritten, and no result or approval is fabricated. Only
+  `--response-loss` substitutes a client response-body reader after the real
+  handler completes. Only `--journal-unknown` installs the precisely scoped,
+  test-only SQL abort trigger described below in its disposable database; it
+  also uses read-only SQL snapshots to distinguish persisted journal state from
+  public readback. Other scenarios install no storage fault.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -250,6 +257,71 @@ identity and checks the real `BIND_PROJECT` step plus public current-Session
 readback. These were test-only corrections, not Core changes or retrospective
 passes. The full-root-suite limitations below are not cleared by this scenario.
 
+## Durable journal UNKNOWN after an injected rollback
+
+`--journal-unknown` uses the same real admitted implementation/verification Runs
+and indexed analysis, then explicitly confirms one exact DEFER choice. The
+controlled fault is **inside the real business transaction**, not a fabricated
+outcome or lost HTTP response:
+
+- A regular SQLite `BEFORE INSERT` trigger on `task_hold_receipts` applies only to
+  the exact actor, Task, Execution, revision and DEFER action. Its subrequest ID
+  must match the original confirmation's **already durable** UNKNOWN step while
+  that confirmation is CONFIRMING with the original outer request ID. It cannot
+  apply before Core journals its own admitted command.
+- The trigger calls a test-only non-deterministic scalar that records those six
+  primitive identities in a synchronized in-memory witness and returns a unique
+  injected error. The callback never touches the DB, writes business records or
+  calls test assertions. This proves the exact fault point despite the public
+  adapter's sanitized error. A TEMP trigger would not reliably reach a pooled
+  writer and is deliberately not used.
+- Core's normal transaction had attempted the hold before inserting its receipt;
+  the injected error causes the normal rollback. Core itself then records the
+  confirmation and step as `UNKNOWN`. Read-only SQL independently requires zero
+  holds/choice receipts and exactly one consumed original confirmation request.
+  The fixture never inserts an UNKNOWN row, edits authority, or disables a fence.
+- The trigger is removed and its absence checked before recovery observations.
+  Exact original receipt reads, options, consumed discard and a refused competing
+  prepare must not invent a successful effect, new intent or retry authority.
+  Cold Core reopen preserves the raw journal/request bytes, original Task action
+  owner/generation, zero canonical choice receipts and `canResume=false`.
+  No `confirmation_commit` is retried with either the original or a new request.
+
+The two outcome layers are intentionally distinct: submission
+`outcome=CONSUMED` / `businessOutcome=COMMITTED` freezes the original request;
+**intent/step UNKNOWN does not mean the DEFER succeeded**. Lack of a hold is not
+non-consumption evidence and cannot authorize another business command. The
+original real Runs, verification evidence, file bytes/HEADs and unaccepted Task
+remain unchanged. The test ends with the unresolved confirmation still fenced.
+
+`journal-fault.json` retains the exact trigger SQL/error marker;
+`journal-fault-witness.json` must contain exactly one matching invocation.
+`journal-unknown-before.json` and `journal-unknown-after.json` contain independent
+read-only persisted snapshots and must be identical across the observations and
+cold reopen. The public calls remain in `mcp.jsonl`.
+
+The scalar is registered once, before the isolated scenario opens fixture DB
+connections, and only when this opt-in test runs. Per-test witness tokens are
+cleaned up. Run this scenario through the dedicated script, not as part of an
+arbitrary concurrent opt-in test selection: modernc function registration is
+process-global and affects future connections. No production fault switch or
+runtime behavior is added.
+
+This establishes **conservative durable UNKNOWN after a known injected rollback**.
+It does not simulate an uncertain transaction commit, process crash, disk loss,
+or positive recovery from a surviving canonical choice receipt. Those remain
+separate cases, not inferred successes.
+
+On 2026-10-31, the ordinary journal-UNKNOWN script **passed 175 checks in
+12.54 seconds**, and its separate composed `--race` invocation **passed 174
+checks in 244.34 seconds** (both exit 0), plus all 13 PREPARING-receipt cases.
+An independent isolated rerun passed 175 checks in 12.44 seconds. All eight
+source hashes were unchanged, each run observed exactly one matching fault
+witness, and the raw before/after snapshots were identical. Root `go vet -p 2
+./...` passed. The intentional UNKNOWN is still unresolved at test end: these
+passes qualify conservative fencing, not successful DEFER completion or general
+recovery. The aggregate-suite limitations below remain in force.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -389,10 +461,10 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 ## Still not covered
 
 Real models/native artifacts, production host sandboxing, native conversation
-resume/successor, interrupted execution recovery, journal UNKNOWN/PENDING,
-unmodeled response-loss/crash points, cross-principal authentication and other
-cross-Session workflows, hostile runtime behavior, and terminal acceptance/delivery are outside this
-bounded gate. Only the explicit `--response-loss` scenario injects the documented
+resume/successor, interrupted execution recovery, journal recovery beyond the
+labeled rollback case, unmodeled response-loss/crash points, cross-principal
+authentication and other cross-Session workflows, hostile runtime behavior,
+and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called
 response-loss testing. The separate production-binary simulator retains
 its own explicit NONE/NOT_RUN waiver boundaries and previous limitations.

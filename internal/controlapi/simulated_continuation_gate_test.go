@@ -113,7 +113,10 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if completed && !t.Failed() {
 			status = "PASSED"
 		}
-		notCovered := []string{"real model", "native artifact qualification", "host sandbox enforcement", "unknown durable journal outcome", "native conversation successor/resume", "acceptance, commit or merge"}
+		notCovered := []string{"real model", "native artifact qualification", "host sandbox enforcement", "arbitrary crash or uncertain transaction-commit recovery", "native conversation successor/resume", "acceptance, commit or merge"}
+		if t.Name() != "TestSimulatedContinuationJournalUnknown" {
+			notCovered = append(notCovered, "durable journal UNKNOWN")
+		}
 		if t.Name() != "TestSimulatedContinuationResponseLoss" {
 			notCovered = append(notCovered, "response-loss injection")
 		}
