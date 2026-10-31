@@ -18,6 +18,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --cross-session
 ./scripts/test-simulated-continuation.sh --journal-unknown
 ./scripts/test-simulated-continuation.sh --journal-recovery
+./scripts/test-simulated-continuation.sh --continue-unknown
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -45,10 +46,10 @@ to the original continuation gate or extend its time budgets. It may be combined
 with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
-`--response-loss`, `--cross-session`, `--journal-unknown` and
-`--journal-recovery` select further
+`--response-loss`, `--cross-session`, `--journal-unknown`,
+`--journal-recovery` and `--continue-unknown` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All six scenarios retain the same request, pipeline,
+combines with `--race`. All seven scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -75,7 +76,8 @@ context and process budgets.
   observations and supervisor joins support independent oracles. No business row
   is seeded or manually rewritten, and no result or approval is fabricated. Only
   `--response-loss` substitutes a client response-body reader after the real
-  handler completes. Only `--journal-unknown` and `--journal-recovery` install
+  handler completes. Only `--journal-unknown`, `--journal-recovery` and
+  `--continue-unknown` install
   the precisely scoped, test-only SQL abort triggers described below in their
   disposable databases; they also use read-only SQL snapshots to distinguish
   persisted journal state from public readback. Other scenarios install no
@@ -394,6 +396,61 @@ prevented compilation, and an overly strict options oracle rejected the existing
 completed-intent fresh-prepare hint. The corrected oracle distinguishes that
 hint from the consumed request's immutable no-retry receipt; no Core behavior
 was changed, and neither prior process is relabeled as a pass.
+
+## CONTINUE rollback preserves the genuine existing hold
+
+`--continue-unknown` starts with an actual successful fixture-user DEFER through
+the public MCP handler. Its hold, canonical receipt and choice event are real
+Core outputs, not seeded preconditions. Before preparing CONTINUE, a read-only
+snapshot freezes the exact hold (including note and original `heldAt`), every
+canonical receipt/event field, and the completed DEFER journal/request.
+
+The subsequent explicit CONTINUE commit uses the same precisely scoped
+canonical-receipt abort seam as `--journal-unknown`, now bound to the original
+CONTINUE action and subrequest. An additional trigger predicate requires the
+hold to be **absent inside that business transaction** before the witness fires.
+Together with the existing baseline this proves the real hold deletion occurred;
+the normal transaction rollback, not a replacement hold insert, must restore it.
+The witness records exactly one original CONTINUE fault. The earlier successful
+DEFER never enters the installed fault.
+
+Core conservatively records the consumed CONTINUE intent and step as `UNKNOWN`.
+The trigger is dropped before recovery observations. Warm/cold original receipt
+reads, options, consumed discard and a refused fresh DEFER must preserve:
+
+- exactly the original hold, DEFER canonical receipt/event and completed DEFER
+  request, byte-for-byte, with **no CONTINUE canonical receipt**;
+- the original consumed CONTINUE request, raw UNKNOWN journal and blocking Task
+  action owner/generation, with no resume, redispatch or reprepare authority;
+- held Task state, `continuationConfirmed=false`, no completion authority, the
+  same three real Runs, unchanged evidence/files/HEADs and unaccepted/uncommitted
+  engineering state.
+
+Reading successful DEFER history cannot settle the failed CONTINUE. No DEFER or
+CONTINUE commit is replayed, and no new choice commit follows UNKNOWN.
+`continue-unknown-business-before.json` and `-after.json` contain the original
+business snapshots; `continue-unknown-journal-before.json` and `-after.json`
+separately cover the post-fault UNKNOWN journal and action ownership. Both pairs
+must match. `journal-fault.json` and `journal-fault-witness.json` retain the exact
+scoped fault and its single invocation, alongside the public `mcp.jsonl`.
+
+This is a known injected CONTINUE rollback with a surviving genuine hold, not an
+uncertain commit, crash or successfully recovered CONTINUE. The same opt-in,
+isolated-script scalar-registration restriction applies. Production code and
+all timing budgets remain unchanged. The original DEFER-rollback scenario keeps
+its separate zero-hold/zero-receipt assertions after the narrow helper extraction.
+
+On 2026-10-31, the ordinary CONTINUE-UNKNOWN script **passed 238 checks in
+14.46 seconds**, and the separate composed `--race` invocation **passed 237
+checks in 288.05 seconds** (both exit 0), plus all 13 PREPARING-receipt cases.
+All ten source hashes remained unchanged. Each run preserved both exact raw
+snapshot pairs and witnessed one original CONTINUE fault. The refactored original
+DEFER-UNKNOWN scenario separately passed 175 checks in 12.47 seconds, retaining
+its zero-hold/zero-canonical-receipt result. Independent isolated reruns passed
+238 checks in 13.93 seconds (CONTINUE) and 175 in 13.25 seconds (DEFER), with
+unchanged hashes and exact snapshot pairs. Independent review and root
+`go vet -p 2 ./...` passed. These are bounded safety passes; CONTINUE remains
+unresolved and the earlier aggregate-suite limits still apply.
 
 ## Instrumentation budget and retained failures
 
