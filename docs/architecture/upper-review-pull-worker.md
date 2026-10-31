@@ -105,3 +105,7 @@ Actual file implementation is available separately through the already-approved
 DIRECT_FILE authority and its [pull worker](direct-file-pull-worker.md). That
 channel uses Core file operations and does not turn this Review protocol into
 a generic Agent runtime or grant command execution.
+
+The host-neutral [single-run consumer](upper-review-worker-client.md) supplies
+schema preflight, bound reads and explicit uncertain readback for injected trusted
+callbacks. It still does not install a live dot transport, model or host runtime.
