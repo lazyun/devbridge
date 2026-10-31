@@ -20,6 +20,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --journal-recovery
 ./scripts/test-simulated-continuation.sh --continue-unknown
 ./scripts/test-simulated-continuation.sh --submission-withdraw
+./scripts/test-simulated-continuation.sh --withdraw-arbitration
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -48,9 +49,10 @@ with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
-`--journal-recovery`, `--continue-unknown` and `--submission-withdraw` select further
+`--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
+`--withdraw-arbitration` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All eight scenarios retain the same request, pipeline,
+combines with `--race`. All nine scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -81,8 +83,10 @@ context and process budgets.
   `--continue-unknown` and `--submission-withdraw` install
   the precisely scoped, test-only SQL abort triggers described below in their
   disposable databases; they also use read-only SQL snapshots to distinguish
-  persisted journal state from public readback. Other scenarios install no
-  storage fault.
+  persisted journal state from public readback. `--withdraw-arbitration` instead
+  installs a non-failing exact writer barrier plus an observation-only service
+  wrapper that forwards unchanged to the same real Facade. It also uses read-only
+  SQL snapshots. Other scenarios install no storage fault or writer barrier.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -518,6 +522,75 @@ internal `SUBMISSION_WITHDRAWAL` stage on the public wire. The corrected test
 asserts the existing normalized public stage **and** the untouched durable
 internal stage. This is a test-only correction, not a Core fix or a relabeled
 pass for that earlier process.
+
+## Overlapping withdrawal/commit arbitration with known first writers
+
+`--withdraw-arbitration` adds actual overlapping public calls; this property is
+established by recorded barriers and invocation intervals, **not inferred from
+running the race detector**. Both participants use separately initialized MCP
+clients and the same production HTTP adapter/real Core:
+
+- A thin test-only wrapper observes the exact `CommitConfirmation` and
+  `WithdrawConfirmationSubmission` service entries, then synchronously forwards
+  each input unchanged to the production service and same Facade. It supplies no
+  result or authority. Counters require exactly one entry per operation.
+- An ordinary SQLite `BEFORE INSERT` trigger matches the exact original
+  Session/intent/request, submitted payload digest, DEFER action, expected ledger
+  outcome and still-pending intent. Its scalar records the actual proposed ledger
+  fields and pauses the **first real writer inside its transaction**. It performs
+  no DB re-entry or business-row writes and returns success only after release.
+- With that writer paused, the second public request is launched. Only its exact
+  service entry releases the rendezvous. The synchronized trace must show
+  `first entry < writer paused < competing entry < release < writer return`;
+  actual client-call intervals must overlap. This does **not** prove the second
+  transaction reached its writer lock before release.
+- Withdrawal-first records one genuine `REJECTED_NOT_CONSUMED` receipt. The
+  overlapping original commit is refused, and there are zero holds, canonical
+  choice receipts or events. Both callers and subsequent cold readback retain
+  that exact winner; no callback manufactures a rejection.
+- Only after this proven fence, a **new explicitly confirmed request ID** on the
+  still-pending intent exercises commit-first. Core consumes it once and records
+  one real DEFER hold/receipt/event. The competing withdrawal must read the same
+  consumed request, possibly while its business step is still CONFIRMING; it is
+  not required to predict immediate final completion. After both calls join,
+  exact reads establish COMPLETED and preserve it cold. The prior rejected
+  request still returns its own immutable history, not the newer consumption.
+
+No consumed/UNKNOWN commit is retried. Both known first-writer orders are covered
+in one bounded lifecycle, with original three-Run inventory, evidence/files/HEADs
+and unaccepted/uncommitted engineering state unchanged. This is serialization at
+this exact request-admission seam, not all possible schedules or second-lock
+arrival proof.
+
+`arbitration-plan-<ORDER>.json` records the exact trigger, inputs and scope;
+`arbitration-trace-<ORDER>.json` records sequence, counters, actual ledger witness
+and timeout status. `arbitration-joins-<ORDER>.json` requires two started/two
+joined calls. Results are appended once per call to `mcp.jsonl` by the main test
+thread, retaining original start/finish times and phase labels; trace and any
+joined responses are also retained on failure. The `arbitration-withdrawal-*`
+and `arbitration-consumed-*` before/after snapshot pairs must remain identical
+across their cold-read windows.
+
+Each rendezvous is bounded at two seconds, the scalar at three seconds, each
+pair's caller context at ten seconds, and cleanup join at twelve seconds. A
+barrier/rendezvous timeout fails the scenario and is **never** counted as a legal
+winner or silently retried. Cleanup releases before cancellation/join, then drops
+the trigger and closes clients/server before Core reopen. Existing shared test
+and production deadlines are not increased. The same isolated-script global
+scalar-registration restriction applies; no production hook is added.
+
+On 2026-10-31, the ordinary arbitration script **passed 197 checks in 15.98
+seconds**, and its composed `--race` invocation **passed 196 checks in 283.16
+seconds** (both exit 0), plus all 13 PREPARING-receipt cases. Twelve source hashes
+were unchanged. Each phase recorded exactly five ordered barrier events, one
+entry per operation, one matching ledger witness and two joined calls; both cold
+snapshot pairs matched across three real Core epochs. No barrier timeout or
+race-detector warning occurred. An independent isolated rerun passed 197 checks
+in 16.69 seconds, and independent review verified both order traces and exact
+winning receipts. Root `go vet -p 2 ./...` passed. An earlier authoring command
+failed to compile because the SDK Connect options argument was
+missing; it remains failed evidence, not a passed gate. These scoped results do
+not clear the full-root-suite limits below.
 
 ## Instrumentation budget and retained failures
 
