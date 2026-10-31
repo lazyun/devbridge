@@ -15,6 +15,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --race
 ./scripts/test-simulated-continuation.sh --sequential
 ./scripts/test-simulated-continuation.sh --response-loss
+./scripts/test-simulated-continuation.sh --cross-session
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -42,9 +43,9 @@ to the original continuation gate or extend its time budgets. It may be combined
 with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
-`--response-loss` selects another independent lifecycle, mutually exclusive with
-`--sequential` and also combinable with `--race`. All three scenarios retain the
-same request, pipeline, context and process budgets.
+`--response-loss` and `--cross-session` select further independent lifecycles.
+All scenario selectors are mutually exclusive and each combines with `--race`.
+All four scenarios retain the same request, pipeline, context and process budgets.
 
 ## Exact trust boundary
 
@@ -195,6 +196,60 @@ result reached the SDK. Root `go vet -p 2 ./...` also passed. These are scoped
 response-loss results, not a new full-root-suite or production-latency claim; the
 aggregate limitations recorded below remain in force.
 
+## Cross-business-Session identity scenario
+
+`--cross-session` creates a distinct real Session B via public `session_initialize`,
+then uses `project_setup_prepare` and explicit fixture-user confirmation to bind
+B to the existing fixture Project. Both A and B have the same established
+`data-instance-local` caller scope. A successful B `workspace_get` proves it can
+read the same Project/Task/Execution; foreign-intent refusal is not merely an
+invalid/unbound-Session or wrong-Project rejection.
+
+The scenario then checks the Session component of exact confirmation identity:
+
+- B cannot read options/receipt, discard, or commit A's pending DEFER intent.
+  Each probe must return the exact typed `CONFIRMATION_FACTS_UNAVAILABLE` failure
+  with no intent, options, display or submission. A retains its original pending
+  content, action ownership/generation and unchanged verification checkpoint.
+- B's legitimate project-binding commit deliberately uses the same request-ID
+  string as A's later legitimate DEFER. Both independently succeed and retain
+  distinct payload digests/receipts in their own Sessions. Foreign probes use
+  both the copied original request ID and a fresh B request ID; refusal must not
+  depend only on a request-key collision.
+- After A consumes DEFER, the same foreign probes cannot borrow its historical
+  receipt or undo the hold. A also cannot read B's project-binding intent. Each
+  Session can still read its own original receipt with unchanged contents.
+- A cold Core reopen preserves the two exact persisted Session IDs and Project
+  bindings. B again reads the shared Task but still cannot operate A's DEFER.
+  A's explicit CONTINUE then clears the hold; foreign probes cannot change that
+  receipt, Task action generation, files, or the exact three-Run inventory.
+
+There is no Session-ID swap in shared fixture state, implicit Session creation,
+raw SQL write, storage fault or response loss. Beyond the shared genuine
+execution/verification pipeline, these probes add no engineering acceptance or
+Run. Session B is created and bound through genuine public business handlers; the
+frozen initially-unbound project confirmation is distinct from its successful
+`BIND_PROJECT` effect and current Session binding. `cross-sessions.json` records
+the exact test identities and the same-caller claim boundary.
+
+This is **Session-scoped intent identity isolation**, not a claim that a known
+Session ID authenticates a different principal. Cross-principal/token-boundary
+security, alternate adapters, journal UNKNOWN reconciliation and arbitrary
+crashes remain outside this scenario.
+
+On 2026-10-31, the ordinary cross-Session script **passed 320 checks in 16.31
+seconds**, and the separate composed `--race` invocation **passed 319 checks in
+299.28 seconds** (both exit 0), plus all 13 PREPARING-receipt cases. Both runs
+recorded all 21 foreign-identity refusals as failure-only envelopes, and all
+seven source hashes remained unchanged. Root `go vet -p 2 ./...` passed.
+
+Two earlier authoring attempts remain failed evidence: a fixture DTO field did
+not compile, and a subsequent run incorrectly expected the immutable prepared
+ProjectID to change after binding. The corrected oracle preserves that frozen
+identity and checks the real `BIND_PROJECT` step plus public current-Session
+readback. These were test-only corrections, not Core changes or retrospective
+passes. The full-root-suite limitations below are not cleared by this scenario.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -301,9 +356,10 @@ exact canceled SQL statement in the earlier composed failure remains untraced.
 
 The separate sequential composed-race script then **passed** 306 checks in
 335.92 seconds (exit 0), plus all 13 receipt-oracle cases, with unchanged source
-and dependency hashes. Check counts can differ by one when start admission
-returns the explicitly qualified `PREPARING` reservation instead of synchronous
-success; the business lifecycle and assertions are unchanged.
+and dependency hashes. Check counts can vary with bounded workspace-read
+polling; the business lifecycle and required invariants are unchanged. Start
+admission remains limited to success or the explicitly qualified `PREPARING`
+reservation, not a generic allowance for failed or unknown outcomes.
 
 Additional validation passed: the focused storage fencing/atomic finalization/
 restart suite, repeated canceled-reader regression under single- and multi-P
@@ -334,8 +390,8 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal UNKNOWN/PENDING,
-unmodeled response-loss/crash points, cross-business-Session authorization,
-hostile runtime behavior, and terminal acceptance/delivery are outside this
+unmodeled response-loss/crash points, cross-principal authentication and other
+cross-Session workflows, hostile runtime behavior, and terminal acceptance/delivery are outside this
 bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called
 response-loss testing. The separate production-binary simulator retains
