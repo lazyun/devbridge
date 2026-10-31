@@ -187,3 +187,7 @@ retained as preliminary evidence only, not final frozen-source qualification.
 - Independent source review approved the corrected client and its limitations.
   These focused checks do not clear the previously documented full-root-suite
   native/socket fixture limitations or qualify the live connector/dot host.
+
+The separate [composition gate](../testing/worker-client-composition.md) follows
+this consumer's actual report through explicit simulated-user approval/start to
+the DIRECT_FILE consumer, using production GPT HTTP and the same isolated Core.

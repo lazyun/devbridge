@@ -193,3 +193,7 @@ check in its retained log. It is incomplete evidence, not a race pass.
   links and whitespace checks passed. Independent source/document review found
   no blocking issue; these focused results do not qualify a live dot connector,
   production native artifact, full root test suite, acceptance or merge.
+
+The separate [composition gate](../testing/worker-client-composition.md) consumes
+an actual UPPER client's proposal through independent approval/start boundaries
+and this file consumer over production GPT HTTP; it is not live dot acceptance.
