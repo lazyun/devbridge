@@ -19,6 +19,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --journal-unknown
 ./scripts/test-simulated-continuation.sh --journal-recovery
 ./scripts/test-simulated-continuation.sh --continue-unknown
+./scripts/test-simulated-continuation.sh --submission-withdraw
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -47,9 +48,9 @@ with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
-`--journal-recovery` and `--continue-unknown` select further
+`--journal-recovery`, `--continue-unknown` and `--submission-withdraw` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All seven scenarios retain the same request, pipeline,
+combines with `--race`. All eight scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -76,8 +77,8 @@ context and process budgets.
   observations and supervisor joins support independent oracles. No business row
   is seeded or manually rewritten, and no result or approval is fabricated. Only
   `--response-loss` substitutes a client response-body reader after the real
-  handler completes. Only `--journal-unknown`, `--journal-recovery` and
-  `--continue-unknown` install
+  handler completes. Only `--journal-unknown`, `--journal-recovery`,
+  `--continue-unknown` and `--submission-withdraw` install
   the precisely scoped, test-only SQL abort triggers described below in their
   disposable databases; they also use read-only SQL snapshots to distinguish
   persisted journal state from public readback. Other scenarios install no
@@ -451,6 +452,72 @@ its zero-hold/zero-canonical-receipt result. Independent isolated reruns passed
 unchanged hashes and exact snapshot pairs. Independent review and root
 `go vet -p 2 ./...` passed. These are bounded safety passes; CONTINUE remains
 unresolved and the earlier aggregate-suite limits still apply.
+
+## Explicit submission withdrawal: unobserved versus consumed
+
+`--submission-withdraw` exercises the production public
+`confirmation_submission_withdraw` entry, not a locally inferred cancellation:
+
+1. Prepare a real DEFER choice after the genuine verification checkpoint. Read
+   one deliberately **never-submitted** request identity. It must remain
+   `UNKNOWN / recorded=false`, without non-consumption proof or retry authority;
+   independent SQL snapshots require that this read wrote no ledger or effect.
+   This is a controlled missing-request probe, **not transport response loss**.
+2. An explicit fixture-user withdrawal supplies the complete original payload.
+   Core records `REJECTED_NOT_CONSUMED / CONFIRMATION_SUBMISSION_WITHDRAWN` for
+   that exact request/hash while the intent remains pending and effect-free.
+   Its durable failure stage is `SUBMISSION_WITHDRAWAL`; the existing closed
+   public vocabulary projects `RECEIPT_READBACK` without rewriting that row.
+   Repeated withdrawal is idempotent. After cold reopen, an intentional late
+   original commit is refused by that already-proven durable fence. A
+   schema-valid changed payload under the same request conflicts. Raw intent,
+   every Session request row, hold/receipt/event set and owner remain unchanged.
+3. Only after that durable rejection, a separate explicit fixture-user
+   confirmation with a **new request ID** consumes the original pending DEFER.
+   Withdrawal of this genuinely consumed request must preserve its completed
+   receipt and actual hold. Withdrawal of the older rejected request returns
+   its own immutable non-consumption facts, not the newer consumed receipt;
+   its current retry projection closes because the intent is now consumed.
+4. Prepare CONTINUE and inject the already-qualified exact receipt-insert abort,
+   after its transaction deletes the genuine hold. The rollback preserves the
+   original hold, and Core records the consumed CONTINUE as UNKNOWN. With the
+   trigger removed, warm and cold withdrawals of that exact consumed request
+   must only read back UNKNOWN: no new rejection, retry permission, owner release,
+   continuation confirmation or hold deletion. No consumed/UNKNOWN commit is
+   ever replayed.
+
+`submission-withdraw-sealed-before.json` and `-after.json` prove the durable
+withdrawal fence survives the late-copy/conflict probes. The `-consumed.json`
+snapshot records both distinct DEFER request receipts. The
+`submission-withdraw-unknown-before.json` and `-after.json` pair must remain
+identical across warm/cold withdrawal; it includes every request in the fixture
+Session so older receipt history cannot silently disappear. Exact original
+DEFER business rows are additionally checked with the full existing hold/
+canonical-receipt/event oracle. The fault SQL and single original CONTINUE
+witness use the same `journal-fault.json` / `journal-fault-witness.json` artifacts.
+
+The same three real Runs, frozen evidence, file bytes/HEADs and unaccepted/
+uncommitted state remain intact. No business authority or conflict metadata is
+seeded. This is **sequential withdrawal/fencing**, not a competing withdrawal-
+versus-commit race, real response loss or legacy-conflict migration qualification.
+The `--race` option instruments this same serial scenario. Its shared test scalar
+retains the isolated-script registration restriction; production behavior and
+all timing budgets are unchanged.
+
+On 2026-10-31, the ordinary withdrawal script **passed 225 checks in 14.89
+seconds**, and the separate composed `--race` invocation **passed 224 checks in
+267.17 seconds** (both exit 0), plus all 13 PREPARING-receipt cases. All eleven
+source hashes were unchanged, both raw snapshot pairs matched, and one original
+CONTINUE fault was witnessed across three real Core epochs. Root
+`go vet -p 2 ./...` passed. An independent isolated rerun passed 225 checks in
+15.04 seconds; independent review verified the wire order, immutable receipts
+and stage distinction. These results do not clear the aggregate limits below.
+
+An earlier authoring run remains failed: its oracle incorrectly expected the
+internal `SUBMISSION_WITHDRAWAL` stage on the public wire. The corrected test
+asserts the existing normalized public stage **and** the untouched durable
+internal stage. This is a test-only correction, not a Core fix or a relabeled
+pass for that earlier process.
 
 ## Instrumentation budget and retained failures
 

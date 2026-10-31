@@ -114,11 +114,14 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 			status = "PASSED"
 		}
 		notCovered := []string{"real model", "native artifact qualification", "host sandbox enforcement", "arbitrary crash or uncertain transaction-commit recovery", "native conversation successor/resume", "acceptance, commit or merge"}
-		if t.Name() != "TestSimulatedContinuationJournalUnknown" && t.Name() != "TestSimulatedContinuationContinueUnknown" {
+		if t.Name() != "TestSimulatedContinuationJournalUnknown" && t.Name() != "TestSimulatedContinuationContinueUnknown" && t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
 			notCovered = append(notCovered, "durable intent UNKNOWN after canonical-choice rollback")
 		}
-		if t.Name() != "TestSimulatedContinuationContinueUnknown" {
+		if t.Name() != "TestSimulatedContinuationContinueUnknown" && t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
 			notCovered = append(notCovered, "CONTINUE rollback preserving an existing genuine hold")
+		}
+		if t.Name() != "TestSimulatedContinuationSubmissionWithdraw" {
+			notCovered = append(notCovered, "explicit withdrawal of unobserved versus consumed submissions")
 		}
 		if t.Name() != "TestSimulatedContinuationJournalRecovery" {
 			notCovered = append(notCovered, "canonical choice recovery after final journal-save failure")

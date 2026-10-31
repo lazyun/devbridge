@@ -8,7 +8,7 @@ hash_cmd=(sha256sum)
 if ! command -v sha256sum >/dev/null 2>&1; then hash_cmd=(shasum -a 256); fi
 build_flags=()
 scenario=Gate
-usage() { echo "Usage: $0 [--race] [--sequential | --response-loss | --cross-session | --journal-unknown | --journal-recovery | --continue-unknown]" >&2; exit 2; }
+usage() { echo "Usage: $0 [--race] [--sequential | --response-loss | --cross-session | --journal-unknown | --journal-recovery | --continue-unknown | --submission-withdraw]" >&2; exit 2; }
 while (($#)); do
   case "$1" in
     --race) ((${#build_flags[@]} == 0)) || usage; build_flags=(-race) ;;
@@ -18,6 +18,7 @@ while (($#)); do
     --journal-unknown) [[ "$scenario" == Gate ]] || usage; scenario=JournalUnknown ;;
     --journal-recovery) [[ "$scenario" == Gate ]] || usage; scenario=JournalRecovery ;;
     --continue-unknown) [[ "$scenario" == Gate ]] || usage; scenario=ContinueUnknown ;;
+    --submission-withdraw) [[ "$scenario" == Gate ]] || usage; scenario=SubmissionWithdraw ;;
     *) usage ;;
   esac
   shift
@@ -38,6 +39,7 @@ go version > "$root/go-version.txt"
   internal/controlapi/simulated_continuation_journal_unknown_test.go \
   internal/controlapi/simulated_continuation_journal_recovery_test.go \
   internal/controlapi/simulated_continuation_continue_unknown_test.go \
+  internal/controlapi/simulated_continuation_submission_withdraw_test.go \
   internal/controlapi/protocol_platform_fixture_test.go \
   internal/controlapi/multi_repository_coding_admission_test.go \
   internal/controlapi/multi_repository_upper_lifecycle_test.go \
