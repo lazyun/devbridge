@@ -212,6 +212,60 @@ Neither correction changes Core authority or converts an earlier failed process
 into a pass. Sequential race coverage and production-default-deadline latency
 are not established by this ordinary pass.
 
+### Canceled SQLite reader regression
+
+The storage investigation reduced the failure signature to a model-free driver
+test: cancel a wide `SELECT`, return its connection to `database/sql`, commit a
+write on a sibling connection, then begin a fresh transaction and execute its
+first `UPDATE ... RETURNING`. With the old `modernc.org/sqlite` v1.39.1, this
+failed with error 517 even though the new transaction had performed no preceding
+application read. The retained regression test is
+`TestSQLiteCanceledReadReleasesPooledSnapshot`; it varies cancellation timing,
+so it is a bounded stress test rather than a deterministic scheduling claim.
+
+The driver could drop a returned reader during cancellation without closing it,
+retaining a stale WAL snapshot. The [upstream cancellation fix](https://gitlab.com/cznic/sqlite/-/merge_requests/81)
+closes that reader before returning the context error. Version v1.40.1 contains
+the fix and is now pinned; no busy-timeout increase, business-command retry,
+fencing relaxation or invented completion is part of the repair.
+
+The exact repository regression failed on an explicit v1.39.1 modfile at
+iteration 2 with error 517 and successful rollback. On v1.40.1 it passed ten
+times (1,000 fresh writer acquisitions). A separate minimal stress comparison
+also completed 3,000 pinned-connection and 500 pooled-connection iterations on
+v1.40.1 without subsequent writer errors. This establishes the driver defect and
+its repair independently; composed workflow and aggregate suite results must
+still be reported separately, rather than inferred from the narrow regression.
+
+With v1.40.1, the original composed-race script subsequently **passed** all 434
+checks in 405.82 seconds (exit 0), including both real terminal Runs, indexed
+analysis, DEFER/CONTINUE and both cold reopens. The receipt oracle's 13 cases
+also passed; source and dependency hashes remained unchanged. This qualifies
+that bounded run, not the former failed runs, all possible concurrency schedules,
+or production-default handler latency. It supports the storage repair while the
+exact canceled SQL statement in the earlier composed failure remains untraced.
+
+The separate sequential composed-race script then **passed** 306 checks in
+335.92 seconds (exit 0), plus all 13 receipt-oracle cases, with unchanged source
+and dependency hashes. Check counts can differ by one when start admission
+returns the explicitly qualified `PREPARING` reservation instead of synchronous
+success; the business lifecycle and assertions are unchanged.
+
+Additional validation passed: the focused storage fencing/atomic finalization/
+restart suite, repeated canceled-reader regression under single- and multi-P
+invocations (including `-race`), root `go vet ./...`, Desktop `go test ./...` and
+`go vet ./...` after a real frontend build, and JavaScript tests (621 passed,
+four skipped). The regression explicitly provisions and restores at least two
+scheduler Ps so that a single-P caller still exercises concurrent cancellation;
+it does not skip the coverage assertion. Independent final review approved the
+revised test and minimal dependency change.
+
+The root `go test ./...` attempt is **not green**: this execution environment
+refuses local Unix-socket creation, so the existing App Server socket fixtures
+fail with `socket: operation not permitted`. No test was skipped or sandbox
+restriction bypassed to conceal that limit. Those aggregate failures remain
+separate from the passed model-free continuation gates.
+
 ## Still not covered
 
 Real models/native artifacts, production host sandboxing, native conversation
