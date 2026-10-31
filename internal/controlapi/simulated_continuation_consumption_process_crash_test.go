@@ -103,6 +103,20 @@ func (s *continuationGate) checkOneAddedCrashReceipt(before, after string, in c.
 }
 
 func (s *continuationGate) exerciseConsumptionProcessCrash() {
+	s.exerciseConsumptionCrashLifecycle(nil)
+}
+
+// A later scenario can interrupt the real explicit withdrawal at this SAME
+// original checkpoint. These values come only from actual prior commands and
+// read-only observations, never from a seeded or replacement authority context.
+type unconsumedCrashCheckpoint struct {
+	Pending, Deferred c.Intent
+	Input, DeferInput c.CommitInput
+	Baseline          consumptionProcessCrashSnapshot
+	Business          continueUnknownBusinessSnapshot
+}
+
+func (s *continuationGate) exerciseConsumptionCrashLifecycle(beforeFence func(unconsumedCrashCheckpoint)) {
 	view := s.checkCheckpoint(false, false)
 	original := s.prepare(s.choice("DEFER_TASK", "consumption-crash-prepare-defer", "Retain exact verified fixture evidence; not acceptance or permission to merge.", int(view.ActionNode.Generation)))
 	deferInput := s.commitInput(original, "consumption-crash-commit-defer")
@@ -192,6 +206,9 @@ func (s *continuationGate) exerciseConsumptionProcessCrash() {
 	assertPending("cold original read")
 	s.save("consumption-process-crash-after-cold-read.json", s.consumptionCrashSnapshot(s.f.plane.DB.SQL(), in))
 	s.save("consumption-process-crash-epochs.json", []string{fault.PriorEpoch, fault.ChildEpoch, epoch, s.f.plane.DB.RuntimeEpoch()})
+	if beforeFence != nil {
+		beforeFence(unconsumedCrashCheckpoint{Pending: pending, Deferred: deferred, Input: in, DeferInput: deferInput, Baseline: baseline, Business: business})
+	}
 	// Do not replay or replace the uncertain request on absence evidence. A real
 	// explicit withdrawal first establishes durable non-consumption authority.
 	withdrawn := s.withdrawSubmission(in)
@@ -230,12 +247,14 @@ func (s *continuationGate) exerciseConsumptionProcessCrash() {
 	s.check(reflect.DeepEqual(current.Commit, continued.Commit) && reflect.DeepEqual(current.Steps, continued.Steps) && reflect.DeepEqual(current.Submission, continued.Submission), "cold new request retains exact completed CONTINUE receipt", current)
 	old := s.confirmationRead(original, deferInput.RequestID)
 	s.check(reflect.DeepEqual(old.Commit, deferred.Commit) && reflect.DeepEqual(old.Steps, deferred.Steps) && reflect.DeepEqual(old.Submission, deferred.Submission), "old DEFER history cannot recreate the cleared hold", old)
-	s.checkCheckpoint(false, true)
+	finalView := s.checkCheckpoint(false, true)
 	s.check(reflect.DeepEqual(s.consumptionCrashSnapshot(s.f.plane.DB.SQL(), in), completed), "cold historical reads change no receipts, ownership or completed business facts", nil)
 	for name, want := range fault.AgentLogs {
 		got, err := os.ReadFile(filepath.Join(s.evidence, name))
 		s.check(err == nil && bytes.Equal(got, want), "crash, fencing and explicit continuation add no Agent work: "+name, err)
 	}
 	s.save("consumption-process-crash-completed.json", completed)
-	s.save("final-workspace.json", s.workspace())
+	// Preserve the view whose full checkpoint just passed. Only read-only ledger
+	// and log comparisons follow it; an extra MCP read adds no business oracle.
+	s.save("final-workspace.json", finalView)
 }

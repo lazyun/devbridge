@@ -46,17 +46,22 @@ const crashBarrierTrigger = "devbridge_test_only_process_crash"
 type processCrashPlan struct {
 	DataRoot, Evidence, Prefix, TriggerSQL, Scope string
 	Request                                       *c.CommitInput `json:",omitempty"`
+	Withdrawal                                    *c.CommitInput `json:",omitempty"`
 	Discard                                       *c.ReadInput   `json:",omitempty"`
 	DiscardAction                                 string         `json:",omitempty"`
 }
 
 // Exactly one typed public command; discard has no invented submission requestId.
 func (p processCrashPlan) command() (tool string, input any, identity []string, action string, err error) {
-	if p.Request != nil && p.Discard == nil && p.DiscardAction == "" {
+	if p.Request != nil && p.Withdrawal == nil && p.Discard == nil && p.DiscardAction == "" {
 		in := *p.Request
 		return "confirmation_commit", in, []string{in.IntentID, in.AISessionID, in.RequestID}, in.Action, nil
 	}
-	if p.Request == nil && p.Discard != nil && p.Discard.RequestID == "" && p.DiscardAction == "CONTINUE_TASK" {
+	if p.Request == nil && p.Withdrawal != nil && p.Discard == nil && p.DiscardAction == "" {
+		in := *p.Withdrawal
+		return "confirmation_submission_withdraw", in, []string{in.IntentID, in.AISessionID, in.RequestID}, in.Action, nil
+	}
+	if p.Request == nil && p.Withdrawal == nil && p.Discard != nil && p.Discard.RequestID == "" && p.DiscardAction == "CONTINUE_TASK" {
 		in := *p.Discard
 		return "confirmation_discard", in, []string{in.IntentID, in.AISessionID, ""}, p.DiscardAction, nil
 	}
@@ -74,12 +79,16 @@ func TestSimulatedContinuationProcessCrashCommand(t *testing.T) {
 		tool string
 	}{
 		{"commit", processCrashPlan{Request: &commit}, "confirmation_commit"},
+		{"withdrawal", processCrashPlan{Withdrawal: &commit}, "confirmation_submission_withdraw"},
 		{"discard", processCrashPlan{Discard: &read, DiscardAction: "CONTINUE_TASK"}, "confirmation_discard"},
 		{"missing", processCrashPlan{}, ""},
 		{"both", processCrashPlan{Request: &commit, Discard: &read, DiscardAction: "CONTINUE_TASK"}, ""},
+		{"commit_and_withdrawal", processCrashPlan{Request: &commit, Withdrawal: &commit}, ""},
+		{"discard_and_withdrawal", processCrashPlan{Discard: &read, DiscardAction: "CONTINUE_TASK", Withdrawal: &commit}, ""},
 		{"discard_request", processCrashPlan{Discard: &withRequest, DiscardAction: "CONTINUE_TASK"}, ""},
 		{"unsupported_discard_action", processCrashPlan{Discard: &read, DiscardAction: "DEFER_TASK"}, ""},
 		{"commit_with_discard_action", processCrashPlan{Request: &commit, DiscardAction: "CONTINUE_TASK"}, ""},
+		{"withdrawal_with_discard_action", processCrashPlan{Withdrawal: &commit, DiscardAction: "CONTINUE_TASK"}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tool, input, identity, action, err := tc.plan.command()
@@ -91,7 +100,7 @@ func TestSimulatedContinuationProcessCrashCommand(t *testing.T) {
 			}
 			request := ""
 			var expected any = read
-			if tc.tool == "confirmation_commit" {
+			if tc.tool == "confirmation_commit" || tc.tool == "confirmation_submission_withdraw" {
 				request = commit.RequestID
 				expected = commit
 			}
@@ -141,6 +150,14 @@ func (s *processCrashService) DiscardConfirmationProposal(ctx context.Context, i
 		return c.Intent{}, err
 	}
 	out, err := s.StaticService.DiscardConfirmationProposal(ctx, in)
+	_ = s.emit(processCrashEvent{Kind: "service_return", Entries: s.entries.Load()})
+	return out, err
+}
+func (s *processCrashService) WithdrawConfirmationSubmission(ctx context.Context, in c.CommitInput) (c.Intent, error) {
+	if err := s.enter("confirmation_submission_withdraw", in); err != nil {
+		return c.Intent{}, err
+	}
+	out, err := s.StaticService.WithdrawConfirmationSubmission(ctx, in)
 	_ = s.emit(processCrashEvent{Kind: "service_return", Entries: s.entries.Load()})
 	return out, err
 }

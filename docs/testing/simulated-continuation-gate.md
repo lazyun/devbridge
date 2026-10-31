@@ -27,6 +27,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --crash-submission-withdraw
 ./scripts/test-simulated-continuation.sh --consumption-process-crash
 ./scripts/test-simulated-continuation.sh --discard-process-crash
+./scripts/test-simulated-continuation.sh --withdrawal-process-crash
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -58,9 +59,10 @@ report's `scenario` field identify which lifecycle was exercised.
 `--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
 `--withdraw-arbitration`, `--cancel-late-completion`, `--process-crash` and
 `--continue-process-crash`, `--crash-submission-withdraw` and
-`--consumption-process-crash` and `--discard-process-crash` select further
+`--consumption-process-crash`, `--discard-process-crash` and
+`--withdrawal-process-crash` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All fifteen scenarios retain the same request, pipeline,
+combines with `--race`. All sixteen scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -109,6 +111,9 @@ context and process budgets.
   `--discard-process-crash` instead targets the real typed pending-proposal
   discard command and pauses after its retirement and action-head changes are
   staged by the production settlement trigger, before transaction commit.
+  `--withdrawal-process-crash` first establishes the actual pre-consumption
+  crash, then kills another owned Core after it stages the exact original
+  withdrawal rejection but before that rejection transaction commits.
   Other scenarios install no storage fault or writer barrier.
 
 The Agent launcher can only exec the exact current Go test executable and named
@@ -1123,8 +1128,8 @@ checkpoint, genuinely DEFERs, and prepares an unconsumed CONTINUE. The exact
 pending card is sent to `confirmation_discard` in a separate owned real Core
 process. Discard uses its actual typed `ReadInput` with the frozen Session,
 intent, version, purpose and content hash; it has **no submission request ID**.
-The shared driver accepts exactly one commit input **or** one supported discard
-input, matches both tool and payload hash at transport/service entry, and retains
+The shared driver accepts exactly one typed commit, supported discard, or
+withdrawal command, matches both tool and payload hash at transport/service entry, and retains
 the real pending-caller, single-forward, SIGKILL, transport-loss and bounded-join
 proofs. This is not a fabricated commit, client cancellation or graceful death.
 
@@ -1216,6 +1221,120 @@ No production source modification, increased deadline, real model call, merge
 or fabricated release authority was needed. These scoped results do not replace
 full-root-suite, native-runtime or production acceptance; previous limitations
 remain explicit.
+
+## Process crash before the withdrawal fence commits
+
+`--withdrawal-process-crash` closes the negative-authority gap left by the
+pre-consumption crash scenario. A fresh real fixture first executes that same
+actual original commit dispatch, first SIGKILL, pre-Open rollback and warm/cold
+UNKNOWN readback. A test-only lifecycle callback runs at that exact surviving
+checkpoint, before any withdrawal fence exists. It receives only the original
+Session/card/request and actual baseline observations; it does not seed an
+intent, construct a replacement Session or manufacture prior business history.
+
+The first explicit withdrawal of that uncertain original submission goes
+through the production handler in a **second owned real Core process**. Its
+precisely scoped test-only `AFTER INSERT ON confirmation_commit_requests`
+barrier witnesses the exact original row already staged with
+`REJECTED_NOT_CONSUMED`, `CONFIRMATION_SUBMISSION_WITHDRAWN` and the raw
+`SUBMISSION_WITHDRAWAL` stage. The independent in-transaction SELECT must match
+NEW request bytes, outcome, submitted and typed hashes, and failure bytes.
+The two hashes are deliberately checked differently: `submitted_sha256`
+canonicalizes JSON object keys; `payload_sha256` hashes the actual typed struct
+JSON bytes. Internal `SubmittedHash`/`OriginalRequest` fields are `json:"-"`,
+not public submitted authority. Pending intent bytes, original worker epoch,
+action owner/generation, zero releases, and one genuine hold/DEFER receipt/event
+remain unchanged. `RejectCommit` has not yet committed; the purpose-specific
+rejection hook is a no-op for this EXECUTION choice.
+
+The parent then issues actual SIGKILL while the caller is pending. The shared
+driver verifies a single forwarded `confirmation_submission_withdraw`, real
+signal death and joined process/client, no service return or graceful cleanup,
+and transport loss with no usable result while the caller context remains live.
+The three typed driver modes are mutually exclusive; mixed modes, unexpected
+tools/payloads and repeated forwarding fail closed. A lost withdrawal response
+is never labeled a completed fence.
+
+Before another Core Open, read-only SQL must match **every byte of the original
+pre-withdrawal baseline**, including all older Session request/intent rows,
+zero request records for this pending card, bindings/releases, owner/generation,
+worker and held business facts. Thus the genuinely inserted but uncommitted
+negative receipt is rolled back. New Core startup and warm/cold exact original
+request reads stay `UNKNOWN / recorded=false`, consumed unset, with
+`READ_ORIGINAL_RECEIPT` and no redispatch/reprepare permission. A competing
+proposal remains refused. The staged witness is oracle-only evidence, never
+non-consumption authority; separate snapshots are not global atomic views.
+
+Only after those checks does the existing lifecycle issue another **separately
+explicit fixture-user withdrawal** of the same original request. This is a
+withdrawal command, not a business-commit retry. Its durable rejection is the
+first actual fence. Every older ledger row stays unchanged; only then is an
+intentional late original commit sent and rejected, and a distinct explicitly
+confirmed request may genuinely CONTINUE. Cold receipts preserve the original
+withdrawal and new consumption, closing the old rejection's retry projection.
+The exact three Runs, original verification/worktrees and Agent logs remain
+unchanged across both crashes and subsequent choices. No business command is
+retried on missing-receipt evidence.
+
+The first crash and the later successful fence/completion retain their existing
+`consumption-process-crash` artifacts. The second crash uses a distinct
+`withdrawal-process-crash` prefix for plan/child/Core/trace/death evidence and
+`-transaction.json`, `-before.json`, `-before-open.json`,
+`-after-cold-read.json`, `-epochs.json`. Neither crash's epoch/witness files
+are overwritten. All previous budgets remain unchanged; the script hashes
+nineteen source files and retains the thirteen PREPARING-receipt cases.
+
+The first authoring run (`ytGB1i`) failed in 16.96 seconds at an incorrectly
+canonicalized expected typed-payload hash after both real SIGKILL witnesses.
+It remains retained as a failed oracle-authoring run, not a production failure
+or qualified pass. The corrected oracle independently hashes marshaled typed
+bytes, separately verifies the canonical submitted hash, and checks parity with
+the actually selected in-transaction row. Production code was not changed.
+
+The first composed race (`YxAYFd`) also remains **FAILED**, at 427.33 seconds:
+both actual crashes, original UNKNOWN reads, durable fencing, fresh completion,
+final full checkpoint, raw ledger and Agent-log checks passed, but the
+five-minute post-bootstrap context expired during an extra `workspace_get`
+used only to populate `final-workspace.json`. The immediately preceding full
+checkpoint had already verified that workspace view. The shared lifecycle now
+saves that returned verified view rather than issuing a redundant artifact-only
+read. No business oracle or deadline was removed/increased; intervening checks
+are read-only. This failed run is not replaced by an assertion that its race
+qualification passed; a new frozen ordinary/race run is required.
+
+The new frozen-source qualifications passed on 2026-10-31: ordinary **378
+checks / 26.46 seconds** (`WJRy8P`) and composed `--race` **377 checks / 400.42
+seconds** (`yUbMHl`), each exit 0 plus all thirteen PREPARING-receipt cases.
+All nineteen source hashes match both runs and final source; no race warning
+appeared. Their difference is exactly one additional ordinary workspace poll.
+The earlier ordinary `Qj4EDl` pass (380 checks / 28.70 seconds) preceded the
+final-view reuse and is not substituted for final-source qualification. The two
+removed checks describe only the duplicate artifact read's transport success
+and Task-view identity; the final post-cold full checkpoint retains both.
+Evidence uses the existing
+`/workspace/scratch/e4799e9b8e60/devbridge-evidence/devbridge-test-only-continuation.`
+prefix.
+
+Independent source/artifact review verified the two distinct signal deaths,
+original request/tool identities, both independently computed rejection hashes,
+six identical pre-dispatch/pre-Open/cold snapshots, and the subsequent exact
+UNKNOWN → explicit durable withdrawal → rejected late original → separately
+confirmed CONTINUE sequence. The six original Session receipt rows remain
+unchanged when the successful withdrawal adds the seventh; all seven stay
+unchanged when the new consumption adds the eighth. The saved final-workspace
+view exactly matches the final verified MCP response, not a synthesized result.
+
+Four same-source regressions passed, each exit 0 plus thirteen receipt cases:
+`--consumption-process-crash` **287 checks / 21.25 seconds** (`jGDvbF`),
+`--discard-process-crash` **319 / 28.49 seconds** (`RS85dp`),
+`--process-crash` **249 / 18.47 seconds** (`rkoGsV`), and
+`--submission-withdraw` **225 / 16.26 seconds** (`foB9uF`). Root
+`go vet -p 2 ./...`, opt-out tests including eleven pure typed-command guard
+cases, script syntax, duplicate/conflicting-selector refusal (exit 2), and
+`git diff --check` passed. No production source changes, increased deadlines,
+real model calls, merge or manual authority repairs were needed. These scoped
+passes do not erase either retained failure or prior full-suite/native/runtime
+limitations, and are not a production performance or stability qualification.
 
 ## Instrumentation budget and retained failures
 
@@ -1361,7 +1480,8 @@ labeled rollback, final-save abort, post-business-commit cancellation and exact
 post-business-commit process-crash, in-transaction CONTINUE crash and its
 serial consumed-withdrawal/discard cases, and exact pre-consumption crash with
 explicit withdrawal fencing, and exact pending-retirement crash with
-rolled-back owner/generation changes,
+rolled-back owner/generation changes, and exact staged-withdrawal rejection
+crash followed by explicit durable fencing,
 unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
