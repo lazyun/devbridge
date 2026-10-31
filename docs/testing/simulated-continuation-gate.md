@@ -164,6 +164,51 @@ admission only: the gate waits for that same Run, never retries start. Unknown,
 foreign, missing-record and mismatched receipts fail closed (also unit-tested).
 Business writes are never silently retried with a new request ID.
 
+## Outcome coverage and stopping rule
+
+The acceptance goal is safe explicit DEFER/CONTINUE after genuine deterministic
+implementation/verification: preserve the original Task, evidence, worktrees and
+request identity; distinguish non-consumption from uncertainty; and never infer
+new execution, retry, acceptance or merge authority. More crash locations are
+not automatically more distinct outcomes. The 2026-10-31 source/evidence audit
+groups the existing scenarios by the durable facts a caller must act on:
+
+| Observable state / boundary | Existing composed evidence | Required next-action invariant |
+| --- | --- | --- |
+| Pending, original submission not durably recorded | Response-loss missing-request probe; consumption-process crash | UNKNOWN is not proof of non-consumption; read original, do not resend |
+| Withdrawal rejection staged but rolled back | Withdrawal-process crash | An attempted withdrawal is not a durable fence; uncertainty remains |
+| Original request durably rejected without consumption | Sequential invalid selection; withdrawal; both-order arbitration; cold late-copy probes | Preserve exact negative receipt; changed original payload conflicts; only separately explicit valid choice may proceed |
+| Consumed choice, no canonical business effect proven | DEFER journal rollback; CONTINUE rollback/SIGKILL; crash withdrawal/discard | Preserve exact hold and current owner; no retry, retirement or relabeling as not consumed |
+| Canonical choice committed, final journal incomplete | Final-save abort; caller cancellation; post-business SIGKILL | Read canonical evidence without replay or duplicate effect |
+| Completed DEFER/CONTINUE, including lost client observation | Base/sequential; response loss; warm/cold exact and old history | Immutable receipts; old DEFER cannot recreate a cleared hold; no successor Run |
+| Unconsumed pending card retired | Sequential discard; discard-process crash then explicit successful discard | Retirement/owner release is atomic; repeat is idempotent; stale card cannot consume |
+| Exact identity and immutable request mismatch | Wrong hash/version/purpose; changed consumed/rejected payload; cross-Session | No borrowed receipt, ownership or command authority |
+| Competing request writers | Withdrawal/commit with both known first-writer orders | One durable winner; no silent retry; overlap is proven separately from race-detector success |
+
+Broader source tests already exercise discard-versus-consumption,
+operator-versus-prepare and cross-Session prepare races in
+`task_action_node_integration_test.go`. They are separate evidence, not additional
+passes of this public-wire gate. Its historical stale-generation/UNKNOWN
+reconciliation fixture modifies legacy metadata and is **not** genuine crash
+acceptance; do not substitute it for the actual process tests above.
+
+This audit found no new production defect or missing durable continuation
+outcome warranting another crash selector. It did find one endpoint-specific
+negative gap: the cross-Session scenario predated
+`confirmation_submission_withdraw`, which can create **negative authority**
+without creating a hold or Run. The existing withdrawal identity unit test
+changes contentHash, not the Session. The existing cross-Session scenario now
+covers that public write entry and both complete Session ledgers; this is not a
+seventeenth scenario or a new defect. Further work needs a new observable
+semantic gap or reproduced defect, not another arbitrary kill position.
+
+This is a bounded coverage map, not an exhaustive proof of all schedules,
+expiry/eligibility changes or security domains. Native runtime qualification,
+interrupted native recovery, hostile-runtime isolation, cross-principal
+authentication, actual dot/Card host integration and terminal acceptance/Git
+delivery remain separate scopes. None becomes passed because this matrix has
+no next crash case; no merge readiness is implied.
+
 ## Sequential anomaly scenario
 
 After the same real implementation/verification and explicit indexed analysis,
@@ -269,6 +314,21 @@ The scenario then checks the Session component of exact confirmation identity:
   A's explicit CONTINUE then clears the hold; foreign probes cannot change that
   receipt, Task action generation, files, or the exact three-Run inventory.
 
+The later endpoint-completeness extension also sends the exact copied payload
+to `confirmation_submission_withdraw` under B, with the original request key
+(colliding with B's own genuine binding receipt for DEFER) and a fresh key. It
+must return the same failure-only `CONFIRMATION_FACTS_UNAVAILABLE` envelope, not
+seal A's request, invent a B rejection or disclose either receipt. The probes run
+at pending DEFER, completed DEFER, cold DEFER and completed CONTINUE checkpoints.
+All eleven scoped tables are captured in a read-only transaction using every
+persisted column: both Sessions' intents, submission/replacement receipts and
+decision selectors, plus this Task's head, bindings, conflict resolutions,
+releases, hold, canonical choice receipts and choice events. Exact before,
+after-copied-key and after-fresh-key snapshots must be identical. Files and the
+three-Run inventory retain the independent existing oracles. The
+`cross-ledger-<checkpoint>-{before,after-collision,after-fresh}.json` artifacts
+preserve the raw values, not merely counts or a masked latest-request view.
+
 There is no Session-ID swap in shared fixture state, implicit Session creation,
 raw SQL write, storage fault or response loss. Beyond the shared genuine
 execution/verification pipeline, these probes add no engineering acceptance or
@@ -294,6 +354,21 @@ ProjectID to change after binding. The corrected oracle preserves that frozen
 identity and checks the real `BIND_PROJECT` step plus public current-Session
 readback. These were test-only corrections, not Core changes or retrospective
 passes. The full-root-suite limitations below are not cleared by this scenario.
+
+The later withdrawal-endpoint extension passed on 2026-10-31: ordinary evidence
+`yBgomO` **344 checks / 16.63 seconds** and composed-race evidence `zeo4BC`
+**343 checks / 308.66 seconds**, both exit 0 plus the 13 PREPARING-receipt cases.
+The sole check-count difference is one ordinary workspace read-poll observation.
+All eight foreign withdrawals returned failure-only envelopes; all four
+before/middle/after 11-table snapshot groups were byte-identical. All nineteen
+source hashes matched the unchanged tested source and source-after checks passed;
+the race log had no race-detector warning. Root `go vet -p 2 ./...` and all five
+`TestConfirmationSubmissionWithdrawal*` tests passed, along with the opt-out
+continuation helper tests. Independent review confirmed the source, outcome
+matrix and ordinary artifacts. The artifact suffix `after-collision` is a probe
+label: only the DEFER original key collides with B's binding, while CONTINUE
+tests its own copied original key. This closes the endpoint-specific negative
+gap without changing production behavior, selectors or time budgets.
 
 ## Durable journal UNKNOWN after an injected rollback
 

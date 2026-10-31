@@ -4,6 +4,7 @@ package controlapi_test
 // This tests Session-scoped confirmation identity, not cross-principal security.
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,77 @@ import (
 	c "github.com/lazyun/devbridge/internal/confirmation"
 	"github.com/lazyun/devbridge/internal/mcpserver"
 )
+
+type crossSessionLedgerTable struct {
+	Columns []string
+	Rows    [][]any
+}
+
+// Capture all persisted columns, not just counts or the selected request. Each
+// snapshot is one read-only transaction over both real Sessions and this Task;
+// it is not a claim of a globally atomic workspace view. No command is in flight.
+func (s *continuationGate) crossSessionLedger(other string) map[string]crossSessionLedgerTable {
+	s.t.Helper()
+	tx, err := s.f.plane.DB.SQL().BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	defer tx.Rollback()
+	out := make(map[string]crossSessionLedgerTable)
+	for _, query := range []struct {
+		table, where string
+		args         []any
+	}{
+		{"confirmation_intents", "ai_session_id IN (?,?) ORDER BY ai_session_id,intent_id", []any{s.f.session, other}},
+		{"confirmation_commit_requests", "ai_session_id IN (?,?) ORDER BY ai_session_id,request_id", []any{s.f.session, other}},
+		{"confirmation_replacement_receipts", "ai_session_id IN (?,?) ORDER BY ai_session_id,request_id", []any{s.f.session, other}},
+		{"confirmation_current_decisions", "ai_session_id IN (?,?) ORDER BY ai_session_id,decision_id", []any{s.f.session, other}},
+		{"task_action_heads", "task_id=? ORDER BY task_id", []any{s.f.task}},
+		{"task_action_confirmation_bindings", "task_id=? ORDER BY intent_id", []any{s.f.task}},
+		{"task_action_conflict_resolutions", "task_id=? ORDER BY task_id,generation", []any{s.f.task}},
+		{"task_action_releases", "task_id=? ORDER BY intent_id", []any{s.f.task}},
+		{"task_holds", "task_id=? ORDER BY task_id", []any{s.f.task}},
+		{"task_hold_receipts", "task_id=? ORDER BY actor,request_id", []any{s.f.task}},
+		{"events", "task_id=? AND type='task.verification_choice' ORDER BY sequence", []any{s.f.task}},
+	} {
+		// Table/predicate strings are fixed test source, never caller input.
+		rows, err := tx.QueryContext(s.ctx, "SELECT * FROM "+query.table+" WHERE "+query.where, query.args...)
+		if err != nil {
+			s.t.Fatal(err)
+		}
+		columns, err := rows.Columns()
+		if err != nil {
+			rows.Close()
+			s.t.Fatal(err)
+		}
+		table := crossSessionLedgerTable{Columns: columns, Rows: [][]any{}}
+		for rows.Next() {
+			values, targets := make([]any, len(columns)), make([]any, len(columns))
+			for i := range values {
+				targets[i] = &values[i]
+			}
+			if err := rows.Scan(targets...); err != nil {
+				rows.Close()
+				s.t.Fatal(err)
+			}
+			for i, value := range values {
+				if raw, ok := value.([]byte); ok {
+					values[i] = string(raw)
+				}
+			}
+			table.Rows = append(table.Rows, values)
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			s.t.Fatal(err)
+		}
+		if err := rows.Close(); err != nil {
+			s.t.Fatal(err)
+		}
+		out[query.table] = table
+	}
+	return out
+}
 
 func TestSimulatedContinuationCrossSession(t *testing.T) {
 	runSimulatedContinuationGate(t, (*continuationGate).exerciseCrossSession)
@@ -62,6 +134,8 @@ func (s *continuationGate) checkOtherSessionTaskView(other string) {
 
 func (s *continuationGate) refuseForeignIntent(source c.Intent, commit c.CommitInput, other, label string) {
 	s.t.Helper()
+	before := s.crossSessionLedger(other)
+	s.save("cross-ledger-"+label+"-before.json", before)
 	read := c.ReadInput{AISessionID: other, IntentID: source.IntentID, Version: source.Version, Purpose: source.Purpose, ContentHash: source.ContentHash, RequestID: commit.RequestID}
 	refuse := func(actor, tool string, input any) {
 		wire := s.call(actor, tool, input, "CONFIRMATION_FACTS_UNAVAILABLE")
@@ -79,6 +153,20 @@ func (s *continuationGate) refuseForeignIntent(source c.Intent, commit c.CommitI
 	// intent identity, not merely on a request-key collision in B's own ledger.
 	copied.RequestID = "cross-foreign-fresh-" + label
 	refuse("fixture_user", "confirmation_commit", copied)
+	// Withdrawal can create durable negative authority without a hold or Run.
+	// Test its own public entry with the copied request key (colliding with B's
+	// binding for DEFER) and a fresh key: neither may seal A's request or leak
+	// A/B's receipt through a failure.
+	copied.RequestID = commit.RequestID
+	refuse("fixture_user", "confirmation_submission_withdraw", copied)
+	afterCollision := s.crossSessionLedger(other)
+	s.save("cross-ledger-"+label+"-after-collision.json", afterCollision)
+	s.check(reflect.DeepEqual(afterCollision, before), "foreign commands and colliding-key withdrawal preserve both complete Session ledgers, Task owner/generation and business facts: "+label, nil)
+	copied.RequestID = "cross-foreign-fresh-" + label
+	refuse("fixture_user", "confirmation_submission_withdraw", copied)
+	afterFresh := s.crossSessionLedger(other)
+	s.save("cross-ledger-"+label+"-after-fresh.json", afterFresh)
+	s.check(reflect.DeepEqual(afterFresh, before), "foreign fresh-key withdrawal cannot create negative authority in either Session: "+label, nil)
 }
 
 func (s *continuationGate) exerciseCrossSession() {
