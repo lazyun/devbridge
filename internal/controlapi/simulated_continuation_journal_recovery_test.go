@@ -98,8 +98,14 @@ type journalRecoverySnapshot struct {
 }
 
 func (s *continuationGate) journalRecoverySnapshot(in c.CommitInput, receipts int) journalRecoverySnapshot {
+	return s.journalRecoverySnapshotFromDB(s.f.plane.DB.SQL(), in, receipts)
+}
+
+// A process-crash driver can inspect the durable WAL through a mode=ro handle
+// before opening another Core epoch. This helper performs only SELECTs.
+func (s *continuationGate) journalRecoverySnapshotFromDB(db *sql.DB, in c.CommitInput, receipts int) journalRecoverySnapshot {
 	s.t.Helper()
-	tx, err := s.f.plane.DB.SQL().BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := db.BeginTx(s.ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		s.t.Fatal(err)
 	}

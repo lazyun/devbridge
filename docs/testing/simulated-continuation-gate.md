@@ -22,6 +22,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --submission-withdraw
 ./scripts/test-simulated-continuation.sh --withdraw-arbitration
 ./scripts/test-simulated-continuation.sh --cancel-late-completion
+./scripts/test-simulated-continuation.sh --process-crash
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -51,9 +52,9 @@ ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
 `--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
-`--withdraw-arbitration` and `--cancel-late-completion` select further
+`--withdraw-arbitration`, `--cancel-late-completion` and `--process-crash` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All ten scenarios retain the same request, pipeline,
+combines with `--race`. All eleven scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -89,8 +90,10 @@ context and process budgets.
   wrapper that forwards unchanged to the same real Facade. It also uses read-only
   SQL snapshots. `--cancel-late-completion` uses a similar non-failing barrier
   at the final journal write after the business commit, an observation-only
-  service wrapper, and actual public caller cancellation. Other scenarios install
-  no storage fault or writer barrier.
+  service wrapper, and actual public caller cancellation. `--process-crash` uses
+  a precisely scoped final-journal barrier in a separate Core-hosting process,
+  actual parent-issued SIGKILL, and read-only post-death SQL observations before
+  opening another Core. Other scenarios install no storage fault or writer barrier.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -730,6 +733,111 @@ interrupted receipt-readback failure were captured. The test expectations were
 corrected against the production settlement trigger and failure mapping; no Core
 behavior was changed. This failed run remains separate from final qualification.
 
+## Actual Core process-crash scenario
+
+`--process-crash` fills a different boundary from both the final-save SQL abort
+and canceled caller scenarios: **the actual process owning Core and its SQLite
+writer is killed with SIGKILL**. It covers precisely the interval after the real
+canonical choice transaction commits, while the final confirmation journal
+update is paused. It does not qualify arbitrary crash points, an uncertain
+business transaction commit, machine/power loss, or interrupted Agent recovery.
+
+The parent first runs the same real implementation, verification and indexed
+analysis, joins both Agent supervisor sessions, and freezes the original pending
+`DEFER_TASK` identity/request. It gracefully closes its own MCP connections and
+Core, then launches only the exact current Go test executable's named helper.
+That graceful **handoff is not the crash under test**. The helper opens the same
+parent-owned disposable DataRoot in a new real Core epoch and exposes the
+production GPT MCP handler. Its environment is explicitly empty except fixture
+paths/switches, telemetry/Git isolation and minimal PATH; a nonexistent explicit
+Codex path denies native execution even if a runtime were accidentally requested.
+Persisted executable overrides must be absent. It creates no new Session or
+business authority and never seeds or repairs an Execution, choice or receipt.
+
+The parent sends the exact frozen fixture-user commit once. Both the transport
+and unchanged-input service wrapper refuse unexpected or repeated commits; the
+transport does not substitute response bytes. A test-only SQL trigger is scoped
+to that intent/Session/action/request and the original task, Execution and
+revision. Its predicate requires the real canonical `task_hold_receipts` row,
+the durable `CONFIRMING / UNKNOWN` predecessor and attempted `COMPLETED` journal.
+Its scalar callback copies only the old/new journal and identity, flushes a
+separate event file, notifies the parent through private FD3, then blocks. It
+performs no database re-entry or authority writes and cannot succeed on timeout.
+
+Only after this exact barrier witness does the parent kill its own child. The
+kernel wait status must prove `Signaled / SIGKILL`; a nonzero exit, client EOF or
+cancellation alone cannot pass. The event trace must be exactly `ready`,
+`service_entry`, `writer_paused`, with no callback timeout, service return or
+graceful helper cleanup. The still-live caller must receive an actual transport
+error and no usable result, with no caller cancellation or second business POST.
+The child process, caller and pipe reader are joined before fixture cleanup.
+
+After death, **before opening another Core**, the parent opens a `mode=ro` /
+`query_only` SQLite handle and records the surviving raw WAL facts: the original
+consumed submission, unfinished journal, genuine choice receipt, hold/event,
+action owner and generation. The trigger must still exist, proving no graceful
+cleanup removed it. Another Core opens the same DataRoot with a new epoch and
+its raw choice snapshot must be unchanged. Only the exact test trigger is then
+removed. Public receipt/options/workspace reads use the parent's **pre-dispatch
+original identity**, never an identity chosen from oracle-only witness output.
+They project completion from the surviving canonical receipt without changing
+the raw journal, redispatching the choice or granting retry authority.
+
+After the recovered DEFER is proven, a new explicit fixture-user `CONTINUE_TASK`
+is prepared at the current generation and undergoes a second real Core process
+crash at the same precise boundary. Its own canonical receipt and cleared hold
+survive; reading the historical DEFER cannot recreate that hold. Across both
+crashes the full checkpoint oracle requires the same three Runs, original
+frozen definition, analysis and verification contract, all owned worktree bytes
+and HEADs, and still-unaccepted/uncommitted state. Agent request/response logs
+must remain byte-identical throughout each handoff/crash/reopen/read sequence.
+
+Retained artifacts use `process-crash-<ordinal>-<action>` prefixes: `-plan.json`,
+`-child.log`, `-core.jsonl`, `-child-events.jsonl`, `-trace.json`, `-death.json`,
+`-before-open.json`, `-after-read.json` and `-epochs.json`. The plan records the
+exact trigger and original request; death records distinguish the graceful
+handoff, signaled process death and forwarding counters. Raw snapshots are
+independent oracles, not recovery inputs. `mcp.jsonl` retains each failed client
+call with nil result and the real transport error. The database and repository
+fixtures remain temporary; this is not a production-data crash experiment.
+
+Existing handler/pipeline/context/script budgets remain unchanged. Added owned
+process bounds are 45 seconds for startup, 10 seconds for the writer rendezvous,
+20 seconds for a callback timeout that **fails**, 10 seconds each for process and
+client joins, and 2 seconds for event drain/reader joins. The helper has a
+90-second context and two-minute process timeout; these do not extend the parent
+budgets. Failure cleanup kills and joins before canceling/draining, with no
+unbounded event-channel range. The script verifies that the exact selected test
+exists in the built executable, so a build-tag-excluded platform cannot pass by
+running only `PreparingReceipt`. This SIGKILL scenario is not built on Windows.
+
+On 2026-10-31, the frozen ordinary process-crash scenario **passed 249 checks
+in 22.60 seconds**, and its separate composed `--race` invocation **passed 248
+checks in 304.77 seconds**, both exit 0 plus all thirteen PREPARING-receipt
+oracle cases. Their evidence suffixes are `1oX476` and `1T2S37`, respectively,
+under `/workspace/scratch/e4799e9b8e60/devbridge-evidence/devbridge-test-only-continuation.`.
+The single check-count difference is bounded workspace-read polling, not a
+removed invariant. All fourteen source hashes matched between both runs and
+the final source; no race warning was emitted. Each run proved two actual
+SIGKILL deaths, one forwarded original commit per death, nil client result with
+real HTTP EOF, three distinct epochs per crash, joined processes/callers/readers,
+exact raw snapshot equality, and no additional Agent protocol activity.
+
+Independent review approved the final timing and cleanup oracles and precise
+coverage limits. A separate reviewer lifecycle passed 247 checks in 21.69
+seconds (`CFipZI`, exit 0) on the immediately preceding source, before the two
+explicit pending-before-kill assertions were added; that is supporting review
+evidence, **not** a final-source race or timing-hardening qualification. Earlier
+authoring ordinary runs also passed; no failed crash run was relabeled success.
+Final-source root `go vet -p 2 ./...`, opt-out tests, all receipt cases, shell
+syntax, duplicate/conflicting selectors (exit 2), and `git diff --check` passed.
+The two directly affected prior scenarios also passed on the same fourteen
+source hashes: `--journal-recovery` **237 checks / 15.03 seconds** (`C4o0nU`)
+and `--cancel-late-completion` **151 checks / 15.32 seconds** (`6OmQQh`), each
+exit 0 plus the thirteen receipt cases. These remain scoped functional/race
+results, not a fresh whole-root-suite pass, production-default timeout
+qualification or real-model/native acceptance.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -870,7 +978,8 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal recovery beyond the
-labeled rollback, final-save abort and post-business-commit cancellation cases, unmodeled response-loss/crash points, cross-principal
+labeled rollback, final-save abort, post-business-commit cancellation and exact
+post-business-commit process-crash cases, unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called

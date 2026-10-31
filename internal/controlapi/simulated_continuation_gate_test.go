@@ -129,8 +129,11 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if t.Name() != "TestSimulatedContinuationCancelLateCompletion" {
 			notCovered = append(notCovered, "client cancellation after business commit with late final journal persistence")
 		}
-		if t.Name() != "TestSimulatedContinuationJournalRecovery" {
+		if t.Name() != "TestSimulatedContinuationJournalRecovery" && t.Name() != "TestSimulatedContinuationProcessCrash" {
 			notCovered = append(notCovered, "canonical choice recovery after final journal-save failure")
+		}
+		if t.Name() != "TestSimulatedContinuationProcessCrash" {
+			notCovered = append(notCovered, "actual Core process SIGKILL after canonical choice commit before final journal persistence")
 		}
 		if t.Name() != "TestSimulatedContinuationResponseLoss" {
 			notCovered = append(notCovered, "response-loss injection")
