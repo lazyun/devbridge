@@ -197,3 +197,7 @@ check in its retained log. It is incomplete evidence, not a race pass.
 The separate [composition gate](../testing/worker-client-composition.md) consumes
 an actual UPPER client's proposal through independent approval/start boundaries
 and this file consumer over production GPT HTTP; it is not live dot acceptance.
+
+This is an outbound transport package, not an inward-facing Core service. The
+[MCP dependency guard](mcp-dependency-boundary.md) permits its SDK dependency while
+forbidding production Core/domain imports of this client.

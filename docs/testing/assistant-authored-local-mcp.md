@@ -118,3 +118,7 @@ confirmation UI qualification, or a passing full-root test suite.
   copies inside the module. Moving only those owned diagnostic copies outside
   the module removed that workspace artifact; final build/vet passed without
   changing product code for it. No failing log was substituted for a pass.
+
+The separately reviewed [MCP dependency-boundary correction](../architecture/mcp-dependency-boundary.md)
+addresses that outbound-client guard failure without changing this projection
+fix or treating the timed-out package suites as passing.

@@ -191,3 +191,7 @@ retained as preliminary evidence only, not final frozen-source qualification.
 The separate [composition gate](../testing/worker-client-composition.md) follows
 this consumer's actual report through explicit simulated-user approval/start to
 the DIRECT_FILE consumer, using production GPT HTTP and the same isolated Core.
+
+This is an outbound transport package, not an inward-facing Core service. The
+[MCP dependency guard](mcp-dependency-boundary.md) permits its SDK dependency while
+forbidding production Core/domain imports of this client.
