@@ -17,6 +17,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --response-loss
 ./scripts/test-simulated-continuation.sh --cross-session
 ./scripts/test-simulated-continuation.sh --journal-unknown
+./scripts/test-simulated-continuation.sh --journal-recovery
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -44,9 +45,10 @@ to the original continuation gate or extend its time budgets. It may be combined
 with `--race`; that combination is a distinct check, not implied by either
 ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
-`--response-loss`, `--cross-session` and `--journal-unknown` select further
+`--response-loss`, `--cross-session`, `--journal-unknown` and
+`--journal-recovery` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All five scenarios retain the same request, pipeline,
+combines with `--race`. All six scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -73,10 +75,11 @@ context and process budgets.
   observations and supervisor joins support independent oracles. No business row
   is seeded or manually rewritten, and no result or approval is fabricated. Only
   `--response-loss` substitutes a client response-body reader after the real
-  handler completes. Only `--journal-unknown` installs the precisely scoped,
-  test-only SQL abort trigger described below in its disposable database; it
-  also uses read-only SQL snapshots to distinguish persisted journal state from
-  public readback. Other scenarios install no storage fault.
+  handler completes. Only `--journal-unknown` and `--journal-recovery` install
+  the precisely scoped, test-only SQL abort triggers described below in their
+  disposable databases; they also use read-only SQL snapshots to distinguish
+  persisted journal state from public readback. Other scenarios install no
+  storage fault.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -322,6 +325,76 @@ witness, and the raw before/after snapshots were identical. Root `go vet -p 2
 passes qualify conservative fencing, not successful DEFER completion or general
 recovery. The aggregate-suite limitations below remain in force.
 
+## Canonical choice recovery after a final journal-save failure
+
+`--journal-recovery` distinguishes **a committed business choice with a failed
+final confirmation-journal save** from the previous scenario's rolled-back
+business transaction. It uses the same genuine admitted Runs and verification
+checkpoint, with no fabricated authority or result rows:
+
+- An ordinary `BEFORE UPDATE OF intent_json` trigger matches only the exact
+  Session/intent/outer commit request/action, the durable `CONFIRMING` intent
+  with its `UNKNOWN` business step, and the attempted `COMPLETED` replacement
+  with the same exact `RECORD_TASK_CHOICE` subrequest. It also requires the
+  matching canonical `task_hold_receipts` row to exist already.
+- A test-only scalar records the exact identities and old/attempted journal
+  documents in a synchronized memory witness, then returns a unique error.
+  It performs no database writes, re-entry or assertions. Each original DEFER
+  and CONTINUE commit must reach this exact final-save fault once, returning
+  `CONFIRMATION_FACTS_UNAVAILABLE` at `RECEIPT_READBACK`, not observed completion.
+- Before any recovery-capable public read, independent read-only SQL captures
+  the raw `CONFIRMING / UNKNOWN` journal, original consumed request, real choice
+  receipt, hold, event history and action owner/generation. The receipt's actor,
+  subrequest, Task/Execution/revision/action and SHA-256 of the frozen business
+  payload are verified independently. DEFER really holds; CONTINUE really clears.
+- After the trigger is removed and its absence checked, original-identity
+  `confirmation_get` and options reconstruct `COMPLETED / COMMAND_COMPLETED`
+  solely from that canonical receipt. The consumed submission stays frozen, with
+  no reprepare, redispatch or resume authority. Completed options retain the
+  existing fresh-prepare hint (`reprepareAllowed=true`), but original variants
+  remain unavailable with `INTENT_ALREADY_CONSUMED`, retry `NONE` and routing
+  to the original receipt. That hint is not authority to retry a consumed request.
+  DEFER is read warm and again
+  after cold reopen; CONTINUE is cold-reopened **before its first recovery read**.
+- Raw snapshots before and after each pure-read window must be byte-identical:
+  projected completion is **not** a claim that readback repaired the journal.
+  The public Task action node may project its next generation while raw owner
+  and generation remain unchanged. A separately labeled normal new CONTINUE
+  prepare, only after DEFER is proven, may persist prior reconciliation and
+  advance ownership. It is not a retry of the unresolved command.
+- Old DEFER history after CONTINUE cannot recreate the hold. There is only one
+  commit call per choice, no commit retry under any request ID, exactly two
+  canonical choice receipts/events, and still only the original three Runs.
+  Frozen evidence, file bytes/HEADs and unaccepted/uncommitted state are checked.
+
+`journal-recovery-fault-<ACTION>.json` records the exact fault and scope;
+`journal-recovery-witness.json` contains the two actual final-save attempts.
+`journal-recovery-before-<ACTION>.json` and `journal-recovery-after-<ACTION>.json`
+retain the independent raw snapshots. The public calls remain in `mcp.jsonl`.
+The scalar has the same isolated-process registration limitation as the
+journal-UNKNOWN scenario: use the dedicated script, not arbitrary concurrent
+opt-in selections. No production fault switch or behavior is added.
+
+This establishes read-only reconciliation from genuine canonical choice
+receipts at this exact final-save abort. It is not an uncertain business commit,
+process crash, disk failure, transport response loss or native runtime recovery.
+
+On 2026-10-31, the ordinary journal-recovery script **passed 237 checks in
+14.60 seconds**, and its separate composed `--race` invocation **passed 236
+checks in 304.78 seconds** (both exit 0), plus all 13 PREPARING-receipt cases.
+All nine recorded source hashes remained unchanged. Both runs observed exactly
+two final-save witnesses, three distinct Core epochs and unchanged raw snapshot
+pairs. An independent isolated rerun passed 237 checks in 16.69 seconds;
+independent review approved the exact fault and raw/public state distinction.
+Root `go vet -p 2 ./...` passed. These are scoped recovery passes, not a
+full-root-suite or latency claim.
+
+Two earlier authoring attempts remain failures: a duplicate test-helper name
+prevented compilation, and an overly strict options oracle rejected the existing
+completed-intent fresh-prepare hint. The corrected oracle distinguishes that
+hint from the consumed request's immutable no-retry receipt; no Core behavior
+was changed, and neither prior process is relabeled as a pass.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -462,7 +535,7 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal recovery beyond the
-labeled rollback case, unmodeled response-loss/crash points, cross-principal
+labeled rollback and final-save abort cases, unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called
