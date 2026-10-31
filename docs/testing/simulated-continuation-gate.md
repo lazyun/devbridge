@@ -266,6 +266,16 @@ fail with `socket: operation not permitted`. No test was skipped or sandbox
 restriction bypassed to conceal that limit. Those aggregate failures remain
 separate from the passed model-free continuation gates.
 
+That aggregate invocation ultimately exited 1. The same socket restriction also
+prevented recovery protocol helpers from starting (exit 72), and the control API
+package exhausted its default ten-minute total test budget. In addition, the
+aggregate build began before the regression's final `runtime` import edit and
+later reported a missing runtime import configuration; it is not a frozen-source
+aggregate pass. A fresh, separate full SQLite-package run on the final frozen
+commit compiled successfully and **passed all 548 top-level tests in 373.354
+seconds** (exit 0). It resolves the storage-package verification gap without
+relabeling the earlier aggregate failure or its uncompleted control API tests.
+
 ## Still not covered
 
 Real models/native artifacts, production host sandboxing, native conversation
