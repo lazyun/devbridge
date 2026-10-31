@@ -13,6 +13,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ```sh
 ./scripts/test-simulated-continuation.sh
 ./scripts/test-simulated-continuation.sh --race
+./scripts/test-simulated-continuation.sh --sequential
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -34,6 +35,12 @@ this gate at an existing Core or repositories: there is no such option.
 The test is opt-in and skipped by ordinary `go test`. The `--race` variant
 instruments this composed Core, MCP adapters and the subprocess test executable;
 it is not the driver-only race mode of the separate production-binary simulator.
+`--sequential` selects a separate anomaly scenario, with a fresh Core, real
+verification checkpoint and its own evidence directory. It does not append work
+to the original continuation gate or extend its time budgets. It may be combined
+with `--race`; that combination is a distinct check, not implied by either
+ordinary sequential or original composed-race results. `scenario.txt` and the
+report's `scenario` field identify which lifecycle was exercised.
 
 ## Exact trust boundary
 
@@ -107,6 +114,33 @@ admission only: the gate waits for that same Run, never retries start. Unknown,
 foreign, missing-record and mismatched receipts fail closed (also unit-tested).
 Business writes are never silently retried with a new request ID.
 
+## Sequential anomaly scenario
+
+After the same real implementation/verification and explicit indexed analysis,
+the separate scenario checks the following through the public MCP wire:
+
+- Exact pending prepare replay returns the original unconsumed choice. A changed
+  prepare payload conflicts, and a competing choice is refused with
+  `TASK_ACTION_PENDING`.
+- Wrong frozen hash, version or purpose cannot read, discard or consume the
+  original intent; exact readback remains pending without a submission.
+- Explicit fixture-user discard makes that pending intent `SUPERSEDED`, with no
+  hold or continuation effect. Its old card and old task-action generation are
+  refused; a fresh current-generation prepare creates a different intent.
+- Runtime selection on a choice-only operation is rejected with a durable
+  `REJECTED_NOT_CONSUMED` receipt. Exact replay preserves that refusal; changing
+  the selection under the rejected request ID conflicts. Only the documented
+  edit-selection path with a new request ID consumes the original pending choice.
+- Discard after consumed `DEFER_TASK` or `CONTINUE_TASK` cannot undo either choice.
+  Cold reopen preserves their exact receipts and the prior rejected request's
+  immutable identity and non-consumption result. Its *current retry projection*
+  correctly closes after consumption; it is not immutable retry authority.
+
+The exact three-Run inventory, frozen definition, original verification evidence,
+all owned worktree bytes/HEADs and unaccepted/uncommitted state are checked
+throughout. These are serial commands and exact replay, not injected response
+loss, native runtime qualification, production-data testing or real-user consent.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -142,6 +176,41 @@ processes into passes. Ordinary functional validation is reported separately;
 composed-race completion and default-deadline performance remain unqualified.
 The budgets were not increased again and no transport or business-write retry
 was added to conceal these failures.
+
+### 2026-10-31 reproduction and anomaly coverage
+
+On a fresh Linux workspace using Go 1.26.10, the exact `eb173e0` functional
+baseline passed 435 checks in 28.22 seconds. Its composed-race binary instead
+failed after 255.04 seconds (exit 1, 30 checks), at the unchanged pipeline
+observation deadline. The retained evidence now distinguishes a completed Agent
+Turn from failed Core persistence:
+
+1. The helper recorded its outgoing `turn/completed`, and Core independently
+   logged `codex.turn.completed` for that same implementation Turn.
+2. Process-exit telemetry, Agent finalization and the recovery-marker write then
+   reported `database is locked (517)` (`SQLITE_BUSY_SNAPSHOT`).
+3. The captured supervisor join reported an infrastructure failure at **Agent
+   finalization intent**. Its session had exited, but the durable implementation
+   Run remained `RUNNING / UNKNOWN`; no verification Run had been created.
+
+This is a concrete post-completion storage failure in the new reproduction,
+not a missing outgoing Agent notification, a live Agent wait, or proof that all
+older failures had the same cause. No race-detector warning appeared. Read-only
+diagnostics did not retry, cancel, recover or manufacture a result. The race
+process and its report remain **FAILED**. Brief concurrent functional work
+overlapped schema bootstrap only, before the pipeline budget; these timings are
+not a production performance comparison. Root-cause repair remains separate
+from adding anomaly coverage.
+
+The new ordinary sequential-anomaly scenario passed 307 checks in 16.56 seconds,
+plus all 13 exact PREPARING-receipt rejection cases, through the documented
+script with unchanged recorded source hashes. Two earlier anomaly iterations
+failed honestly and were corrected in the fixture: an internal runtime field
+was not part of the public wire schema, and a historical rejection's current
+retry projection was incorrectly assumed to be immutable after consumption.
+Neither correction changes Core authority or converts an earlier failed process
+into a pass. Sequential race coverage and production-default-deadline latency
+are not established by this ordinary pass.
 
 ## Still not covered
 

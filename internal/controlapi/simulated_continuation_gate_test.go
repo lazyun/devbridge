@@ -73,6 +73,14 @@ type continuationGate struct {
 }
 
 func TestSimulatedContinuationGate(t *testing.T) {
+	runSimulatedContinuationGate(t, (*continuationGate).exerciseChoices)
+}
+
+func TestSimulatedContinuationSequentialAnomalies(t *testing.T) {
+	runSimulatedContinuationGate(t, (*continuationGate).exerciseSequentialAnomalies)
+}
+
+func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)) {
 	if os.Getenv("DEVBRIDGE_SIMULATED_CONTINUATION") != "1" {
 		t.Skip("explicit trusted Agent gate; run scripts/test-simulated-continuation.sh")
 	}
@@ -105,7 +113,7 @@ func TestSimulatedContinuationGate(t *testing.T) {
 		if completed && !t.Failed() {
 			status = "PASSED"
 		}
-		s.save("report.json", map[string]any{"schemaVersion": 1, "status": status, "startedAt": started, "finishedAt": time.Now().UTC(), "checks": s.checks, "trustBoundary": "TEST_ONLY_PROTOCOL_FIXTURE_V1: injected trusted resolver and deterministic Agent, not production native qualification", "bootstrap": "real typed project/session/confirmation/coordinator services; schema-only database template; no seeded business authority", "wire": "production GPT and Local MCP HTTP adapters after initial UPPER Review admission", "requestTimeoutSeconds": continuationRequestTimeout.Seconds(), "pipelineTimeoutSeconds": continuationPipelineTimeout.Seconds(), "postBootstrapTimeoutSeconds": continuationContextTimeout.Seconds(), "notCovered": []string{"real model", "native artifact qualification", "host sandbox enforcement", "unknown journal outcome or response-loss injection", "native conversation successor/resume", "acceptance, commit or merge"}})
+		s.save("report.json", map[string]any{"schemaVersion": 1, "scenario": t.Name(), "status": status, "startedAt": started, "finishedAt": time.Now().UTC(), "checks": s.checks, "trustBoundary": "TEST_ONLY_PROTOCOL_FIXTURE_V1: injected trusted resolver and deterministic Agent, not production native qualification", "bootstrap": "real typed project/session/confirmation/coordinator services; schema-only database template; no seeded business authority", "wire": "production GPT and Local MCP HTTP adapters after initial UPPER Review admission", "requestTimeoutSeconds": continuationRequestTimeout.Seconds(), "pipelineTimeoutSeconds": continuationPipelineTimeout.Seconds(), "postBootstrapTimeoutSeconds": continuationContextTimeout.Seconds(), "notCovered": []string{"real model", "native artifact qualification", "host sandbox enforcement", "unknown journal outcome or response-loss injection", "native conversation successor/resume", "acceptance, commit or merge"}})
 	}()
 	home := t.TempDir()
 	for _, key := range []string{"HOME", "CODEX_HOME", "XDG_CONFIG_HOME"} {
@@ -154,7 +162,7 @@ func TestSimulatedContinuationGate(t *testing.T) {
 	s.connect()
 	s.prepareExecution()
 	s.awaitVerification()
-	s.exerciseChoices()
+	exercise(s)
 	completed = true
 }
 
@@ -731,4 +739,107 @@ func TestSimulatedContinuationPreparingReceipt(t *testing.T) {
 			}
 		})
 	}
+}
+
+// These are serial public-wire probes, not fault injection or response-loss
+// simulation. Each refused command is followed by original-identity readback;
+// only separately labeled fixture-user commands may discard or consume choices.
+func (s *continuationGate) confirmationRead(in c.Intent, request string) c.Intent {
+	var out c.Result
+	read := c.ReadInput{AISessionID: s.f.session, IntentID: in.IntentID, Version: in.Version, Purpose: in.Purpose, ContentHash: in.ContentHash, RequestID: request}
+	gateDecode(s.t, s.call("gpt", "confirmation_get", read, ""), &out)
+	s.check(out.Intent != nil && out.Intent.IntentID == in.IntentID && out.Intent.ContentHash == in.ContentHash, "read exact original confirmation", out)
+	return *out.Intent
+}
+
+func (s *continuationGate) discardChoice(in c.Intent) c.Intent {
+	var out c.Result
+	read := c.ReadInput{AISessionID: s.f.session, IntentID: in.IntentID, Version: in.Version, Purpose: in.Purpose, ContentHash: in.ContentHash}
+	gateDecode(s.t, s.call("fixture_user", "confirmation_discard", read, ""), &out)
+	s.check(out.Intent != nil && out.Intent.IntentID == in.IntentID, "discard addresses only original choice", out)
+	return *out.Intent
+}
+
+func (s *continuationGate) exerciseSequentialAnomalies() {
+	v := s.checkCheckpoint(false, false)
+	note := "Retain exact verified fixture evidence; not acceptance or permission to merge."
+	input := s.choice("DEFER_TASK", "serial-pending-defer", note, int(v.ActionNode.Generation))
+	pending := s.prepare(input)
+	replayed := s.prepare(input)
+	s.check(reflect.DeepEqual(pending.Content, replayed.Content) && pending.IntentID == replayed.IntentID && pending.ContentHash == replayed.ContentHash && replayed.Commit == nil, "exact pending prepare replay preserves one unconsumed choice", replayed)
+	changed := gateMap(s.t, input)
+	changed["execution"].(map[string]any)["note"] = "Changed payload under the original prepare request."
+	s.call("gpt", "execution_prepare", changed, "CONFIRMATION_REQUEST_CONFLICT")
+	blocked := s.checkCheckpoint(false, false)
+	s.check(blocked.ActionNode.Blocking, "pending choice blocks competing action", blocked.ActionNode)
+	s.call("gpt", "execution_prepare", s.choice("CONTINUE_TASK", "serial-competing-continue", "", int(blocked.ActionNode.Generation)), "TASK_ACTION_PENDING")
+
+	// All mutations are schema-valid but name the wrong frozen identity. Neither
+	// read, discard nor commit may use intentId alone to acquire authority.
+	for _, field := range []struct {
+		name  string
+		value any
+	}{{"contentHash", strings.Repeat("0", 64)}, {"version", pending.Version + 1}, {"purpose", string(c.Review)}} {
+		read := gateMap(s.t, c.ReadInput{AISessionID: s.f.session, IntentID: pending.IntentID, Version: pending.Version, Purpose: pending.Purpose, ContentHash: pending.ContentHash})
+		read[field.name] = field.value
+		s.call("gpt", "confirmation_get", read, "CONFIRMATION_READ_IDENTITY_MISMATCH")
+		s.call("fixture_user", "confirmation_discard", read, "CONFIRMATION_READ_IDENTITY_MISMATCH")
+		commit := gateMap(s.t, s.commitInput(pending, "serial-wrong-"+field.name))
+		commit[field.name] = field.value
+		s.call("fixture_user", "confirmation_commit", commit, "CONFIRMATION_READ_IDENTITY_MISMATCH")
+		unchanged := s.confirmationRead(pending, "")
+		s.check(unchanged.State == "PENDING" && unchanged.Commit == nil && unchanged.Submission == nil && reflect.DeepEqual(unchanged.Content, pending.Content), "wrong "+field.name+" leaves original choice unconsumed", unchanged)
+	}
+	s.checkCheckpoint(false, false)
+	retired := s.discardChoice(pending)
+	s.check(retired.State == "SUPERSEDED" && retired.Commit == nil && reflect.DeepEqual(retired.Content, pending.Content), "explicit pending discard retires without business effect", retired)
+	s.call("fixture_user", "confirmation_commit", s.commitInput(pending, "serial-late-card"), "CONFIRMATION_INTENT_NOT_CURRENT")
+	s.call("gpt", "execution_prepare", s.choice("DEFER_TASK", "serial-stale-generation", note, int(v.ActionNode.Generation)), "TASK_ACTION_STALE")
+	v = s.checkCheckpoint(false, false)
+	s.check(!v.ActionNode.Blocking && v.ActionNode.Generation != blocked.ActionNode.Generation, "discard releases pending action and fences old generation", v.ActionNode)
+	fresh := s.prepare(s.choice("DEFER_TASK", "serial-fresh-defer", note, int(v.ActionNode.Generation)))
+	s.check(fresh.IntentID != pending.IntentID, "fresh prepare does not revive discarded intent", fresh)
+
+	bad := s.commitInput(fresh, "serial-inapplicable-runtime")
+	bad.Selection.RuntimeConfig = &codexruntime.NextRunRuntimeConfig{Model: "fixture-not-a-runtime-choice", ReasoningEffort: "high"}
+	// Use the actual public runtime input shape; internal serviceTier is not a caller field.
+	badWire := gateMap(s.t, bad)
+	badWire["selection"].(map[string]any)["runtimeConfig"] = map[string]any{"model": bad.Selection.RuntimeConfig.Model, "reasoningEffort": bad.Selection.RuntimeConfig.ReasoningEffort, "codexFastMode": false}
+	var rejected c.Result
+	gateDecode(s.t, s.call("fixture_user", "confirmation_commit", badWire, "BACKEND_SELECTION_NOT_APPLICABLE"), &rejected)
+	s.check(rejected.Intent != nil && rejected.Intent.State == "PENDING" && rejected.Intent.Commit == nil && rejected.Intent.Submission != nil, "runtime choice refusal leaves exact pending intent", rejected)
+	submission := rejected.Intent.Submission
+	s.check(submission.Recorded && submission.Outcome == c.RejectedNotConsumed && submission.BusinessOutcome == "REJECTED_NOT_CONSUMED" && submission.ConsumptionDisposition == "NOT_CONSUMED" && submission.Consumed != nil && !*submission.Consumed && submission.NextAction == c.EditSelection && submission.RetryDisposition == c.RetryEditSelectionAndResubmit && !submission.RedispatchSameIntent && submission.ReceiptRequestID == "" && submission.Request.RequestID == bad.RequestID && submission.Request.ContentHash == fresh.ContentHash && len(submission.PayloadSHA256) == 64, "durable no-consumption receipt authorizes only selection edit and new request", submission)
+	s.call("fixture_user", "confirmation_commit", badWire, "BACKEND_SELECTION_NOT_APPLICABLE")
+	corrected := s.commitInput(fresh, bad.RequestID)
+	s.call("fixture_user", "confirmation_commit", corrected, "CONFIRMATION_REQUEST_CONFLICT")
+	readback := s.confirmationRead(fresh, bad.RequestID)
+	s.check(reflect.DeepEqual(readback.Submission, submission), "replay and changed-payload conflict retain exact rejected receipt", readback.Submission)
+	s.checkCheckpoint(false, false)
+	corrected.RequestID = "serial-corrected-defer"
+	deferred := s.commit(corrected)
+	s.checkCheckpoint(true, false)
+	discarded := s.discardChoice(deferred)
+	s.check(discarded.State == "COMPLETED" && reflect.DeepEqual(discarded.Commit, deferred.Commit) && reflect.DeepEqual(discarded.Steps, deferred.Steps), "discard cannot undo consumed DEFER", discarded)
+	v = s.checkCheckpoint(true, false)
+	continued := s.prepare(s.choice("CONTINUE_TASK", "serial-prepare-continue", "", int(v.ActionNode.Generation)))
+	continuedInput := s.commitInput(continued, "serial-commit-continue")
+	continued = s.commit(continuedInput)
+	s.checkCheckpoint(false, true)
+	discarded = s.discardChoice(continued)
+	s.check(discarded.State == "COMPLETED" && reflect.DeepEqual(discarded.Commit, continued.Commit) && reflect.DeepEqual(discarded.Steps, continued.Steps), "discard cannot undo consumed CONTINUE", discarded)
+	s.cold()
+	s.checkCheckpoint(false, true)
+	s.replay(corrected, deferred)
+	s.replay(continuedInput, continued)
+	readback = s.confirmationRead(fresh, bad.RequestID)
+	// Retry eligibility is a current-intent projection, not an immutable receipt
+	// field: consuming this intent must close its former edit-and-resubmit route.
+	expectedHistorical := *submission
+	expectedHistorical.NextAction = c.ReadCurrentTarget
+	expectedHistorical.RetryDisposition = c.RetryReprepareRequired
+	expectedHistorical.ReprepareAllowed = false
+	s.check(readback.State == "COMPLETED" && reflect.DeepEqual(readback.Commit, deferred.Commit) && reflect.DeepEqual(readback.Submission, &expectedHistorical), "cold historical refusal preserves original NOT_CONSUMED facts but closes retry after corrected consumption", readback)
+	s.checkCheckpoint(false, true)
+	s.save("final-workspace.json", s.workspace())
 }
