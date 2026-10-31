@@ -126,6 +126,9 @@ func runSimulatedContinuationGate(t *testing.T, exercise func(*continuationGate)
 		if t.Name() != "TestSimulatedContinuationWithdrawArbitration" {
 			notCovered = append(notCovered, "overlapping withdrawal versus commit with both known first-writer orders")
 		}
+		if t.Name() != "TestSimulatedContinuationCancelLateCompletion" {
+			notCovered = append(notCovered, "client cancellation after business commit with late final journal persistence")
+		}
 		if t.Name() != "TestSimulatedContinuationJournalRecovery" {
 			notCovered = append(notCovered, "canonical choice recovery after final journal-save failure")
 		}

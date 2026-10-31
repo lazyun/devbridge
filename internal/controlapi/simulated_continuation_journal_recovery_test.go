@@ -153,7 +153,7 @@ func (s *continuationGate) journalRecoverySnapshot(in c.CommitInput, receipts in
 	if in.Action == "DEFER_TASK" {
 		expectedHolds = 1
 	}
-	s.check(len(events) == receipts && len(holds) == expectedHolds, "business effect and one event per genuine choice survived the later journal-save abort", out)
+	s.check(len(events) == receipts && len(holds) == expectedHolds, "business effect and one event per genuine choice exist independently of unfinished final journal persistence", out)
 	return out
 }
 

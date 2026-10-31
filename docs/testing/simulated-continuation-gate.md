@@ -21,6 +21,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --continue-unknown
 ./scripts/test-simulated-continuation.sh --submission-withdraw
 ./scripts/test-simulated-continuation.sh --withdraw-arbitration
+./scripts/test-simulated-continuation.sh --cancel-late-completion
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -50,9 +51,9 @@ ordinary sequential or original composed-race results. `scenario.txt` and the
 report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
 `--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
-`--withdraw-arbitration` select further
+`--withdraw-arbitration` and `--cancel-late-completion` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All nine scenarios retain the same request, pipeline,
+combines with `--race`. All ten scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -86,7 +87,10 @@ context and process budgets.
   persisted journal state from public readback. `--withdraw-arbitration` instead
   installs a non-failing exact writer barrier plus an observation-only service
   wrapper that forwards unchanged to the same real Facade. It also uses read-only
-  SQL snapshots. Other scenarios install no storage fault or writer barrier.
+  SQL snapshots. `--cancel-late-completion` uses a similar non-failing barrier
+  at the final journal write after the business commit, an observation-only
+  service wrapper, and actual public caller cancellation. Other scenarios install
+  no storage fault or writer barrier.
 
 The Agent launcher can only exec the exact current Go test executable and named
 helper. It uses `env -i`, a private HOME/CODEX_HOME and fixed fixture switches;
@@ -592,6 +596,140 @@ failed to compile because the SDK Connect options argument was
 missing; it remains failed evidence, not a passed gate. These scoped results do
 not clear the full-root-suite limits below.
 
+## Client cancellation with late final journal persistence
+
+`--cancel-late-completion` tests a distinct boundary from response-body loss:
+the real public caller cancels **before the real service returns**, while Core
+is already persisting its final confirmation journal after the genuine DEFER
+business transaction committed. This is one DEFER, not a new CONTINUE test,
+early cancellation, transaction rollback, process crash or execution recovery.
+The test does not infer non-consumption from client cancellation.
+
+A dedicated production MCP HTTP adapter uses a thin observation-only
+`StaticService` wrapper. It forwards the exact input and actual request context
+to the same real Facade and supplies no business result. One pre-initialized SDK
+client calls `confirmation_commit` once with the original frozen identity.
+A precisely scoped ordinary `BEFORE UPDATE OF intent_json` trigger pauses only
+that original Session/intent/request at the transition from `CONFIRMING` with an
+`UNKNOWN` step to `COMPLETED`/`COMMAND_COMPLETED`. Its predicate requires the real
+canonical choice receipt for the original business subrequest and exact targets.
+The callback records actual old/new journal JSON; it never accesses the DB,
+creates authority, invokes test assertions or performs another business command.
+
+While the writer is paused, independent read-only WAL transactions capture the
+actual `CONFIRMING`/`UNKNOWN` journal and genuine committed hold, canonical receipt
+and event. The main test then cancels its client context. It requires a nil client
+result with `errors.Is(err, context.Canceled)` **and** observation that the real
+server request context was canceled, before releasing the writer. Client-side
+cancellation alone is not server-cancellation evidence. The retained SDK client
+error also reports `sending "notifications/cancelled": Bad Request`; this is not
+a claim that the separate cancellation notification was delivered successfully.
+The production adapter enables `PropagateRequestCancellation: true` on its
+stateless JSON HTTP transport, and the SDK propagates HTTP carrier cancellation
+into the handler context. The test relies on the
+actually observed service-context cancellation, not on that notification. The recorded causal order
+is service entry → writer paused → client cancel issued → observed server
+cancellation and client return → writer release → writer return → service return.
+The two cancellation observations need not be ordered relative to each other.
+
+Core's existing `RecordStep(context.WithoutCancel(ctx), ...)` must persist the
+actual attempted final `COMPLETED` journal despite the canceled request. This
+also legitimately clears the original action owner and increments generation
+once via `task_action_confirmation_settled`; the test requires that exact
+transition rather than freezing a consumed action owner. Every prior submission
+row, the genuine hold (including `HeldAt` and note), canonical receipt and choice
+event must remain identical. The separately captured, oracle-only service return
+contains `COMPLETED` plus the real `CONFIRMATION_REQUEST_INTERRUPTED` /
+`RECEIPT_READBACK` failure: its receipt-readback context was canceled. That is
+**not** a successfully delivered client response or a non-consumption receipt.
+
+After both caller and service have joined, the dedicated endpoint closes and the
+trigger is removed. A separate unaffected public client uses only the original
+identity frozen before dispatch, never the captured server result, to read the
+consumed completed receipt. Warm and cold reads must preserve exact raw completed
+journal and immutable business bytes, without repair, resend or new request.
+The existing checkpoint oracle preserves all three original Runs, worksets,
+analysis, file bytes/source HEADs and still-unaccepted/UNCOMMITTED Task state.
+
+`cancel-late-plan.json` records the exact trigger and limits;
+`cancel-late-trace.json` records events, counters, old/new journal witness and
+oracle-only service output; `cancel-late-joins.json` records both joins. The
+`cancel-late-before.json`, `-canonical.json`, `-after.json` and `-cold.json`
+artifacts distinguish pre-release raw journal from its actual later persistence.
+Exactly one canceled public commit is retained in `mcp.jsonl`, with nil result and
+its real error. No `confirmation_commit` is retried.
+
+The scalar has a strict **5-second** timeout, rendezvous waits **2 seconds**, and
+the client/service phase **10 seconds**, unchanged under `--race`. Cleanup releases
+before cancellation/draining, bounds joins at **12 seconds**, joins the context
+observer, and retains partial trace/results on failure. Any barrier timeout,
+missing propagation, wrong identity, extra forwarded call or missing join fails;
+no timeout is accepted as late success. Driver scalar registration remains
+process-global: only the isolated dedicated script selection is supported, not
+arbitrary parallel opt-in tests. Shared request/pipeline/context/process budgets
+are unchanged; this is not production-latency qualification.
+
+On 2026-10-31, the frozen ordinary scenario **passed 151 checks in 12.72
+seconds** (`/tmp/devbridge-test-only-continuation.9UPSOM`), and composed `--race`
+**passed 151 checks in 247.48 seconds**
+(`/tmp/devbridge-test-only-continuation.w71U5w`), both exit 0 plus all thirteen
+pure receipt-oracle cases. An independent reviewer run also **passed 151 checks
+in 12.84 seconds**, exit 0 (`/tmp/devbridge-test-only-continuation.ktr27Z`). All
+three had one exact forwarded commit, one final-write
+witness, one service return and joined context observer, no timeout, and matching
+causal order/raw snapshots. No race warning was emitted. All thirteen tracked
+source hashes matched the final source. Root `go vet -p 2 ./...`, opt-out skip
+before registration, receipt cases, script syntax, conflicting/duplicate flags
+(exit 2), and `git diff --check` passed. These are scoped results, not a whole-root
+suite pass or production-default timeout qualification.
+
+During the prior-scenario regression batch, the 4.9 GiB `/tmp` tmpfs filled
+with retained generated executables. Five scripts exited 1 **at linking, before
+any test ran**, with `mapping output file failed: no space left on device`:
+`CvRYsG` (journal UNKNOWN), `7daEmV` (journal recovery), `Snkkh4` (CONTINUE
+UNKNOWN), `T5tvEu` (withdrawal), and `4XZptE` (arbitration), all under the usual
+`/tmp/devbridge-test-only-continuation.` prefix. Their original logs and failed
+exit sidecars remain; no missing report is called a failed or passed test.
+Nine finished generated binaries were copied to workspace-backed storage,
+SHA-256 verified, and their original paths retained as hash-valid symlinks,
+freeing 487,332,612 bytes without removing evidence. The relocation manifest is
+`/workspace/scratch/e4799e9b8e60/devbridge-evidence-binaries/relocation-manifest.json`.
+The blocked checks were rerun unchanged with workspace-backed `TMPDIR` and
+`DEVBRIDGE_SIM_EVIDENCE_DIR`; no code or timeout change was made.
+
+All nine prior ordinary selectors then had a successful final-source run
+(exit 0, plus thirteen receipt-oracle cases each):
+
+| Selector | Checks | Duration | Evidence suffix |
+| --- | ---: | ---: | --- |
+| `default` | 435 | 20.57s | `y4tsg0` |
+| `--sequential` | 307 | 17.53s | `gKi3du` |
+| `--response-loss` | 210 | 17.70s | `LCzMRb` |
+| `--cross-session` | 320 | 15.98s | `CiAzDB` |
+| `--journal-unknown` | 175 | 12.59s | `d6UnJS` |
+| `--journal-recovery` | 237 | 16.96s | `OkAjLu` |
+| `--continue-unknown` | 238 | 13.08s | `U6Tcrr` |
+| `--submission-withdraw` | 225 | 16.58s | `ScxiUh` |
+| `--withdraw-arbitration` | 197 | 17.30s | `pHhqtl` |
+
+The first four suffixes are under `/tmp/devbridge-test-only-continuation.`;
+the last five are under
+`/workspace/scratch/e4799e9b8e60/devbridge-evidence/devbridge-test-only-continuation.`.
+All thirteen source hashes matched across these nine directories and the three
+new-scenario qualifications. The response-loss count differs from its preceding
+211-check run only by one `workspace_get succeeds` polling observation; no
+behavioral assertion was removed. The five original linker failures are still
+failures, not retroactively relabeled passes. Prior root aggregate/socket and
+production-latency limitations below remain unchanged.
+
+The first authoring run (`/tmp/devbridge-test-only-continuation.moFmhr`) **failed
+in 9.59 seconds** because the draft oracle incorrectly required action ownership
+and generation to stay frozen after successful final persistence. Actual causal
+cancellation, late `COMPLETED`, exact owner release/generation increment and the
+interrupted receipt-readback failure were captured. The test expectations were
+corrected against the production settlement trigger and failure mapping; no Core
+behavior was changed. This failed run remains separate from final qualification.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -732,7 +870,7 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal recovery beyond the
-labeled rollback and final-save abort cases, unmodeled response-loss/crash points, cross-principal
+labeled rollback, final-save abort and post-business-commit cancellation cases, unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
 post-handler response-stream failure; ordinary exact replay is not called
