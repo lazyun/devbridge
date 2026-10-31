@@ -86,7 +86,23 @@ func (s *continuationGate) checkUncommittedCrashChoice(got, pending c.Intent, in
 	}
 }
 
+// The returned checkpoint is composed only from the real lifecycle above and
+// exact original receipts. A later scenario may exercise commands against that
+// same surviving Core/Session, never a seeded or replaced authority context.
+type crashedContinueCheckpoint struct {
+	Original, Deferred, Pending, Observed c.Intent
+	Input, DeferInput                     c.CommitInput
+	Journal                               continueProcessCrashSnapshot
+	Business                              continueUnknownBusinessSnapshot
+	Fault                                 killedChoiceCore
+}
+
 func (s *continuationGate) exerciseContinueProcessCrash() {
+	s.establishCrashedContinue()
+	s.save("final-workspace.json", s.workspace())
+}
+
+func (s *continuationGate) establishCrashedContinue() crashedContinueCheckpoint {
 	view := s.checkCheckpoint(false, false)
 	note := "Retain exact verified fixture evidence; not acceptance or permission to merge."
 	original := s.prepare(s.choice("DEFER_TASK", "continue-crash-prepare-defer", note, int(view.ActionNode.Generation)))
@@ -186,5 +202,5 @@ func (s *continuationGate) exerciseContinueProcessCrash() {
 		s.check(err == nil && bytes.Equal(got, want), "in-transaction crash/recovery emits no additional Agent activity: "+name, err)
 	}
 	s.save("continue-process-crash-after-cold.json", after)
-	s.save("final-workspace.json", s.workspace())
+	return crashedContinueCheckpoint{Original: original, Deferred: deferred, Pending: pending, Observed: cold, Input: in, DeferInput: deferInput, Journal: before, Business: baseline, Fault: fault}
 }

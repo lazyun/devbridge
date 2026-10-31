@@ -24,6 +24,7 @@ From the repository root, with the repository's Go toolchain and Git installed:
 ./scripts/test-simulated-continuation.sh --cancel-late-completion
 ./scripts/test-simulated-continuation.sh --process-crash
 ./scripts/test-simulated-continuation.sh --continue-process-crash
+./scripts/test-simulated-continuation.sh --crash-submission-withdraw
 ```
 
 Set `DEVBRIDGE_SIM_EVIDENCE_DIR` to an optional evidence parent directory. Each
@@ -54,9 +55,9 @@ report's `scenario` field identify which lifecycle was exercised.
 `--response-loss`, `--cross-session`, `--journal-unknown`,
 `--journal-recovery`, `--continue-unknown`, `--submission-withdraw` and
 `--withdraw-arbitration`, `--cancel-late-completion`, `--process-crash` and
-`--continue-process-crash` select further
+`--continue-process-crash` and `--crash-submission-withdraw` select further
 independent lifecycles. All scenario selectors are mutually exclusive and each
-combines with `--race`. All twelve scenarios retain the same request, pipeline,
+combines with `--race`. All thirteen scenarios retain the same request, pipeline,
 context and process budgets.
 
 ## Exact trust boundary
@@ -95,7 +96,8 @@ context and process budgets.
   service wrapper, and actual public caller cancellation. `--process-crash` uses
   a precisely scoped final-journal barrier in a separate Core-hosting process,
   actual parent-issued SIGKILL, and read-only post-death SQL observations before
-  opening another Core. `--continue-process-crash` uses the same owned-process
+  opening another Core. `--continue-process-crash` and
+  `--crash-submission-withdraw` use the same owned-process
   driver but pauses inside the genuine CONTINUE business transaction after its
   hold DELETE and before its receipt INSERT, then proves rollback after SIGKILL.
   Other scenarios install no storage fault or writer barrier.
@@ -933,6 +935,83 @@ verified the process/transaction oracles and their evidence. No production code,
 model call, merge, deadline increase or unsafe business retry was required.
 The prior aggregate-suite and native/production-latency limitations remain.
 
+## Withdrawal and discard after actual crash
+
+`--crash-submission-withdraw` starts from the **actual same-identity surviving
+checkpoint** established by the uncommitted CONTINUE process-crash lifecycle,
+not a manually seeded `CONFIRMING` row or a new Session. Its real SIGKILL,
+transaction-local deletion, pre-Open rollback oracle, exact original hold and
+consumed-but-unfinished journal must all pass first. The shared setup returns
+only its original fixture identities and observations; the new scenario runs in
+a fresh disposable fixture rather than attaching to a previous report's data.
+
+It then tests explicit fixture-user `confirmation_submission_withdraw` followed
+by `confirmation_discard`. Both are successful **no-op readbacks** of the exact
+consumed original receipt: neither success envelope means that the submission
+was withdrawn, the intent superseded, the hold undone, or a retry authorized.
+The public intent stays `CONFIRMING` with an `UNKNOWN` step, blank effect and
+nil failure. It retains the original request/selection, consumed outcome,
+`READ_ORIGINAL_RECEIPT` next action, and no resume, redispatch or reprepare rights.
+This is deliberately distinct from the prior returned SQL-abort `UNKNOWN` case.
+
+The new independent SQL observations preserve all request rows and all raw
+intent rows in this fixture Session, plus the Task's action bindings and release
+rows. They directly require **zero release receipts for the original consumed
+intent** and no replacement receipt in the Session. Those snapshots, the original
+action owner/generation, the killed worker epoch, exact hold/HeldAt and DEFER
+receipt/event/journal remain unchanged after each serialized probe. These are
+scoped read-only comparisons, not a claim that separate workspace partitions
+form a global atomic snapshot.
+
+Three negative probes additionally fail closed without changing the ledger:
+changed selection under the original consumed request ID, a different explicitly
+never-submitted withdrawal request ID, and an incorrect frozen discard hash.
+The first two return `CONFIRMATION_REQUEST_CONFLICT`; the third returns
+`CONFIRMATION_READ_IDENTITY_MISMATCH`. The different request is only a negative
+withdrawal probe, never a replacement recovery address or replayed commit; it
+must not acquire a `REJECTED_NOT_CONSUMED` receipt that could re-arm this consumed
+intent. A fresh CONTINUE proposal is still refused with `TASK_ACTION_PENDING`.
+
+After another real cold Core reopen, the command order is reversed: discard,
+then withdrawal, then original receipt/history reads. All monitored bytes and
+ownership stay fixed, and the Task remains held and blocking under the original
+intent. The Agent protocol logs and full checkpoint oracle still show no new
+work, successor, acceptance, commit or merge. The consumed `confirmation_commit`
+is **never** retried. These calls are serial; this is not another concurrency
+arbitration test, authorization to clear uncertainty from a missing receipt,
+or proof of unmodeled crash timing.
+
+The retained original crash artifacts use the `continue-process-crash` prefix.
+Additional `crash-submission-withdraw-before.json`, `-after-withdraw.json`,
+`-after-discard.json` and `-after-cold.json` preserve the expanded ledger/action
+observations. Exact commands, successful unchanged readbacks, negative-probe
+failures and original identities remain in `mcp.jsonl`; all standard hashes,
+reports and unchanged budgets still apply. Only test composition and evidence
+are added; no production recovery or authority behavior is changed.
+
+On 2026-10-31, frozen ordinary crash-withdrawal/discard coverage **passed 455
+checks in 20.06 seconds** (`NyOEmg`), and its separate composed `--race` invocation
+**passed 454 checks in 344.93 seconds** (`XdRLjr`), both exit 0 plus all thirteen
+PREPARING-receipt oracle cases. The one-check difference is a workspace-read
+polling observation; no invariant was removed. Evidence is under the existing
+`/workspace/scratch/e4799e9b8e60/devbridge-evidence/devbridge-test-only-continuation.`
+prefix. All sixteen source hashes matched across both runs and the final source;
+no race warning appeared. Their four expanded before/after ledger snapshots
+were identical, with one consumed crashed request, zero release/replacement
+receipts, and unchanged `CONFIRMING / UNKNOWN`, owner and generation. Actual
+SIGKILL/deletion/rollback evidence remains independently required by the reused
+setup rather than inferred from those no-op results.
+
+The same-source ordinary regressions also passed: `--continue-process-crash`
+**252 checks / 17.32 seconds** (`6FMwAh`) and `--submission-withdraw` **225 checks /
+16.71 seconds** (`xZN1Ll`), each exit 0 plus the thirteen receipt cases. Root
+`go vet -p 2 ./...`, opt-out/receipt tests, script syntax, duplicate/conflicting
+selector refusal (exit 2), and `git diff --check` passed. Independent review
+approved the real-checkpoint extraction, no-op authority oracles and evidence.
+No deadline increase, production behavior change, real model call or consumed
+business-command replay was needed. These are scoped qualifications, not a new
+full-root-suite pass or production/native acceptance; previous limits remain.
+
 ## Instrumentation budget and retained failures
 
 This composed **functional** gate explicitly configures a bounded 60-second MCP
@@ -1074,7 +1153,8 @@ relabeling the earlier aggregate failure or its uncompleted control API tests.
 Real models/native artifacts, production host sandboxing, native conversation
 resume/successor, interrupted execution recovery, journal recovery beyond the
 labeled rollback, final-save abort, post-business-commit cancellation and exact
-post-business-commit process-crash and in-transaction CONTINUE crash cases,
+post-business-commit process-crash, in-transaction CONTINUE crash and its
+serial consumed-withdrawal/discard cases,
 unmodeled response-loss/crash points, cross-principal
 authentication and other cross-Session workflows, hostile runtime behavior,
 and terminal acceptance/delivery are outside this bounded gate. Only the explicit `--response-loss` scenario injects the documented
