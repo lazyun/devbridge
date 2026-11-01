@@ -947,6 +947,7 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 	var selectedReview *review.Review
 	runIDs := []string{}
 	executionRevisionID := ""
+	inspectionSuccessorRunID := ""
 	switch target.Kind {
 	case "REVIEW":
 		v, e := s.GetReview(ctx, in.AISessionID, target.OperationID)
@@ -1006,7 +1007,11 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			out.Result.Model = v.Canonical.Model
 			out.Result.ReasoningEffort = v.Canonical.ReasoningEffort
 		}
-		runIDs = append(runIDs, v.RunID)
+		// The session-scoped Probe carries the durable continuation receipt's
+		// exact successor. Keep the immutable source readable, but select the
+		// current continuation by default without scanning Task history.
+		inspectionSuccessorRunID = v.RecoverySuccessorRunID
+		runIDs = append(runIDs, v.RunID, inspectionSuccessorRunID)
 	default:
 		return out, errors.New("target.kind must be REVIEW, EXECUTION or INSPECTION")
 	}
@@ -1143,6 +1148,13 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			continue
 		}
 		association := (target.Kind == "REVIEW" && r.ReviewID == target.OperationID) || (target.Kind == "EXECUTION" && r.ExecutionProposalID == target.OperationID) || (target.Kind == "INSPECTION" && r.ContextProbeID == target.OperationID)
+		if target.Kind == "INSPECTION" && id == inspectionSuccessorRunID {
+			// Continuations intentionally have no ContextProbeID. Only the exact
+			// receipt-linked Inspection Run may use that shape; same-owner
+			// Recovery diagnostics and unrelated Runs remain ineligible.
+			association = r.ContextProbeID == "" && r.FeatureAreaID == "" &&
+				r.OperationKind == run.OperationInspection && r.OperationID == target.OperationID && r.Purpose == run.PurposeInspection
+		}
 		if r.ID != id || r.ProjectID != session.Project.ID || r.TaskID != taskID || !association || r.OperationKind != "" && string(r.OperationKind) != target.Kind || r.OperationID != "" && r.OperationID != target.OperationID {
 			return out, errors.New("Exact operation Run association changed")
 		}
