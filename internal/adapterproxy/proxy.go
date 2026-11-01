@@ -81,7 +81,21 @@ func New(ctx context.Context, config Config) (*Proxy, error) {
 	return &Proxy{handler: proxy}, nil
 }
 
-func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) { p.handler.ServeHTTP(w, r) }
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// The upstream transport can still be finishing its request-body EOF
+	// probe when the response arrives. HTTP/1's default response writer
+	// drains/closes that same body, which can abort an otherwise complete
+	// upstream response. HTTP/2 already permits concurrent reads and writes.
+	if r.ProtoMajor == 1 {
+		if err := http.NewResponseController(w).EnableFullDuplex(); err != nil && !errors.Is(err, http.ErrNotSupported) {
+			http.Error(w, "enable proxy full duplex: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// ErrNotSupported is expected for non-network writers such as
+		// httptest.ResponseRecorder; the production net/http writer supports it.
+	}
+	p.handler.ServeHTTP(w, r)
+}
 
 func parseCoreURL(raw string) (*url.URL, error) {
 	if raw == "" {
