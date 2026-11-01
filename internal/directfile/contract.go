@@ -32,6 +32,9 @@ const (
 	DestinationAlreadyExists = "DESTINATION_ALREADY_EXISTS"
 	TooLarge                 = "FILE_TOO_LARGE"
 	OperationFailed          = "FILE_OPERATION_FAILED"
+	// CancellationMutationUnresolved proves only that cancellation did not
+	// start: an earlier file effect still needs its own durable receipt proof.
+	CancellationMutationUnresolved = "DIRECT_FILE_CANCELLATION_MUTATION_UNRESOLVED"
 )
 
 type Error struct {

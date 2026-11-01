@@ -532,7 +532,9 @@ func (a *DirectFileAuthority) StartTaskAuthorization(ctx context.Context, in dir
 				return directfile.State{}, e
 			}
 			if unresolved {
-				return directfile.State{}, directFileError(directfile.OperationFailed, "unresolved file mutation receipt requires recovery before cancellation")
+				// This refusal precedes every cancellation effect and receipt. Do
+				// not conflate it with an ambiguous failure after dispatch/commit.
+				return directfile.State{}, directFileError(directfile.CancellationMutationUnresolved, "unresolved file mutation receipt requires recovery before cancellation")
 			}
 			if _, e = tx.ExecContext(ctx, `UPDATE direct_file_task_authorizations SET state='CLOSED',failure_code='',failure_reason='',updated_at=? WHERE workflow_id=? AND protocol_version=2 AND state IN ('PREPARING','ACTIVE','RECOVERY_REQUIRED')`, formatTime(now), v.WorkflowID); e != nil {
 				return directfile.State{}, e

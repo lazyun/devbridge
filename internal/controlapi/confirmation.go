@@ -1518,6 +1518,15 @@ func (f *Facade) performConfirmationStep(ctx context.Context, intent confirmatio
 		b := intent.Content.Execution
 		entered = true
 		state, e := f.deps.DirectFiles.StartTaskAuthorization(ctx, directfile.StartInput{AISessionID: session, TaskID: taskID, TaskDefinitionRevisionID: revision, DecisionID: b.DecisionID, RequestID: step.RequestID, ConfirmationIntentID: intent.IntentID, Action: step.Kind, WorkflowID: b.WorkflowID, RuntimeEpoch: b.RuntimeEpoch, GrantGeneration: b.GrantGeneration})
+		var refusal *directfile.Error
+		if step.Kind == "CANCEL_DIRECT_FILE" && state.WorkflowID == "" && errors.As(e, &refusal) && refusal.Code == directfile.CancellationMutationUnresolved {
+			// The authority entered its guard but proved cancellation itself
+			// never started. Keep this consumed choice REJECTED/NOT_STARTED,
+			// rather than permanently owning the Task as an unknown cancel.
+			// The earlier file mutation remains unresolved; no replay or new
+			// authority is granted by this classification.
+			entered = false
+		}
 		if e == nil && state.State == "PREPARING" && step.Kind != "CANCEL_DIRECT_FILE" {
 			observed, reconcileErr := f.deps.DirectFiles.ReconcileTaskAuthorization(ctx, directfile.Registration{AISessionID: session, TaskID: taskID, TaskDefinitionRevisionID: revision, DecisionID: b.DecisionID, ImplementationMode: string(task.ImplementationDirectFile), Confirmed: true})
 			e = reconcileErr
