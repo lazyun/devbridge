@@ -349,6 +349,15 @@ func DirectFileWorkerAction(p Projection) (wp.Action, bool) {
 		g.TaskID != state.TaskID || g.TaskDefinitionRevisionID != state.TaskDefinitionRevisionID {
 		return fallback, true
 	}
+	if p.NextAction.Code == "RESOLVE_CURRENT_TASK_ACTION" {
+		// The current Task-action owner was attached after file guidance. An
+		// unresolved consumed confirmation must not be replaced by an offer to
+		// prepare another cancellation, which admission would correctly reject.
+		if node := p.TaskView.ActionNode; node != nil && node.TaskID == state.TaskID && node.Blocking {
+			return p.NextAction, true
+		}
+		return fallback, true
+	}
 	if g.NextAction.Code == "CANCEL_DIRECT_FILE" {
 		return wp.Action{Code: "CANCEL_DIRECT_FILE", Required: true, Message: message}, true
 	}

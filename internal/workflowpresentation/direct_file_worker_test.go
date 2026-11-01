@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lazyun/devbridge/internal/directfile"
+	"github.com/lazyun/devbridge/internal/taskaction"
 	wp "github.com/lazyun/devbridge/internal/workflowprogression"
 )
 
@@ -35,6 +36,19 @@ func TestDirectFileWorkerCurrentActionUsesOnlyExactObservedCancellation(t *testi
 		{"still-enabled", "REFRESH", func(p *Projection) { p.DirectFile.Enabled = true }},
 		{"terminal-task", "REFRESH", func(p *Projection) { p.TaskView.Terminal = true }},
 		{"wait", "WAIT_FOR_DIRECT_FILE", func(p *Projection) { p.Guidance.NextAction.Code = "WAIT_FOR_DIRECT_FILE" }},
+		{"blocking-current-confirmation", "RESOLVE_CURRENT_TASK_ACTION", func(p *Projection) {
+			p.NextAction = wp.Action{Code: "RESOLVE_CURRENT_TASK_ACTION", Required: true, Message: "Read the original unknown confirmation; no new cancellation."}
+			p.TaskView.ActionNode = &taskaction.Node{TaskID: "task", IntentID: "original", State: "UNKNOWN", Blocking: true}
+		}},
+		{"missing-blocking-node", "REFRESH", func(p *Projection) { p.NextAction.Code = "RESOLVE_CURRENT_TASK_ACTION" }},
+		{"foreign-blocking-node", "REFRESH", func(p *Projection) {
+			p.NextAction.Code = "RESOLVE_CURRENT_TASK_ACTION"
+			p.TaskView.ActionNode = &taskaction.Node{TaskID: "other", Blocking: true}
+		}},
+		{"no-longer-blocking-node", "REFRESH", func(p *Projection) {
+			p.NextAction.Code = "RESOLVE_CURRENT_TASK_ACTION"
+			p.TaskView.ActionNode = &taskaction.Node{TaskID: "task"}
+		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -44,6 +58,9 @@ func TestDirectFileWorkerCurrentActionUsesOnlyExactObservedCancellation(t *testi
 			got := CurrentAction(p)
 			if got.Code != tc.want {
 				t.Fatalf("action=%+v want=%s", got, tc.want)
+			}
+			if tc.want == "RESOLVE_CURRENT_TASK_ACTION" && got != p.NextAction {
+				t.Fatal("blocking action lost its original requirement/message")
 			}
 			if p.DirectFile.State != before.State || p.DirectFile.RuntimeEpoch != before.RuntimeEpoch || p.DirectFile.GrantGeneration != before.GrantGeneration {
 				t.Fatal("projection changed authority")

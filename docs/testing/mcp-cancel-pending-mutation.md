@@ -124,3 +124,55 @@ passed individually on the same baseline. Their original whole-package timeout
 stacks were not found in the current workspace, so neither their cause nor a
 whole-suite pass is claimed. Those rechecks retain command/result excerpts,
 not complete original logs, in `devbridge-suite-timeout-recheck-evidence`.
+
+## Canonical cancellation receipt and historical UNKNOWN guidance
+
+A subsequent bounded check on `3431eaa96a22c3a3f2114296eb4827b2ff2e128d`
+distinguished two nearby persistence windows through real GPT/Local MCP:
+
+| Isolated fault | Durable business facts | Cold confirmation read |
+| --- | --- | --- |
+| Cancellation committed, but saving the final confirmation JSON fails | Grant CLOSED; exact original cancellation subrequest has a CLOSED receipt; persisted intent still CONFIRMING with an UNKNOWN step | COMPLETED from that canonical receipt; no new cancellation |
+| Cancellation receipt insertion fails and rolls back its transaction | No cancellation receipt; grant not CLOSED; intent UNKNOWN | Still UNKNOWN, non-resumable, no same-intent redispatch or replacement permission |
+
+The fault uses narrowly scoped SQLite triggers, removed before the restart;
+it is not a TCP-loss or process-kill experiment. The canonical receipt, not
+the error message or current grant state alone, supplies completion proof.
+`confirmation_get` recovers a read-only projection: it does **not** rewrite
+the persisted CONFIRMING intent into COMPLETED. Every saved business-table
+snapshot remains identical across the cold reads and the explicitly requested
+historical replay of the already-proven completed cancellation. A fresh file
+write remains refused with DIRECT_FILE_CAPABILITY_NOT_ENABLED, and original
+file identity, bytes and mtime remain unchanged.
+
+The missing-receipt case exposed a separate **guidance defect**, not an admission
+bypass: the Task action node correctly remained UNKNOWN/blocking and new
+cancellation preparation returned TASK_ACTION_PENDING, but the workspace's
+`nextAction` and Task `currentAction` incorrectly recommended CANCEL_DIRECT_FILE.
+The file-worker presentation had overwritten the already-attached
+RESOLVE_CURRENT_TASK_ACTION with older file guidance.
+
+The correction preserves that existing Task-action instruction when its
+blocking node belongs to the exact selected Task. A missing, foreign or no
+longer blocking node falls back to REFRESH, not cancellation. It does not
+require the node to belong to the current Session: another Session's blocking
+action still prevents a misleading cancellation offer. Existing independent
+Decision priority and normal unblocked CANCEL/WAIT behavior are unchanged.
+
+This changes **presentation only**. Historical UNKNOWN is neither migrated nor
+unlocked. Read the original exact confirmation identity/request; absent an
+original canonical business receipt, do not interpret a restart, completed file
+mutation, or generic error as permission to retry, replace or declare the
+cancellation successful. The final negative case retains the same unknown
+owner, blocked capability and TASK_ACTION_PENDING rejection after its guidance
+is corrected.
+
+The repository gate is
+`TestFileWorkerCancellationCanonicalReceiptRecoveryHTTP`, with the two scenarios
+above. Small projection cases cover same-Task blocking, missing/foreign/inactive
+nodes and the existing normal/Decision paths. An overlay removing cancellation
+receipt recovery makes the positive cold-read assertion fail; a separate old
+projection overlay makes the missing-receipt guidance assertion fail. Private
+raw evidence is retained in `devbridge-cancel-receipt-recovery-evidence`, not in
+the repository. No race run or broad suite was added for this read-only
+presentation correction.
