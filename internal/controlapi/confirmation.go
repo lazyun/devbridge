@@ -1587,6 +1587,10 @@ func (f *Facade) performConfirmationStep(ctx context.Context, intent confirmatio
 				step.TaskID = adopted.Archive.TaskID
 			}
 			if adoptErr != nil {
+				var before *confirmationStepNotStarted
+				if errors.As(adoptErr, &before) {
+					step.Effect = "NOT_STARTED"
+				}
 				return step, adoptErr
 			}
 			step.Effect = "PREPARATION_READY"

@@ -6,6 +6,7 @@ import (
 
 	"github.com/lazyun/devbridge/internal/confirmation"
 	"github.com/lazyun/devbridge/internal/formalexecution"
+	"github.com/lazyun/devbridge/internal/runtimeplatform"
 	"github.com/lazyun/devbridge/internal/runtimeselection"
 	"github.com/lazyun/devbridge/internal/task"
 )
@@ -53,6 +54,15 @@ func (f *Facade) finishFormalAdoption(ctx context.Context, intent confirmation.I
 			}
 			ref, e := f.deps.RuntimeQualification.ResolvePlatformReference(ctx, *intent.Commit.BackendSelection, "IMPLEMENTATION")
 			if e != nil {
+				// ErrQualificationRequired proves this exact fresh admission
+				// has no business effects. Resolution does not write canonical
+				// adoption/Execution authority; a missing mapping must not
+				// strand this request as an unresumable UNKNOWN.
+				// Do not infer no effects from a later writer error, missing
+				// receipt IDs, or an error message that resembles this sentinel.
+				if errors.Is(e, runtimeplatform.ErrQualificationMissing) {
+					return zero, &confirmationStepNotStarted{cause: e}
+				}
 				return zero, e
 			}
 			receipt, err = store.CommitAdoption(ctx, id, ref)

@@ -135,8 +135,9 @@ func appendConfirmationFailure(choice *c.Choice, failure *c.Failure) {
 	}
 }
 
-// This marker is set only before entering any canonical business command.
-// Error class or missing returned IDs cannot prove a command had no effects.
+// This marker is set only before entering a canonical business command, or
+// after its dedicated pre-effect refusal proves no business effects occurred.
+// A generic error class or missing returned IDs is not such proof.
 type confirmationStepNotStarted struct{ cause error }
 
 func (e *confirmationStepNotStarted) Error() string { return e.cause.Error() }

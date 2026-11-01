@@ -177,7 +177,8 @@ func (id ReadIdentity) MatchesAdoption(r AdoptionReceipt) error {
 }
 
 // ErrQualificationRequired is returned only for a fresh definition-only
-// admission. Complete replay and locked admission never replace their platform.
+// admission before any business write; its transaction is rolled back.
+// Complete replay and locked admission never replace their platform.
 var ErrQualificationRequired = errors.New("FORMAL_ADOPTION_QUALIFICATION_REQUIRED")
 
 func (r AdoptionReceipt) SourceID() string {
