@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/lazyun/devbridge/internal/executionproposal"
 	wp "github.com/lazyun/devbridge/internal/workflowprogression"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -79,6 +80,23 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		}
 	}
 	exactReviewReadback := reviewCancellation || params.Name == "review_worker_claim" || params.Name == "review_worker_get"
+	exactExecutionReadback := params.Name == "execution_start" && value["reservationCommitted"] == true
+	originalRevision := ""
+	if exactExecutionReadback {
+		// The start receipt owns this response, not the Task's latest Run.
+		// Proposal.RunID may already point at later Verification; use the
+		// original receipt or the independently returned Run instead.
+		scope, originalRevision = surfaceExecutionStartScope(raw)
+		scope.AISessionID = session
+		for key, id := range map[string]string{"projectId": scope.ProjectID, "featureAreaId": scope.FeatureAreaID, "taskId": scope.TaskID, "executionId": scope.ExecutionID, "runId": scope.RunID, "taskDefinitionRevisionId": originalRevision} {
+			delete(contextValue, key)
+			if id != "" {
+				contextValue[key] = id
+			}
+		}
+		delete(contextValue, "reviewId")
+		delete(contextValue, "decisionId")
+	}
 	if params.Name == "file_worker_claim" || params.Name == "file_worker_get" {
 		// A historical delivery receipt must never inherit successor workflow actions.
 		for _, key := range []string{"workflowId", "protocolVersion", "runtimeEpoch", "grantGeneration"} {
@@ -127,6 +145,11 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 	case "file_worker_claim", "file_worker_get", "direct_file_enable", "direct_file_disable", "file_list", "file_read", "file_write", "document_create", "repository_search", "development_branch_create", "development_branch_select":
 		needsWorkflow = false
 	}
+	if exactExecutionReadback && (scope.TaskID == "" || scope.ExecutionID == "") {
+		needsWorkflow = false
+		refreshRequired = true
+		workflow["readError"] = "Exact Execution receipt identity unavailable; refresh its authoritative state separately."
+	}
 	if needsWorkflow {
 		if reader, available := service.(interface {
 			WorkflowGuidanceForResource(context.Context, wp.ResourceScope) (wp.Guidance, error)
@@ -135,6 +158,9 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 			if readErr != nil {
 				refreshRequired = true
 				workflow["readError"] = publicToolError(readErr).Error()
+			} else if exactExecutionReadback && !surfaceExecutionReadbackMatches(g, scope, originalRevision) {
+				refreshRequired = true
+				workflow["readError"] = "Exact Execution readback is superseded by another operation; refresh its authoritative state separately."
 			} else if exactReviewReadback && ((g.ReviewID != "" && g.ReviewID != scope.ReviewID) || (g.RunID != "" && g.RunID != scope.RunID) || g.ExecutionID != "") {
 				// Exact receipt replay may outlive its Task's current operation.
 				// Do not attach a successor's identity/actions to the old receipt.
@@ -182,6 +208,36 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		out.Content = []sdkmcp.Content{&sdkmcp.TextContent{Text: string(encoded)}}
 	}
 	return out, nil
+}
+
+// surfaceExecutionStartScope reads only identities confirmed by the Core result.
+// A receipt-only failure must not fill missing child identities from live Task state.
+func surfaceExecutionStartScope(raw []byte) (wp.ResourceScope, string) {
+	var result executionproposal.StartResult
+	if json.Unmarshal(raw, &result) != nil {
+		return wp.ResourceScope{}, ""
+	}
+	if r := result.Receipt; r != nil {
+		return wp.ResourceScope{ProjectID: r.ProjectID, TaskID: r.TaskID, ExecutionID: r.OriginalExecutionID, RunID: r.OriginalRunID}, r.TaskDefinitionRevisionID
+	}
+	scope := wp.ResourceScope{ProjectID: result.Proposal.ProjectID, FeatureAreaID: result.Run.FeatureAreaID, TaskID: result.Proposal.TaskID, ExecutionID: result.Proposal.ID, RunID: result.Run.ID}
+	if scope.ProjectID == "" {
+		scope.ProjectID = result.Run.ProjectID
+	}
+	if scope.TaskID == "" {
+		scope.TaskID = result.Run.TaskID
+	}
+	if scope.ExecutionID == "" {
+		scope.ExecutionID = result.Run.ExecutionProposalID
+	}
+	return scope, result.Proposal.TaskDefinitionRevisionID
+}
+
+func surfaceExecutionReadbackMatches(g wp.Guidance, scope wp.ResourceScope, revision string) bool {
+	return g.TaskID == scope.TaskID && g.ExecutionID == scope.ExecutionID && g.RunID == scope.RunID &&
+		(scope.ProjectID == "" || g.ProjectID == scope.ProjectID) &&
+		(scope.FeatureAreaID == "" || g.FeatureAreaID == scope.FeatureAreaID) &&
+		(revision == "" || g.TaskDefinitionRevisionID == revision)
 }
 
 // Pending decisions require conversation handling; showing their read-only Card

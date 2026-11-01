@@ -276,7 +276,25 @@ func TestApprovedTaskStartThroughLocalMCP(t *testing.T) {
 				client = newApprovedStartLocalClient(t, f)
 			}
 			before = definitionRuntimeSnapshot(t, f, true)
-			replay := decodeApprovedLocalStart(t, client.call("execution_start", command, false))
+			rawReplay := client.call("execution_start", command, false)
+			replay := decodeApprovedLocalStart(t, rawReplay)
+			var envelope struct {
+				Context         map[string]any `json:"context"`
+				Workflow        map[string]any `json:"workflow"`
+				RefreshRequired bool           `json:"refreshRequired"`
+			}
+			if err = json.Unmarshal(rawReplay, &envelope); err != nil {
+				t.Fatal(err)
+			}
+			// The canonical Task now points at Verification, but replay still
+			// belongs to the original Implementation Run. Never attach the
+			// newer operation's identity, decisions or actions to this receipt.
+			if envelope.Context["executionId"] != started.Proposal.ID || envelope.Context["runId"] != started.Run.ID || envelope.Context["taskDefinitionRevisionId"] != started.Proposal.TaskDefinitionRevisionID {
+				t.Errorf("%s replay envelope changed exact original scope: original execution=%s run=%s context=%+v", phase, started.Proposal.ID, started.Run.ID, envelope.Context)
+			}
+			if !envelope.RefreshRequired || envelope.Workflow["stale"] != true || envelope.Workflow["nextAction"] != nil || envelope.Workflow["pendingDecisions"] != nil || envelope.Context["decisionId"] != nil {
+				t.Errorf("%s replay inherited current Verification guidance: workflow=%+v context=%+v", phase, envelope.Workflow, envelope.Context)
+			}
 			if replay.Proposal.ID != started.Proposal.ID || replay.Run.ID != started.Run.ID || replay.Proposal.RuntimeConfig != selected || !reflect.DeepEqual(replay.Proposal.BackendSelection, started.Proposal.BackendSelection) {
 				t.Fatalf("%s replay replaced frozen start: %+v", phase, replay)
 			}
