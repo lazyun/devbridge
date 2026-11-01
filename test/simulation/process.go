@@ -12,23 +12,31 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
 type child struct {
-	cmd  *exec.Cmd
-	done chan struct{}
-	log  *os.File
-	once sync.Once
+	cmd     *exec.Cmd
+	done    chan struct{}
+	log     *os.File
+	once    sync.Once
+	waitErr error // published before done closes; read only after joining done
 }
 
-func (p *child) stop(crash bool) {
+func (p *child) stop(crash bool) error {
+	stopped := false
+	var crashErr error
 	p.once.Do(func() {
+		stopped = true
 		select {
 		case <-p.done:
+			if crash {
+				crashErr = fmt.Errorf("owned process exited before SIGKILL injection")
+			}
 		default:
 			if crash {
-				_ = p.cmd.Process.Kill()
+				crashErr = p.cmd.Process.Kill()
 			} else {
 				_ = p.cmd.Process.Signal(os.Interrupt)
 			}
@@ -38,10 +46,27 @@ func (p *child) stop(crash bool) {
 				_ = p.cmd.Process.Kill()
 				<-p.done
 			}
+			if crash && crashErr == nil {
+				crashErr = verifySIGKILL(p.cmd.ProcessState, p.waitErr)
+			}
 		}
 		_ = p.log.Close()
 	})
+	if crash && !stopped {
+		return fmt.Errorf("owned process already stopped; no new SIGKILL injection")
+	}
+	return crashErr
 }
+
+func verifySIGKILL(state *os.ProcessState, waitErr error) error {
+	if state != nil && waitErr != nil {
+		if status, ok := state.Sys().(syscall.WaitStatus); ok && status.Signaled() && status.Signal() == syscall.SIGKILL {
+			return nil
+		}
+	}
+	return fmt.Errorf("owned process did not terminate by SIGKILL: state=%v wait=%v", state, waitErr)
+}
+
 func isolatedEnvironment(home, root, selection string) []string {
 	// Deliberate allowlist: no inherited tokens, proxy, model, Git hooks/config or
 	// user's Codex/Pi preferences. Selection points only to the fail-fast tripwire.
@@ -98,7 +123,7 @@ func (s *scenario) launchOne(name string, args ...string) string {
 			}
 		}
 	}()
-	go func() { _ = p.cmd.Wait(); <-scanDone; close(p.done) }()
+	go func() { p.waitErr = p.cmd.Wait(); <-scanDone; close(p.done) }()
 	timer := time.NewTimer(30 * time.Second)
 	defer timer.Stop()
 	select {
@@ -143,8 +168,15 @@ func (s *scenario) launch() {
 func (s *scenario) stop(crash bool) {
 	// A crash scenario first SIGKILLs only its owned Core process, rather than
 	// sending a graceful interrupt and calling that crash recovery.
-	if crash && len(s.processes) > 0 {
-		s.processes[0].stop(true)
+	var crashErr error
+	var crashDetail any
+	if crash {
+		crashErr = fmt.Errorf("no owned Core process for SIGKILL injection")
+		if len(s.processes) > 0 {
+			core := s.processes[0]
+			crashErr = core.stop(true)
+			crashDetail = map[string]any{"pid": core.cmd.Process.Pid, "exitState": core.cmd.ProcessState.String()}
+		}
 	}
 	if s.agent != nil {
 		_ = s.agent.session.Close()
@@ -158,6 +190,12 @@ func (s *scenario) stop(crash bool) {
 		s.processes[i].stop(false)
 	}
 	s.processes = nil
+	// Finish all owned cleanup before reporting a failed injection. Ordinary
+	// deferred cleanup remains non-panicking and idempotent.
+	if crash {
+		s.must(crashErr)
+		s.check("owned Core actually terminated by SIGKILL", true, crashDetail)
+	}
 }
 func (s *scenario) git(path string, args ...string) string {
 	cmd := exec.CommandContext(s.ctx, "git", append([]string{"-c", "core.hooksPath=/dev/null"}, args...)...)
