@@ -2,10 +2,13 @@
 
 ## Current packaged workflow gate
 
-Run from the repository root:
+Select an installed **native Codex executable**, then run from the repository
+root. The script requires `DEVBRIDGE_PLATFORM_NATIVE_BINARY`; an omitted or
+non-executable path exits with status 2 before building:
 
 ```sh
-./scripts/verify-usable-project.sh
+DEVBRIDGE_PLATFORM_NATIVE_BINARY=/absolute/path/to/native/codex \
+  ./scripts/verify-usable-project.sh
 ```
 
 The script builds Core and both adapters, then runs
@@ -18,19 +21,45 @@ selection, implementation, verification, acceptance, Git commit, FeatureArea
 merge and replay after all three processes restart. Independent Git assertions
 check both selected repositories and the unchanged third repository.
 
-The App Server in this gate is deterministic and offline. Its implementation
-edits and verification commands are real filesystem and shell operations, but
-this is not an online model-quality or provider-availability test. Logs, protocol
-messages and disposable repositories are retained at the printed evidence path.
-The test deliberately skips unless `DEVBRIDGE_USABLE_PROJECT_BIN` is set; the
-script always supplies freshly built binaries.
+The gate launches that **real native App Server** against a deterministic
+loopback Responses provider, with isolated HOME/CODEX_HOME and disposable
+configuration. It does not use a fake App Server or an online model provider.
+Implementation edits and verification commands execute in the native runtime;
+this is not an online model-quality, provider-availability, or real-user
+confirmation test. The script retains logs, protocol messages and disposable
+repositories at its printed evidence path.
+
+Before implementation, the test stops the services and invokes the same
+packaged Core's `-mode qualify-runtime` against the fixture DataRoot. The
+[native collector](../../internal/platformcollector/provider.go) currently
+recognizes `codex-cli 0.149.0` and `codex-cli 0.159.2`; version recognition alone
+does not establish qualification. The native artifact, protocol and runtime
+checks must also pass. Separate App Server version admission elsewhere does
+not override this gate's collector policy.
+
+The host must support the native runtime's filesystem sandbox. An enclosing
+Linux sandbox can prevent nested execution, for example by exposing the fixed
+`/tmp/codex-daemon-<uid>` directory as a read-only mode-000 mount while the native
+runtime requires mode 0700. That is an environment blocker, not by itself a
+Dev Bridge workflow defect. Do not change protected mounts or permissions,
+disable the sandbox, or spoof the native version to make the gate pass. Retain
+the exact qualification error and report which stages were not reached.
 
 For the test alone after a build:
 
 ```sh
+DEVBRIDGE_PLATFORM_NATIVE_BINARY=/absolute/path/to/native/codex \
 DEVBRIDGE_USABLE_PROJECT_BIN=/absolute/path/to/bin \
-  go test ./internal/localmcp -run '^TestUsableProjectCandidatePublicLifecycle$' -count=1 -v
+  go test ./internal/localmcp -run '^TestUsableProjectCandidatePublicLifecycle$' -count=1 -timeout 6m -v
 ```
+
+`DEVBRIDGE_USABLE_PROJECT_BIN` must contain Core and both adapters from the same
+build. Without it, the test deliberately skips; with it set but no native
+selection, the test fails. The script supplies freshly built binaries and
+retained evidence automatically. For a direct test invocation, optionally set
+`DEVBRIDGE_USABLE_PROJECT_EVIDENCE_DIR` to an existing directory to retain the
+otherwise temporary fixtures. A native qualification refusal is a test failure,
+not a skip or a completed workflow acceptance.
 
 ## Historical real Codex harness
 
