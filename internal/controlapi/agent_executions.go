@@ -133,10 +133,29 @@ func (f *Facade) projectAgentExecution(ctx context.Context, e agentexecution.Exe
 			if err != nil {
 				return agentexecution.Projection{}, MapError(err)
 			}
-			if v.TaskID != e.TaskID || v.ProjectID != e.ProjectID {
+			if v.ID != e.SemanticOwnerID || v.TaskID != e.TaskID || v.ProjectID != e.ProjectID {
 				return agentexecution.Projection{}, notFound()
 			}
 			facts.CurrentRunID = v.RunID
+			if successorID := v.RecoverySuccessorRunID; successorID != "" {
+				// The immutable Probe link is backed by the continuation receipt.
+				// Never infer current ownership from recency or a Recovery child.
+				valid := false
+				for _, r := range facts.Runs {
+					if r.ID == successorID && r.ID != v.RunID && v.RunID != "" &&
+						e.SemanticOwnerKind == "INSPECTION" && e.FeatureAreaID == "" &&
+						r.AgentExecutionID == e.ID && r.ProjectID == e.ProjectID && r.TaskID == e.TaskID && r.FeatureAreaID == "" &&
+						r.OperationKind == run.OperationInspection && r.OperationID == e.SemanticOwnerID &&
+						r.Purpose == run.PurposeInspection && r.ContextProbeID == "" {
+						valid = true
+						break
+					}
+				}
+				if !valid {
+					return agentexecution.Projection{}, notFound()
+				}
+				facts.CurrentRunID = successorID
+			}
 			facts.DomainStatus = string(v.Status)
 		}
 	}

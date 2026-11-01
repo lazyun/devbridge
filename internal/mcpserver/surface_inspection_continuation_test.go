@@ -16,8 +16,9 @@ import (
 
 type inspectionContinuationReadFixture struct {
 	*surfaceReadFixture
-	probe contextprobe.Probe
-	runs  map[string]run.Run
+	probe     contextprobe.Probe
+	runs      map[string]run.Run
+	coreRunID string
 }
 
 func (f *inspectionContinuationReadFixture) GetContextProbeForSession(_ context.Context, session, id string) (contextprobe.Probe, error) {
@@ -41,8 +42,19 @@ func (f *inspectionContinuationReadFixture) GetAgentExecutionForSession(_ contex
 	if session != "session" || id != "agent-execution" {
 		return agentexecution.Projection{}, errors.New("Execution scope mismatch")
 	}
-	// The universal envelope remains bound to the immutable original Run.
-	return agentexecution.Projection{ExecutionID: id, ProjectID: "project", TaskID: "task", Kind: agentexecution.KindInspection, SemanticOwnerKind: "INSPECTION", SemanticOwnerID: "inspection", RunID: "source-run", RunIDs: []string{"source-run"}, Status: "FAILED"}, nil
+	current, status := f.coreRunID, "FAILED"
+	if current == "" {
+		current = "source-run"
+	} else {
+		status = string(f.runs[current].Status)
+		if status == "SUCCEEDED" {
+			status = "COMPLETED"
+		}
+		if status == "INFRASTRUCTURE_FAILED" {
+			status = "FAILED"
+		}
+	}
+	return agentexecution.Projection{ExecutionID: id, ProjectID: "project", TaskID: "task", Kind: agentexecution.KindInspection, SemanticOwnerKind: "INSPECTION", SemanticOwnerID: "inspection", RunID: current, RunIDs: []string{"source-run", "continuation-run"}, Status: status}, nil
 }
 
 func newInspectionContinuationReadFixture() *inspectionContinuationReadFixture {
@@ -158,5 +170,41 @@ func TestOperationGetInspectionWithoutContinuationKeepsOriginal(t *testing.T) {
 	out, err := OperationGetCore(context.Background(), f, inspectionReadInput(""))
 	if err != nil || out.Result.Operation.RunID != "source-run" || len(out.Result.RunResults) != 1 {
 		t.Fatalf("ordinary Inspection changed: %+v %v", out, err)
+	}
+}
+
+func TestOperationGetHistoricalInspectionAfterCoreContinuation(t *testing.T) {
+	for _, tc := range []struct {
+		name                    string
+		source, successor       run.Status
+		domain                  contextprobe.Status
+		wantSource, wantCurrent string
+	}{
+		{"running", run.StatusFailed, run.StatusRunning, contextprobe.StatusRunning, "FAILED", "RUNNING"},
+		{"completed", run.StatusInfrastructureFailed, run.StatusSucceeded, contextprobe.StatusSucceeded, "FAILED", "COMPLETED"},
+		{"failed", run.StatusSucceeded, run.StatusFailed, contextprobe.StatusFailed, "COMPLETED", "FAILED"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newInspectionContinuationReadFixture()
+			f.coreRunID = "continuation-run"
+			f.probe.Status = tc.domain
+			source, next := f.runs["source-run"], f.runs["continuation-run"]
+			source.Status, next.Status = tc.source, tc.successor
+			f.runs[source.ID], f.runs[next.ID] = source, next
+			for _, id := range []string{"source-run", "continuation-run", ""} {
+				in := inspectionReadInput(id)
+				out, err := OperationGetCore(context.Background(), f, in)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if id == "source-run" {
+					if out.Result.Operation.RunID != id || out.Result.Operation.Status != tc.wantSource || out.Result.CoreOperation != nil || out.Result.Cancellation != nil {
+						t.Fatalf("history borrowed current successor: %+v", out.Result)
+					}
+				} else if out.Result.Operation.RunID != "continuation-run" || out.Result.Operation.Status != tc.wantCurrent || out.Result.CoreOperation == nil || out.Result.CoreOperation.RunID != "continuation-run" {
+					t.Fatalf("current successor lost: %+v", out.Result)
+				}
+			}
+		})
 	}
 }

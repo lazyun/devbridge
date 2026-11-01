@@ -1159,6 +1159,17 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			return out, errors.New("Exact operation Run association changed")
 		}
 		runs = append(runs, r)
+		if target.Kind == "INSPECTION" && inspectionSuccessorRunID != "" && id == target.RunID && id != inspectionSuccessorRunID {
+			// The Probe and universal envelope now describe the successor. An
+			// explicit historical source read retains its own terminal status.
+			out.Result.Operation.Status = string(r.Status)
+			switch r.Status {
+			case run.StatusSucceeded:
+				out.Result.Operation.Status = "COMPLETED"
+			case run.StatusInfrastructureFailed:
+				out.Result.Operation.Status = "FAILED"
+			}
+		}
 		if out.Result.ReviewSource != nil && id == target.RunID {
 			out.Result.ReviewSource.RunStatus = string(r.Status)
 			if r.Status == run.StatusSucceeded && selectedReview != nil && (r.Result != nil || r.ResultProtocol == run.NaturalResultProtocol || selectedReview.ExecutorKind == review.ExecutorUpperLLM) {
