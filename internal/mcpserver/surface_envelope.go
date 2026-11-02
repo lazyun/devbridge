@@ -80,13 +80,21 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		}
 	}
 	exactReviewReadback := reviewCancellation || params.Name == "review_worker_claim" || params.Name == "review_worker_get"
-	exactExecutionReadback := params.Name == "execution_start" && value["reservationCommitted"] == true
+	executionCancellation := params.Name == "operation_cancel" && stringValue(value, "ownerType") == "EXECUTION" && stringValue(value, "ownerId") != ""
+	exactExecutionReadback := (params.Name == "execution_start" && value["reservationCommitted"] == true) || executionCancellation
 	originalRevision := ""
 	if exactExecutionReadback {
-		// The start receipt owns this response, not the Task's latest Run.
-		// Proposal.RunID may already point at later Verification; use the
-		// original receipt or the independently returned Run instead.
-		scope, originalRevision = surfaceExecutionStartScope(raw)
+		if executionCancellation {
+			// ExecutionID in the cancellation receipt can be a universal
+			// inventory alias. The immutable semantic owner locates the
+			// original Proposal; a successor must not replace it on replay.
+			owner := stringValue(value, "ownerId")
+			scope = wp.ResourceScope{ProjectID: stringValue(value, "projectId"), TaskID: stringValue(value, "taskId"), ExecutionID: owner, RunID: stringValue(value, "runId"), OwnerType: "EXECUTION", OwnerID: owner}
+		} else {
+			// Proposal.RunID may already point at later Verification; use
+			// the original receipt or independently returned Run instead.
+			scope, originalRevision = surfaceExecutionStartScope(raw)
+		}
 		scope.AISessionID = session
 		for key, id := range map[string]string{"projectId": scope.ProjectID, "featureAreaId": scope.FeatureAreaID, "taskId": scope.TaskID, "executionId": scope.ExecutionID, "runId": scope.RunID, "taskDefinitionRevisionId": originalRevision} {
 			delete(contextValue, key)
