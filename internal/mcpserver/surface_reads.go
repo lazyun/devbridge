@@ -371,6 +371,22 @@ func (s *StaticService) WorkspaceRuntimeDecisionsForSession(ctx context.Context,
 	}
 	return s.control.WorkspaceRuntimeDecisionsForSession(ctx, session, runID)
 }
+func operationGuidanceMatches(g wp.Guidance, target p.OperationTarget, taskID string) bool {
+	return g.TaskID == taskID && g.RunID == target.RunID &&
+		((target.Kind == "REVIEW" && g.ReviewID == target.OperationID && g.ExecutionID == "") ||
+			(target.Kind == "EXECUTION" && g.ExecutionID == target.OperationID))
+}
+
+func historicalOperationWorkflow(v SurfaceWorkflow) SurfaceWorkflow {
+	v.NextAction = wp.Action{}
+	v.NextStep = nil
+	v.VerificationDecisions = nil
+	v.PendingDecisions = []p.PendingDecision{}
+	v.Capabilities = []p.Capability{}
+	v.RefreshRequired = true
+	return v
+}
+
 func projectSurfaceWorkflow(v p.Projection) SurfaceWorkflow {
 	out := surfaceWorkflow()
 	out.State = v.CurrentState
@@ -1086,6 +1102,7 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			}
 		}
 	}
+	workflowMatchesCurrent, inspectionNeedsCurrentEnvelope := false, false
 	if reader, ok := s.(compactWorkspaceReader); ok && taskID != "" {
 		v, e := reader.CompactWorkspaceForSession(ctx, in.AISessionID, areaID, taskID)
 		addPartition("WORKFLOW", e)
@@ -1095,9 +1112,21 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			refresh := out.Workflow.RefreshRequired
 			out.Workflow = projectSurfaceWorkflow(v)
 			out.Workflow.RefreshRequired = refresh
-			if v.CurrentOperation == nil || v.CurrentOperation.ID != target.OperationID || v.CurrentOperation.Kind != target.Kind {
+			if v.CurrentOperation == nil {
+				// Preserve the existing live-claim capability gate. Exact terminal
+				// guidance may remain readable, but does not add action options.
 				out.Workflow.PendingDecisions = []p.PendingDecision{}
 				out.Workflow.Capabilities = []p.Capability{}
+			}
+			if op := v.CurrentOperation; op != nil {
+				workflowMatchesCurrent = op.ID == target.OperationID && op.Kind == target.Kind && op.RunID == target.RunID
+			} else if v.Guidance != nil {
+				// Terminal and no-Run operations have no live conversation claim.
+				workflowMatchesCurrent = operationGuidanceMatches(*v.Guidance, target, taskID)
+			} else if target.Kind == "INSPECTION" {
+				// Inspection has no Development guidance. Its exact current Core
+				// envelope is checked below, never inferred from Run recency.
+				inspectionNeedsCurrentEnvelope = true
 			}
 			part := &out.Result.Partitions[len(out.Result.Partitions)-1]
 			part.Generation = v.Generation
@@ -1113,6 +1142,7 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 			refresh := out.Workflow.RefreshRequired
 			out.Workflow = projectSurfaceWorkflow(v)
 			out.Workflow.RefreshRequired = refresh
+			workflowMatchesCurrent = operationGuidanceMatches(g, target, taskID)
 			partition := &out.Result.Partitions[len(out.Result.Partitions)-1]
 			partition.Generation = g.Generation
 			partition.SourceSequence = g.SourceSequence
@@ -1304,6 +1334,15 @@ func OperationGetCore(ctx context.Context, s BridgeService, in OperationGetInput
 		} else {
 			addPartition("REPOSITORY_DRIFT", errors.New("repository drift reader unavailable"))
 		}
+	}
+	if inspectionNeedsCurrentEnvelope && coreOperation != nil {
+		workflowMatchesCurrent = coreOperation.SemanticOwnerKind == target.Kind && coreOperation.SemanticOwnerID == target.OperationID && coreOperation.RunID == target.RunID
+	}
+	if !workflowMatchesCurrent {
+		// A current Task projection is not authority for a historical operation
+		// or an earlier Run of the same operation. Preserve exact result/history,
+		// but require a separate current-workspace observation before acting.
+		out.Workflow = historicalOperationWorkflow(out.Workflow)
 	}
 	if out.Workflow.RefreshRequired {
 		if c := out.Result.Cancellation; c != nil {
