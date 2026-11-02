@@ -148,7 +148,11 @@ func (f *Facade) TaskExecutionTargetForSession(ctx context.Context, sessionID, t
 }
 
 func taskExecutionStartTarget(t task.Task, executions []executionproposal.Proposal) *wp.TaskExecutionExpectation {
-	if t.Status != task.StatusActive || t.LegacyReadOnly || t.CurrentDefinitionRevisionID == "" || t.WorkSpec.ImplementationMode != task.ImplementationCodingAgent ||
+	// File work has already committed before a RUN verification may need an
+	// explicit continuation. Expose only that existing verification target;
+	// this read does not authorize file implementation or bypass start guards.
+	fileVerification := t.WorkSpec.ImplementationMode == task.ImplementationDirectFile && t.VerificationSpec.Mode == task.VerificationModeRun && t.Phase == task.PhaseVerificationReady
+	if t.Status != task.StatusActive || t.LegacyReadOnly || t.CurrentDefinitionRevisionID == "" || (t.WorkSpec.ImplementationMode != task.ImplementationCodingAgent && !fileVerification) ||
 		(t.Phase != task.PhaseImplementationReady && t.Phase != task.PhaseVerificationReady) {
 		return nil
 	}
