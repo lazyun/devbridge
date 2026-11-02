@@ -295,6 +295,17 @@ func (f *Facade) ReprepareConfirmation(ctx context.Context, in confirmation.Repr
 	}
 	return f.confirmationAccessReadback(ctx, out)
 }
+
+// A request-specific ledger read proves consumption independently of child
+// recovery. Preserve that separation while retaining already-proven resume
+// guidance for the exact original receipt on the detached public readback.
+func confirmationRecoveredSubmissionGuidance(out confirmation.Intent, result confirmation.Submission, recoveryErr error) confirmation.Submission {
+	if recoveryErr == nil && out.CanResume && out.Commit != nil && result.Recorded && result.Outcome == confirmation.Consumed && result.ReceiptRequestID == out.Commit.RequestID {
+		result.NextAction = confirmation.ContinueOriginalSteps
+	}
+	return result
+}
+
 func (f *Facade) ReadConfirmation(ctx context.Context, in confirmation.ReadInput) (out confirmation.Intent, err error) {
 	defer func() { confirmation.NormalizePublicIntent(&out) }()
 	if _, e := f.confirmationSession(ctx, in.AISessionID); e != nil {
@@ -354,6 +365,7 @@ func (f *Facade) ReadConfirmation(ctx context.Context, in confirmation.ReadInput
 			out.Submission = nil
 			return out, ConfirmationFailure(err, "RECEIPT_READBACK")
 		}
+		result = confirmationRecoveredSubmissionGuidance(out, result, e)
 		out.Submission = &result
 		if out.State == "REJECTED" && out.Commit != nil && result.ReceiptRequestID == out.Commit.RequestID {
 			for _, step := range out.Steps {
