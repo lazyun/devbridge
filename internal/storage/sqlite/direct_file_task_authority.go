@@ -525,6 +525,11 @@ func (a *DirectFileAuthority) StartTaskAuthorization(ctx context.Context, in dir
 		now := time.Now().UTC()
 		if in.Action == "CANCEL_DIRECT_FILE" {
 			if v.State.State == "CLOSED" {
+				// A separately consumed cancellation still needs its own exact
+				// completion proof if the final confirmation save is lost.
+				if e = insertDirectFileStartReceipt(ctx, tx, in, payload, v.State, now); e != nil {
+					return directfile.State{}, e
+				}
 				return v.State, tx.Commit()
 			}
 			var unresolved bool

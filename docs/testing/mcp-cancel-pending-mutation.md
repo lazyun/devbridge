@@ -176,3 +176,40 @@ projection overlay makes the missing-receipt guidance assertion fail. Private
 raw evidence is retained in `devbridge-cancel-receipt-recovery-evidence`, not in
 the repository. No race run or broad suite was added for this read-only
 presentation correction.
+
+## Already-closed cancellation retains its own receipt
+
+A separate isolated regression on `085ee6f1fdfb109bb080677388e7f414260ae3de`
+found a different persistence gap: after one explicit cancellation completed,
+Core admitted a second exact cancellation of the same CLOSED grant. That
+idempotent business branch returned success without saving the second
+confirmation's canonical subrequest receipt. If the final confirmation JSON
+save then failed, a cold read retained CONFIRMING with an UNKNOWN step and
+`canResume=false`; the Task action remained blocking, including supplemental
+Review. The first cancellation's receipt could not prove the second request.
+
+The fix saves the independently consumed cancellation's exact CLOSED receipt
+inside the existing writer transaction, after the unchanged Session, Task,
+frozen-definition and consumed-confirmation checks. It does not reopen the
+grant, rerun a file operation, change runtime authority, or use CLOSED state
+alone to repair historical UNKNOWN confirmations.
+
+`TestDirectFileClosedCancellationExactRecoveryMCP` exercises actual GPT and
+Local MCP HTTP adapters with real isolated Core/SQLite/worktrees. Typed fixture
+setup and explicit deterministic fixture-user choices are simulated; no real
+user task, online model, installed dot or native worker is qualified. A narrowly
+scoped SQLite trigger fails only the second intent's final COMPLETED update,
+then is removed before Core and both adapters restart. This is not a process
+kill or network-loss test.
+
+The original source fails with one first-request receipt and no second-request
+receipt; the repaired source retains one for each. Both cold reads return their
+own COMPLETED result, the second exact identity is preserved, and the Task
+is no longer blocked. Cold reads and replay of the second request **after** its
+completion proof leave all business-table snapshots unchanged; original file
+identity, bytes and mtime are unchanged across the cancellation/restart reads.
+The uncertain original request is never blindly retried. The existing
+`TestMultiRepositoryDirectG7OnlyConsumedExactConfirmationCanStart` also passes.
+Only these two focused gates were run for the fix; no race or broad suite is
+claimed. Private raw evidence is retained separately as
+`devbridge-closed-cancel-recovery-085ee6f-evidence`.
