@@ -52,7 +52,8 @@ func (f *Facade) enrichFeatureAreaActionCapabilities(ctx context.Context, sessio
 	// Review cancellation already belongs to the canonical operation owner.
 	// Its projection uses the same exact Run/claim facts as operation details;
 	// the legacy Execution-only eligibility reader cannot advertise this path.
-	if current.CurrentReview != nil && current.Task != nil && current.CurrentReview.TaskID == current.Task.ID {
+	if current.CurrentReview != nil && current.Task != nil && current.CurrentReview.TaskID == current.Task.ID &&
+		op.Claim != nil && op.Claim.Kind == agentconversation.Review && op.Claim.OperationID == current.CurrentReview.ID {
 		reviewCancel, e := f.reviewCancellationEligibility(ctx, sessionID, current, op)
 		if e != nil {
 			return e

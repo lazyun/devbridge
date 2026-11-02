@@ -53,7 +53,7 @@ func (s *AgentConversationStore) CancelEligibility(ctx context.Context, featureA
 	if err != nil {
 		return result, err
 	}
-	if e.ProjectID != r.ProjectID || e.Status != executionproposal.StatusConsumed || e.ImplementationRunID == "" || e.Outcome != executionproposal.OutcomeRunning {
+	if e.ProjectID != r.ProjectID || e.Status != executionproposal.StatusConsumed || !executionCancellationHasRun(e) || e.Outcome != executionproposal.OutcomeRunning {
 		result.Reason = "The Execution is not durably running."
 		return result, nil
 	}
@@ -165,4 +165,11 @@ func (s *AgentConversationStore) RecoveryEligibility(ctx context.Context, featur
 	result.Available, result.Reason = true, ""
 	result.Target = &agentconversation.ActionTarget{FeatureAreaID: featureAreaID, ExecutionID: facts.run.ExecutionProposalID, OperationKind: claim.Kind, OperationID: claim.OperationID, RunID: claim.RunID, AgentConversationID: facts.conversation.ID}
 	return result, nil
+}
+
+// Both FILE verification and reverification successors legitimately have no
+// Implementation Run. Exact latest-Run, purpose and live-boundary checks still
+// apply in CancelEligibility; merely possessing an ID never grants authority.
+func executionCancellationHasRun(e executionproposal.Proposal) bool {
+	return e.ImplementationRunID != "" || e.VerificationRunID != ""
 }
