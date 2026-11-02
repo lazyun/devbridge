@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lazyun/devbridge/internal/agentruntime"
 	"github.com/lazyun/devbridge/internal/executioncancel"
 	"github.com/lazyun/devbridge/internal/mcpserver"
 	"github.com/lazyun/devbridge/internal/run"
@@ -20,6 +21,10 @@ import (
 )
 
 func TestExecutionCancellationReplayWithLiveSuccessorMCP(t *testing.T) {
+	runCancellationLiveSuccessorFixture(t, nil)
+}
+
+func runCancellationLiveSuccessorFixture(t *testing.T, observe func(*upperLifecycleFixture, func(string, map[string]any, bool) []byte, agentruntime.Request, *agentruntime.Request) bool) {
 	// Never allow ambient fixture switches to select a real runtime.
 	for _, key := range []string{"DEVBRIDGE_USER_DECISION_REAL_FIXTURE", "DEVBRIDGE_REAL_CODEX", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CODEX_API_KEY", "DEVBRIDGE_CODING_V1_DROP_RESOLVED", "DEVBRIDGE_CODING_V1_HOLD_AFTER_CONSUMPTION", "DEVBRIDGE_CODING_V1_TURN_SUFFIX", "DEVBRIDGE_TEST_UNIQUE_TURNS"} {
 		t.Setenv(key, "")
@@ -62,6 +67,11 @@ func TestExecutionCancellationReplayWithLiveSuccessorMCP(t *testing.T) {
 				t.Fatalf("%s unexpected error=%v response=%s", name, result.IsError, full)
 			}
 			return raw
+		}
+		if observe != nil {
+			if !observe(f, call, oldRequest, nil) {
+				return false
+			}
 		}
 		type envelope struct {
 			Result          executioncancel.Receipt `json:"result"`
@@ -151,6 +161,11 @@ func TestExecutionCancellationReplayWithLiveSuccessorMCP(t *testing.T) {
 		newRequest, newRun := waitUserRequest(t, f, f.task, "turn-implementation-successor")
 		if newRun.ID != started.Run.ID || newRun.ExecutionProposalID != successor || newRun.Status != run.StatusRunning || newRequest.ID == oldRequest.ID {
 			t.Fatalf("successor lacks independent live request: %+v / %+v", newRun, newRequest)
+		}
+		if observe != nil {
+			if !observe(f, call, oldRequest, &newRequest) {
+				return false
+			}
 		}
 		snapshotter := &continuationGate{t: t, f: f}
 		tables := []string{"tasks", "task_definition_revisions", "execution_proposals", "execution_cancellations", "decision_resolution_receipts", "runtime_selection_sources", "runtime_selection_bindings", "runtime_scope_plans", "runtime_workset_bindings", "runtime_start_authorities", "run_repository_bindings", "runtime_user_decisions", "runtime_response_dispatch_attempts"}

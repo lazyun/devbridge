@@ -61,6 +61,14 @@ func durableResolutionInputSchema() string {
 func runtimeDTOSchema[T any]() string {
 	rawJSON := &jsonschema.Schema{Types: []string{"object", "array", "string", "number", "boolean", "null"}, Description: "Exact official backend JSON; never model-authored semantic response."}
 	types := map[reflect.Type]*jsonschema.Schema{reflect.TypeFor[json.RawMessage](): rawJSON}
+	// Dispatch payload is []byte, not RawMessage: encoding/json emits base64
+	// string (or null), never an integer array or parsed response object.
+	dispatch, dispatchErr := jsonschema.For[agentruntime.ResponseDispatchAttempt](&jsonschema.ForOptions{TypeSchemas: types})
+	if dispatchErr != nil {
+		panic(dispatchErr)
+	}
+	dispatch.Properties["payload"] = &jsonschema.Schema{Types: []string{"string", "null"}}
+	types[reflect.TypeFor[agentruntime.ResponseDispatchAttempt]()] = dispatch
 	item, itemErr := jsonschema.For[agentruntime.Item](&jsonschema.ForOptions{TypeSchemas: types})
 	if itemErr != nil {
 		panic(itemErr)

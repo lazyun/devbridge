@@ -148,6 +148,15 @@ func normalizePresentationRawFieldsWithRuntime(schema *jsonschema.Schema, typ re
 		if child == nil {
 			return fmt.Errorf("missing presentation property %v.%s", typ, name)
 		}
+		// This exact durable byte payload uses encoding/json's base64 wire
+		// representation; do not generalize it to RawMessage response leaves.
+		if typ == reflect.TypeFor[agentruntime.ResponseDispatchAttempt]() && name == "payload" {
+			if err := requireRawMessageInference(child); err != nil {
+				return fmt.Errorf("%v.%s: %w", typ, name, err)
+			}
+			schema.Properties[name] = &jsonschema.Schema{Types: []string{"string", "null"}}
+			continue
+		}
 		rawType := reflect.TypeFor[json.RawMessage]()
 		isRaw := field.Type == rawType
 		isRawList := field.Type.Kind() == reflect.Slice && field.Type.Elem() == rawType
