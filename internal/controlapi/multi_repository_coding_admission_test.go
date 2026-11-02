@@ -296,6 +296,10 @@ func TestMultiRepositoryCodingReviewProductionFacadeV2(t *testing.T) {
 }
 
 func runCodingReviewFixture(t *testing.T, onStarted func(*upperLifecycleFixture, string, string, string) bool, setup ...func(*upperLifecycleFixture)) {
+	runCodingReviewFixtureScoped(t, "", onStarted, setup...)
+}
+
+func runCodingReviewFixtureScoped(t *testing.T, callerScope string, onStarted func(*upperLifecycleFixture, string, string, string) bool, setup ...func(*upperLifecycleFixture)) {
 	for _, tc := range []struct {
 		name   string
 		mutate bool
@@ -304,7 +308,12 @@ func runCodingReviewFixture(t *testing.T, onStarted func(*upperLifecycleFixture,
 		{name: "mutation-blocked", mutate: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f := newUpperLifecycleFixture(t)
+			var f *upperLifecycleFixture
+			if callerScope == "" {
+				f = newUpperLifecycleFixture(t)
+			} else {
+				f = newUpperLifecycleFixtureScoped(t, callerScope)
+			}
 			if _, err := f.facade.SubmitReviewResult(f.ctx, f.findingsOnly("release-upper-review", f.access.Target)); err != nil {
 				t.Fatal(err)
 			}
