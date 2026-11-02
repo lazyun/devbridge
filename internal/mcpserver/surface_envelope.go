@@ -81,10 +81,17 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 	}
 	exactReviewReadback := reviewCancellation || params.Name == "review_worker_claim" || params.Name == "review_worker_get"
 	executionCancellation := params.Name == "operation_cancel" && stringValue(value, "ownerType") == "EXECUTION" && stringValue(value, "ownerId") != ""
-	exactExecutionReadback := (params.Name == "execution_start" && value["reservationCommitted"] == true) || executionCancellation
+	successorPreparation := params.Name == "successor_execution_prepare"
+	exactExecutionReadback := (params.Name == "execution_start" && value["reservationCommitted"] == true) || executionCancellation || successorPreparation
 	originalRevision := ""
 	if exactExecutionReadback {
-		if executionCancellation {
+		if successorPreparation {
+			// The durable preparation receipt admits this successor Execution,
+			// not a later generation selected by the Task. It contains no Run;
+			// runtime progress must be read separately, not invented on replay.
+			owner := stringValue(value, "successorExecutionId")
+			scope = wp.ResourceScope{ProjectID: stringValue(input, "projectId"), TaskID: stringValue(value, "taskId"), ExecutionID: owner, OwnerType: "EXECUTION", OwnerID: owner}
+		} else if executionCancellation {
 			// ExecutionID in the cancellation receipt can be a universal
 			// inventory alias. The immutable semantic owner locates the
 			// original Proposal; a successor must not replace it on replay.
