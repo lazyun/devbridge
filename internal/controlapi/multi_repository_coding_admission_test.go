@@ -600,7 +600,11 @@ func runCodingDeliveryFixture(t *testing.T, onStarted func(*upperLifecycleFixtur
 }
 
 func runCodingDeliveryFixtureWithStart(t *testing.T, onStarted func(*upperLifecycleFixture, string) bool, startExecution func(*upperLifecycleFixture, c.Intent, controlapi.ApprovedTaskStartInput) (executionproposal.StartResult, error), setup ...func(*upperLifecycleFixture)) {
-	f := newUpperLifecycleFixture(t)
+	runCodingDeliveryFixtureFrom(t, newUpperLifecycleFixture(t), onStarted, startExecution, setup...)
+}
+
+// Callers entering public MCP must bootstrap the adapter's real caller scope.
+func runCodingDeliveryFixtureFrom(t *testing.T, f *upperLifecycleFixture, onStarted func(*upperLifecycleFixture, string) bool, startExecution func(*upperLifecycleFixture, c.Intent, controlapi.ApprovedTaskStartInput) (executionproposal.StartResult, error), setup ...func(*upperLifecycleFixture)) {
 	installProtocolFixturePlatform(t, f)
 	helperRoot := t.TempDir()
 	wireLog := filepath.Join(helperRoot, "wire.jsonl")

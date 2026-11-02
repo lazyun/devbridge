@@ -67,6 +67,25 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		contextValue["aiSessionId"] = session
 	}
 	scope := wp.ResourceScope{AISessionID: session, FeatureAreaID: stringValue(contextValue, "featureAreaId"), TaskID: stringValue(contextValue, "taskId"), ReviewID: stringValue(contextValue, "reviewId"), ExecutionID: stringValue(contextValue, "executionId"), RunID: stringValue(contextValue, "runId"), OwnerType: stringValue(input, "ownerType"), OwnerID: stringValue(input, "ownerId")}
+	// Recovery results are durable receipts for one operation and Run. Resolve
+	// their identity from the receipt, never from a later Task continuation.
+	recoveryKind := stringValue(value, "operationKind")
+	exactRecoveryReadback := params.Name == "agent_operation_recover" && (recoveryKind == "REVIEW" || recoveryKind == "EXECUTION")
+	if exactRecoveryReadback {
+		scope = wp.ResourceScope{AISessionID: session, FeatureAreaID: stringValue(value, "featureAreaId"), RunID: stringValue(value, "runId"), OwnerType: recoveryKind, OwnerID: stringValue(value, "operationId")}
+		for _, key := range []string{"projectId", "featureAreaId", "taskId", "reviewId", "executionId", "runId", "decisionId", "taskDefinitionRevisionId"} {
+			delete(contextValue, key)
+		}
+		if recoveryKind == "REVIEW" {
+			scope.ReviewID = scope.OwnerID
+			contextValue["reviewId"] = scope.ReviewID
+		} else {
+			scope.ExecutionID = scope.OwnerID
+			contextValue["executionId"] = scope.ExecutionID
+		}
+		contextValue["runId"] = scope.RunID
+		contextValue["featureAreaId"] = scope.FeatureAreaID
+	}
 	// Cancellation's legacy executionId can be a virtual inventory identity
 	// (review:<id>), not an ExecutionProposal. Use the durable semantic owner
 	// for enrichment and leave the original receipt byte-for-byte unchanged.
@@ -160,6 +179,11 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 	case "file_worker_claim", "file_worker_get", "direct_file_enable", "direct_file_disable", "file_list", "file_read", "file_write", "document_create", "repository_search", "development_branch_create", "development_branch_select":
 		needsWorkflow = false
 	}
+	if exactRecoveryReadback && (scope.OwnerID == "" || scope.RunID == "" || scope.FeatureAreaID == "") {
+		needsWorkflow = false
+		refreshRequired = true
+		workflow["readError"] = "Exact recovery receipt identity unavailable; refresh its authoritative state separately."
+	}
 	if exactExecutionReadback && (scope.TaskID == "" || scope.ExecutionID == "") {
 		needsWorkflow = false
 		refreshRequired = true
@@ -173,6 +197,9 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 			if readErr != nil {
 				refreshRequired = true
 				workflow["readError"] = publicToolError(readErr).Error()
+			} else if exactRecoveryReadback && (g.FeatureAreaID != scope.FeatureAreaID || g.RunID != scope.RunID || g.ExecutionID != scope.ExecutionID || (recoveryKind == "REVIEW" && g.ReviewID != scope.ReviewID)) {
+				refreshRequired = true
+				workflow["readError"] = "Exact recovered operation readback is superseded by another operation; refresh its authoritative state separately."
 			} else if exactExecutionReadback && !surfaceExecutionReadbackMatches(g, scope, originalRevision) {
 				refreshRequired = true
 				workflow["readError"] = "Exact Execution readback is superseded by another operation; refresh its authoritative state separately."
