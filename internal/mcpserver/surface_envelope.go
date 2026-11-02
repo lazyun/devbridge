@@ -67,6 +67,21 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		contextValue["aiSessionId"] = session
 	}
 	scope := wp.ResourceScope{AISessionID: session, FeatureAreaID: stringValue(contextValue, "featureAreaId"), TaskID: stringValue(contextValue, "taskId"), ReviewID: stringValue(contextValue, "reviewId"), ExecutionID: stringValue(contextValue, "executionId"), RunID: stringValue(contextValue, "runId"), OwnerType: stringValue(input, "ownerType"), OwnerID: stringValue(input, "ownerId")}
+	// Formal report receipts and reads describe their recorded Review/Run,
+	// even after a later Review or Execution becomes the Task's current owner.
+	reviewResultReadback := params.Name == "review_result_submit" || params.Name == "review_result_get"
+	if reviewResultReadback {
+		scope.ReviewID, scope.RunID = stringValue(value, "reviewId"), stringValue(value, "runId")
+		scope.ExecutionID, scope.OwnerType, scope.OwnerID = "", "REVIEW", scope.ReviewID
+		for _, key := range []string{"reviewId", "runId", "executionId", "decisionId", "taskDefinitionRevisionId"} {
+			delete(contextValue, key)
+		}
+		for key, id := range map[string]string{"reviewId": scope.ReviewID, "runId": scope.RunID} {
+			if id != "" {
+				contextValue[key] = id
+			}
+		}
+	}
 	// Recovery results are durable receipts for one operation and Run. Resolve
 	// their identity from the receipt, never from a later Task continuation.
 	recoveryKind := stringValue(value, "operationKind")
@@ -189,6 +204,11 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 		refreshRequired = true
 		workflow["readError"] = "Exact Execution receipt identity unavailable; refresh its authoritative state separately."
 	}
+	if reviewResultReadback && (scope.ReviewID == "" || (params.Name == "review_result_submit" && scope.RunID == "")) {
+		needsWorkflow = false
+		refreshRequired = true
+		workflow["readError"] = "Exact Review result identity unavailable; refresh its authoritative state separately."
+	}
 	if needsWorkflow {
 		if reader, available := service.(interface {
 			WorkflowGuidanceForResource(context.Context, wp.ResourceScope) (wp.Guidance, error)
@@ -197,6 +217,9 @@ func surfaceBusinessResult(ctx context.Context, service BridgeService, params *s
 			if readErr != nil {
 				refreshRequired = true
 				workflow["readError"] = publicToolError(readErr).Error()
+			} else if reviewResultReadback && (g.ReviewID != scope.ReviewID || g.RunID != scope.RunID || g.ExecutionID != "" || (scope.TaskID != "" && g.TaskID != scope.TaskID) || (scope.FeatureAreaID != "" && g.FeatureAreaID != scope.FeatureAreaID)) {
+				refreshRequired = true
+				workflow["readError"] = "Exact Review result readback is superseded by another operation; refresh its authoritative state separately."
 			} else if exactRecoveryReadback && (g.FeatureAreaID != scope.FeatureAreaID || g.RunID != scope.RunID || g.ExecutionID != scope.ExecutionID || (recoveryKind == "REVIEW" && g.ReviewID != scope.ReviewID)) {
 				refreshRequired = true
 				workflow["readError"] = "Exact recovered operation readback is superseded by another operation; refresh its authoritative state separately."
