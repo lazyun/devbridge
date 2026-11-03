@@ -117,8 +117,19 @@ func (s *WorkflowEventStore) Finish(ctx context.Context, v workflowevents.Pendin
 		return e
 	}
 	defer tx.Rollback()
-	if _, e = tx.ExecContext(ctx, `UPDATE workflow_event_deliveries SET state=?,attempts=attempts+1,next_attempt_at=? WHERE subscription_id=? AND event_id=? AND state='RETRY' AND attempts=?`, state, formatTime(next), v.Subscription.ID, v.EventID, v.Attempts); e != nil {
+	result, e := tx.ExecContext(ctx, `UPDATE workflow_event_deliveries SET state=?,attempts=attempts+1,next_attempt_at=? WHERE subscription_id=? AND event_id=? AND state='RETRY' AND attempts=?`, state, formatTime(next), v.Subscription.ID, v.EventID, v.Attempts)
+	if e != nil {
 		return e
+	}
+	changed, e := result.RowsAffected()
+	if e != nil {
+		return e
+	}
+	// Unsubscribe may have removed this delivery while its callback was in
+	// flight. A newly created subscription can reuse the same ID, but an old
+	// callback that did not consume a delivery must not stop that subscription.
+	if changed == 0 {
+		return nil
 	}
 	if state == "STOPPED" {
 		if _, e = tx.ExecContext(ctx, `UPDATE workflow_event_subscriptions SET state='STOPPED' WHERE id=?`, v.Subscription.ID); e != nil {
