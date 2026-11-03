@@ -641,6 +641,18 @@ func (s *Service) resumeReserved(ctx context.Context, consumed Proposal, reserve
 		receipt = reported.Handoff
 	}
 	result.Handoff = receipt
+	// Only the atomic store capability can prove an exact never-entered
+	// preparation rejection. A terminal Run projection alone is insufficient.
+	if settlement, ok := s.store.(interface {
+		SettleRejectedImplementationPreparation(context.Context, string, string, time.Time) (Proposal, bool, error)
+	}); ok && receipt.RecordExists && receipt.RecordedState == HandoffRejected {
+		completed, settled, settleErr := settlement.SettleRejectedImplementationPreparation(context.WithoutCancel(ctx), consumed.ID, reserved.ID, s.now().UTC())
+		err = errors.Join(err, settleErr)
+		if settled {
+			result.Proposal = completed
+			logExecutionOutcome(logCtx, completed)
+		}
+	}
 	if !receipt.Accepted() {
 		err = errors.Join(err, &HandoffError{Handoff: receipt})
 	}

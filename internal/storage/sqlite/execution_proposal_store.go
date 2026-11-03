@@ -432,6 +432,16 @@ func (s *ExecutionProposalStore) Complete(ctx context.Context, id string, outcom
 		return executionproposal.Proposal{}, err
 	}
 	defer tx.Rollback()
+	value, err := s.completeTx(ctx, tx, id, outcome, failureCode, failureMessage, now)
+	if err != nil {
+		return value, err
+	}
+	return value, tx.Commit()
+}
+
+// completeTx shares the canonical event and claim-release transaction with
+// proven pre-runtime rejection settlement. Its caller owns the transaction.
+func (s *ExecutionProposalStore) completeTx(ctx context.Context, tx *sql.Tx, id string, outcome executionproposal.Outcome, failureCode, failureMessage string, now time.Time) (executionproposal.Proposal, error) {
 	value, err := scanExecutionProposal(tx.QueryRowContext(ctx, selectExecutionProposal+` WHERE id=?`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return executionproposal.Proposal{}, executionproposal.ErrNotFound
@@ -488,9 +498,6 @@ func (s *ExecutionProposalStore) Complete(ctx context.Context, id string, outcom
 		return value, err
 	}
 	if err := settleExecutionCancellationsTx(ctx, tx, eventRunID); err != nil {
-		return value, err
-	}
-	if err := tx.Commit(); err != nil {
 		return value, err
 	}
 	return value, nil
