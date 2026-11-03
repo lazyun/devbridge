@@ -653,6 +653,19 @@ func (s *Service) resumeReserved(ctx context.Context, consumed Proposal, reserve
 			logExecutionOutcome(logCtx, completed)
 		}
 	}
+	// FILE verification-only preparation can reject before the runtime executor
+	// callback exists. Only the store's atomic proof may finish that product;
+	// a projected TERMINAL handoff is not such a proof.
+	if files, ok := s.store.(interface {
+		SettleRejectedFileVerification(context.Context, string, string, time.Time) (Proposal, bool, error)
+	}); ok && reserved.Purpose == run.PurposeVerification && receipt.RecordedState == HandoffRejected {
+		completed, changed, completionErr := files.SettleRejectedFileVerification(context.WithoutCancel(ctx), consumed.ID, reserved.ID, s.now().UTC())
+		err = errors.Join(err, completionErr)
+		if changed {
+			result.Proposal = completed
+			logExecutionOutcome(logCtx, completed)
+		}
+	}
 	if !receipt.Accepted() {
 		err = errors.Join(err, &HandoffError{Handoff: receipt})
 	}
