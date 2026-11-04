@@ -813,7 +813,7 @@ func (c *Client) handleEvent(event Event) {
 			}
 			if json.Unmarshal(params.Item, &itemType) == nil && itemType.Type == "commandExecution" {
 				observeCommand(state, params.Item, true, eventTime(params.CompletedAtMS))
-			} else {
+			} else if state.completion == nil {
 				var message wire.AgentMessage
 				if json.Unmarshal(params.Item, &message) == nil && message.Type == "agentMessage" {
 					if message.Phase != nil && *message.Phase == "final_answer" {
