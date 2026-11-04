@@ -898,6 +898,9 @@ func (c *Client) handleEvent(event Event) {
 const maxCommandOutputBytes = 32 << 10
 
 func observeCommand(state *turnState, raw json.RawMessage, completed bool, observedAt time.Time) {
+	if state.completion != nil {
+		return
+	}
 	var item wire.CommandExecution
 	if json.Unmarshal(raw, &item) != nil || item.Type != "commandExecution" || item.ID == "" || item.Command == "" {
 		return
@@ -906,6 +909,12 @@ func observeCommand(state *turnState, raw json.RawMessage, completed bool, obser
 		state.commands = make(map[string]CommandExecution)
 	}
 	value, exists := state.commands[item.ID]
+	// A completed item is the authoritative terminal payload, including unknown
+	// fields. Replayed lifecycle events or the Turn snapshot must not replace it
+	// or its explicit completion time. Snapshots still fill missing completions.
+	if exists && value.FinishedAt != nil {
+		return
+	}
 	if !exists {
 		value = CommandExecution{ItemID: item.ID}
 		state.commandOrder = append(state.commandOrder, item.ID)
