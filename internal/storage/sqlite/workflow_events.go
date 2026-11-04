@@ -48,8 +48,8 @@ type WorkflowEventStore struct{ db *DB }
 func NewWorkflowEventStore(db *DB) *WorkflowEventStore { return &WorkflowEventStore{db} }
 func (s *WorkflowEventStore) Status(ctx context.Context, project, task string, now time.Time) (workflowevents.Status, error) {
 	var v workflowevents.Status
-	e := s.db.sql.QueryRowContext(ctx, `SELECT count(DISTINCT CASE WHEN s.state='ACTIVE' AND s.expires_at>? THEN s.id END),count(DISTINCT CASE WHEN s.state='STOPPED' THEN s.id END),
- COALESCE(sum(CASE WHEN d.state='RETRY' AND s.state='ACTIVE' AND s.expires_at>? THEN 1 ELSE 0 END),0),COALESCE(sum(d.state='DELIVERED'),0),COALESCE(sum(d.state='EXHAUSTED'),0)
+	e := s.db.sql.QueryRowContext(ctx, `SELECT count(DISTINCT CASE WHEN s.state='ACTIVE' AND rtrim(s.expires_at,'Z')>rtrim(?,'Z') THEN s.id END),count(DISTINCT CASE WHEN s.state='STOPPED' THEN s.id END),
+ COALESCE(sum(CASE WHEN d.state='RETRY' AND s.state='ACTIVE' AND rtrim(s.expires_at,'Z')>rtrim(?,'Z') THEN 1 ELSE 0 END),0),COALESCE(sum(d.state='DELIVERED'),0),COALESCE(sum(d.state='EXHAUSTED'),0)
  FROM workflow_event_subscriptions s LEFT JOIN workflow_event_deliveries d ON d.subscription_id=s.id WHERE s.project_id=? AND s.task_id=?`, formatTime(now), formatTime(now), project, task).Scan(&v.ActiveSubscriptions, &v.StoppedSubscriptions, &v.Pending, &v.Delivered, &v.Exhausted)
 	return v, e
 }
@@ -78,7 +78,11 @@ func (s *WorkflowEventStore) Remove(ctx context.Context, scope, id string) error
 	return tx.Commit()
 }
 
-const activeWorkflowSubscription = `s.state='ACTIVE' AND s.expires_at>? AND EXISTS(SELECT 1 FROM ai_sessions a JOIN tasks t ON t.project_id=a.project_id WHERE a.id=s.ai_session_id AND a.caller_scope=s.caller_scope AND a.project_id=s.project_id AND t.id=s.task_id)`
+// formatTime stores canonical UTC RFC3339Nano values. Remove only the trailing
+// UTC marker before ordering: otherwise ".1Z" sorts after ".100000001Z".
+// Unlike SQLite date functions, this retains nanosecond precision and also
+// orders existing rows correctly without rewriting their stored timestamps.
+const activeWorkflowSubscription = `s.state='ACTIVE' AND rtrim(s.expires_at,'Z')>rtrim(?,'Z') AND EXISTS(SELECT 1 FROM ai_sessions a JOIN tasks t ON t.project_id=a.project_id WHERE a.id=s.ai_session_id AND a.caller_scope=s.caller_scope AND a.project_id=s.project_id AND t.id=s.task_id)`
 
 func (s *WorkflowEventStore) Active(ctx context.Context, id string, now time.Time) (bool, error) {
 	var n int
@@ -88,7 +92,7 @@ func (s *WorkflowEventStore) Active(ctx context.Context, id string, now time.Tim
 func (s *WorkflowEventStore) Pending(ctx context.Context, now time.Time) ([]workflowevents.Pending, error) {
 	rows, e := s.db.sql.QueryContext(ctx, `SELECT s.id,s.caller_scope,s.ai_session_id,s.project_id,s.task_id,s.callback_url,s.signing_secret,s.expires_at,e.id,e.type,COALESCE(e.run_id,''),e.created_at,d.attempts
  FROM workflow_event_deliveries d JOIN workflow_event_subscriptions s ON s.id=d.subscription_id JOIN events e ON e.id=d.event_id
- WHERE d.state='RETRY' AND d.next_attempt_at<=? AND `+activeWorkflowSubscription+` ORDER BY e.sequence LIMIT 20`, formatTime(now), formatTime(now))
+ WHERE d.state='RETRY' AND rtrim(d.next_attempt_at,'Z')<=rtrim(?,'Z') AND `+activeWorkflowSubscription+` ORDER BY e.sequence LIMIT 20`, formatTime(now), formatTime(now))
 	if e != nil {
 		return nil, e
 	}
