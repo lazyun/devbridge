@@ -308,7 +308,10 @@ func workflowTaskStateTx(ctx context.Context, q definitionQuerier, projectID, ar
 	}
 	var phase task.Phase
 	var status string
-	err = q.QueryRowContext(ctx, `SELECT id,status,phase,COALESCE(current_review_id,''),COALESCE(current_execution_id,''),COALESCE(current_definition_revision_id,''),required_review_depth FROM tasks WHERE project_id=? AND feature_area_id=? AND task_type='DEVELOPMENT' AND (?='' OR id=?) ORDER BY status='ACTIVE' DESC,created_at DESC,id DESC LIMIT 1`, projectID, areaID, taskID, taskID).Scan(&g.TaskID, &status, &phase, &g.ReviewID, &g.ExecutionID, &g.TaskDefinitionRevisionID, &g.RequiredReviewDepth)
+	// formatTime persists canonical UTC RFC3339Nano. Its trailing Z sorts
+	// after fractional digits, so remove only that suffix for chronological
+	// ordering without losing nanoseconds. Preserve active-owner and ID ties.
+	err = q.QueryRowContext(ctx, `SELECT id,status,phase,COALESCE(current_review_id,''),COALESCE(current_execution_id,''),COALESCE(current_definition_revision_id,''),required_review_depth FROM tasks WHERE project_id=? AND feature_area_id=? AND task_type='DEVELOPMENT' AND (?='' OR id=?) ORDER BY status='ACTIVE' DESC,rtrim(created_at,'Z') DESC,id DESC LIMIT 1`, projectID, areaID, taskID, taskID).Scan(&g.TaskID, &status, &phase, &g.ReviewID, &g.ExecutionID, &g.TaskDefinitionRevisionID, &g.RequiredReviewDepth)
 	if errors.Is(err, sql.ErrNoRows) {
 		if taskID != "" {
 			err = task.ErrNotFound
