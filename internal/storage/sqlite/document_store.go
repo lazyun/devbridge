@@ -64,7 +64,10 @@ func (s *DocumentStore) Get(ctx context.Context, id string) (document.Document, 
 }
 
 func (s *DocumentStore) ListByProject(ctx context.Context, projectID string, limit int) ([]document.Document, error) {
-	rows, err := s.db.sql.QueryContext(ctx, selectDocument+` WHERE project_id=? ORDER BY created_at DESC,id LIMIT ?`, projectID, limit)
+	// formatTime writes canonical UTC RFC3339Nano. Remove the trailing Z
+	// before ordering so fractional prefixes retain nanosecond chronology.
+	// Apply the limit only after sorting, preserving the existing ID tie-break.
+	rows, err := s.db.sql.QueryContext(ctx, selectDocument+` WHERE project_id=? ORDER BY rtrim(created_at,'Z') DESC,id LIMIT ?`, projectID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list documents: %w", err)
 	}
