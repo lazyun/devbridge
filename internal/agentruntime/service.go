@@ -448,7 +448,10 @@ func (s *Session) observe(event Event) (err error) {
 			i = len(s.snapshot.Items) - 1
 		}
 		v := &s.snapshot.Items[i]
-		if v.CompletedAt != nil && event.Method == "item/started" {
+		// The first completion freezes this item's observed final facts. A
+		// replay must not rewrite its terminal timestamp/result or replace a
+		// subsequently started current item, even if the replay conflicts.
+		if v.CompletedAt != nil {
 			break
 		}
 		v.Type = item.Type
