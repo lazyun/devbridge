@@ -1240,6 +1240,9 @@ func (f *Facade) CreateDocument(ctx context.Context, input document.CreateInput)
 	if f.deps.Documents == nil {
 		return document.Document{}, errors.New("Document service unavailable")
 	}
+	if _, err := f.sessionProject(ctx, input.AISessionID); err != nil {
+		return document.Document{}, err
+	}
 	value, err := f.deps.Documents.Create(ctx, input)
 	if err != nil {
 		return document.Document{}, MapError(err)
