@@ -2,6 +2,7 @@ package projectcontext
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 )
@@ -23,6 +24,7 @@ func (s *MemoryStore) EnsureRequired(_ context.Context, projectID string, now ti
 		value.Status, value.RootGuidanceIdentity, value.ContextFingerprint, value.Diagnostics, value.Result, value.ResultArtifactRef, value.UpdatedAt = StatusRequired, "", "", []string{}, "", "", now
 	}
 	s.data[projectID] = value
+	value.Diagnostics = slices.Clone(value.Diagnostics)
 	return value, nil
 }
 
@@ -45,6 +47,7 @@ func (s *MemoryStore) MarkNoGuidance(_ context.Context, projectID string, now ti
 		return ProjectContext{}, ErrNotFound
 	}
 	if value.Status == StatusNoGuidance {
+		value.Diagnostics = slices.Clone(value.Diagnostics)
 		return value, nil
 	}
 	if value.Status != StatusRequired {
@@ -70,6 +73,7 @@ func (s *MemoryStore) MarkBootstrapped(_ context.Context, projectID string, stat
 	value.Diagnostics = append([]string(nil), diagnostics...)
 	value.UpdatedAt = now
 	s.data[projectID] = value
+	value.Diagnostics = slices.Clone(value.Diagnostics)
 	return value, nil
 }
 
