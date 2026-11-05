@@ -213,7 +213,8 @@ func (c *Client) RepositoryRoot(ctx context.Context, path string) (string, error
 	if err != nil {
 		return "", err
 	}
-	root := strings.TrimSpace(string(out))
+	// Remove the output terminator without trimming filename bytes.
+	root := strings.TrimSuffix(string(out), "\n")
 	if root == "" || !filepath.IsAbs(root) {
 		return "", errors.New("Git returned an invalid repository root")
 	}
