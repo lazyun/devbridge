@@ -22,7 +22,9 @@ func (s *RunStore) ListProjectPage(ctx context.Context, filter run.ProjectPage) 
 	case "history":
 		query += ` AND r.status IN ('SUCCEEDED','FAILED','INFRASTRUCTURE_FAILED','CANCELED')`
 	}
-	query += ` ORDER BY r.created_at DESC,r.id LIMIT ? OFFSET ?`
+	// formatTime writes canonical UTC RFC3339Nano. Remove the trailing Z so
+	// fractional prefixes sort chronologically before applying the page bounds.
+	query += ` ORDER BY rtrim(r.created_at,'Z') DESC,r.id LIMIT ? OFFSET ?`
 	args = append(args, filter.Limit, filter.Offset)
 	rows, err := s.db.sql.QueryContext(ctx, query, args...)
 	if err != nil {
