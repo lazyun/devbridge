@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	bridgegit "github.com/lazyun/devbridge/internal/git"
 	"github.com/lazyun/devbridge/internal/reviewaccess"
@@ -111,7 +112,12 @@ func (s *Service) search(ctx context.Context, id, query string, paths []string, 
 	for _, match := range matches {
 		snippet := match.Snippet
 		if len(snippet) > 512 {
-			snippet = snippet[:512]
+			// Keep the byte cap without splitting a valid UTF-8 code point.
+			end := 512
+			for end > 0 && !utf8.RuneStart(snippet[end]) {
+				end--
+			}
+			snippet = snippet[:end]
 		}
 		result.Matches = append(result.Matches, SearchMatch{Path: match.Path, Line: match.Line, Snippet: snippet})
 	}
