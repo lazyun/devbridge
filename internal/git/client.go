@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -490,25 +491,52 @@ func (c *Client) runWithExitEnv(ctx context.Context, repoPath, operation string,
 }
 
 type limitedBuffer struct {
-	bytes.Buffer
+	buffer   bytes.Buffer
 	limit    int
 	exceeded bool
 }
 
+func (b *limitedBuffer) Len() int       { return b.buffer.Len() }
+func (b *limitedBuffer) Bytes() []byte  { return b.buffer.Bytes() }
+func (b *limitedBuffer) String() string { return b.buffer.String() }
+
+// retainedSize keeps one overflow byte without adding to a possible MaxInt limit.
+func (b *limitedBuffer) retainedSize(size int) int {
+	if b.Len() > b.limit {
+		return 0
+	}
+	remaining := b.limit - b.Len()
+	if size > remaining {
+		return remaining + 1
+	}
+	return size
+}
+
 func (b *limitedBuffer) Write(p []byte) (int, error) {
 	n := len(p)
-	remaining := b.limit + 1 - b.Len()
-	if remaining > 0 {
-		if remaining < len(p) {
-			_, _ = b.Buffer.Write(p[:remaining])
-		} else {
-			_, _ = b.Buffer.Write(p)
-		}
-	}
+	_, _ = b.buffer.Write(p[:b.retainedSize(n)])
 	if b.Len() > b.limit {
 		b.exceeded = true
 	}
 	return n, nil
+}
+
+func (b *limitedBuffer) WriteString(s string) (int, error) {
+	n := len(s)
+	_, _ = b.buffer.WriteString(s[:b.retainedSize(n)])
+	if b.Len() > b.limit {
+		b.exceeded = true
+	}
+	return n, nil
+}
+
+// ReadFrom exposes only the bounded byte and string writers to io.Copy.
+// Hiding ReadFrom prevents recursion while retaining the StringWriter fast path.
+func (b *limitedBuffer) ReadFrom(r io.Reader) (int64, error) {
+	return io.Copy(struct {
+		io.Writer
+		io.StringWriter
+	}{b, b}, r)
 }
 
 func appendBounded(dst *bytes.Buffer, value []byte, limit int, operation string) error {
