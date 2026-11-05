@@ -22,8 +22,10 @@ type statusCapture struct {
 func (w *statusCapture) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 func (w *statusCapture) WriteHeader(status int) {
-	w.status = status
 	w.ResponseWriter.WriteHeader(status)
+	if w.status == 0 && (status >= http.StatusOK || status == http.StatusSwitchingProtocols) {
+		w.status = status
+	}
 }
 
 func (w *statusCapture) Write(value []byte) (int, error) {
