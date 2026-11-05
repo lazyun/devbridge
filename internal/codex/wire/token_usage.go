@@ -18,7 +18,8 @@ type ThreadTokenUsage struct {
 }
 
 type ThreadTokenUsageUpdatedParams struct {
-	ThreadID   string           `json:"threadId"`
-	TurnID     string           `json:"turnId"`
-	TokenUsage ThreadTokenUsage `json:"tokenUsage"`
+	ThreadID string `json:"threadId"`
+	TurnID   string `json:"turnId"`
+	// Resolve the exact Turn before decoding a possibly malformed usage body.
+	TokenUsage json.RawMessage `json:"tokenUsage"`
 }

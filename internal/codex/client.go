@@ -877,12 +877,17 @@ func (c *Client) handleEvent(event Event) {
 			}
 		}
 		if state != nil && state.completion == nil && state.usage != nil {
-			raw, err := decodeRawCumulative(params.TokenUsage.Total)
+			var usage wire.ThreadTokenUsage
+			err := json.Unmarshal(params.TokenUsage, &usage)
+			var raw TokenCounts
+			if err == nil {
+				raw, err = decodeRawCumulative(usage.Total)
+			}
 			if err != nil {
 				state.usage.InvalidTelemetry()
 				c.eventDiagnostic(event, err)
 			} else {
-				state.usage.Observe(raw, params.TokenUsage.ModelContextWindow)
+				state.usage.Observe(raw, usage.ModelContextWindow)
 			}
 			if state.usageConfirmed {
 				c.persistTurnUsageLocked(state)
