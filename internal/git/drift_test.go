@@ -115,7 +115,7 @@ func TestChangedFilesNamedSameCommitIsEmpty(t *testing.T) {
 }
 
 func TestParseNameStatusHandlesScoredAndUnknownStatuses(t *testing.T) {
-	// R100 with new path first, old path second; unknown letter falls back to
+	// R100 with old path first, new path second; unknown letter falls back to
 	// MODIFIED without corrupting the stream.
 	out := []byte("R100\x00old/path.go\x00new/path.go\x00M\x00kept.go\x00X\x00weird.go\x00")
 	changes := parseNameStatus(out)

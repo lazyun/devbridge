@@ -17,7 +17,7 @@ const (
 )
 
 // FileChange is one objective path-level Git fact. OldPath is populated only
-// for RENAMED entries.
+// for renames and copies (copies are reported as ADDED).
 type FileChange struct {
 	Change  ChangeType
 	Path    string
@@ -33,7 +33,7 @@ func (c *Client) ChangedFilesNamed(ctx context.Context, repoPath, fromCommit, to
 	}
 	// --name-status -z is deterministic NUL-delimited porcelain: status
 	// letter (possibly score-bearing, e.g. R100), then NUL, then the path;
-	// renames and copies carry the new path first, then the old path. -M
+	// renames and copies carry the old path first, then the new path. -M
 	// enables rename detection.
 	out, err := c.run(ctx, repoPath, "named changes", "diff", "--name-status", "-z", "-M", fromCommit, toCommit, "--")
 	if err != nil {
@@ -58,7 +58,8 @@ func parseNameStatus(out []byte) []FileChange {
 		if i+1 >= len(fields) || (twoPaths && i+2 >= len(fields)) {
 			break
 		}
-		path := strings.TrimSpace(fields[i+1])
+		// With -z, path fields are verbatim; whitespace is part of the name.
+		path := fields[i+1]
 		change := ChangeModified
 		switch letter {
 		case 'A', 'C':
@@ -71,7 +72,7 @@ func parseNameStatus(out []byte) []FileChange {
 		i += 2
 		if twoPaths {
 			// Renames and copies list the old path first, then the new path.
-			newPath := strings.TrimSpace(fields[i])
+			newPath := fields[i]
 			i++
 			changes = append(changes, FileChange{Change: change, Path: newPath, OldPath: path})
 			continue
