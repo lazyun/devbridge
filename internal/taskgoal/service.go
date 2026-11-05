@@ -190,11 +190,12 @@ func (s *Service) Report(ctx context.Context, executionID, goalID string, status
 	if !validTransition(current.Status, status) {
 		return Progress{}, &ErrInvalidTransition{From: current.Status, To: status}
 	}
-	if err := s.store.UpdateGoalProgress(ctx, executionID, goalID, status, s.now().UTC()); err != nil {
+	now := s.now().UTC()
+	if err := s.store.UpdateGoalProgress(ctx, executionID, goalID, status, now); err != nil {
 		return Progress{}, err
 	}
 	current.Status = status
-	current.UpdatedAt = s.now().UTC()
+	current.UpdatedAt = now
 	return current, nil
 }
 
