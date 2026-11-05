@@ -121,7 +121,10 @@ func (s *WorkflowEventStore) Finish(ctx context.Context, v workflowevents.Pendin
 		return e
 	}
 	defer tx.Rollback()
-	result, e := tx.ExecContext(ctx, `UPDATE workflow_event_deliveries SET state=?,attempts=attempts+1,next_attempt_at=? WHERE subscription_id=? AND event_id=? AND state='RETRY' AND attempts=?`, state, formatTime(next), v.Subscription.ID, v.EventID, v.Attempts)
+	// A refresh can replace the signing key while a callback is in flight.
+	// Leave that delivery available under the new key instead of allowing an
+	// old-key rejection to stop the freshly verified subscription.
+	result, e := tx.ExecContext(ctx, `UPDATE workflow_event_deliveries SET state=?,attempts=attempts+1,next_attempt_at=? WHERE subscription_id=? AND event_id=? AND state='RETRY' AND attempts=? AND EXISTS(SELECT 1 FROM workflow_event_subscriptions s WHERE s.id=workflow_event_deliveries.subscription_id AND s.signing_secret=?)`, state, formatTime(next), v.Subscription.ID, v.EventID, v.Attempts, v.Subscription.Delivery.Secret)
 	if e != nil {
 		return e
 	}

@@ -77,6 +77,13 @@ func TestEventSubscriptionVerifiesSignatureAndStableIdentity(t *testing.T) {
 	if e != nil || first.ID != second.ID || calls != 2 || len(store.put) != 2 {
 		t.Fatalf("refresh did not preserve identity: %+v %v", second, e)
 	}
+	// Refresh may rotate the signing key without changing the subscription ID.
+	// The transport above also verifies the challenge signature with this key.
+	in.Delivery.Secret = "whsec_" + base64.StdEncoding.EncodeToString([]byte(strings.Repeat("n", 32)))
+	rotated, e := service.Subscribe(ctx, "scope", in)
+	if e != nil || rotated.ID != first.ID || calls != 3 || len(store.put) != 3 || store.put[2].Delivery.Secret != in.Delivery.Secret || store.put[0].Delivery.Secret == store.put[2].Delivery.Secret {
+		t.Fatalf("refresh did not rotate verified key with stable identity: %+v %v", rotated, e)
+	}
 	if e = service.Unsubscribe(ctx, "scope", in); e != nil || store.removed != 1 {
 		t.Fatal(e)
 	}
