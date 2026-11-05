@@ -370,9 +370,13 @@ func (p TaskPermissions) Instructions() string {
 		if p.HasTrustedExecution() {
 			if p.Purpose == "IMPLEMENTATION" {
 				scope := "the approved REPOSITORY write grant permits product changes in that repository"
-				for _, grant := range p.Writes {
-					if grant.Kind == "PATHS" {
-						scope = "the approved PATHS write grant still permits changes only at: " + strings.Join(grant.Paths, ", ") + " (in " + grant.Root + ")"
+				if len(p.Writes) > 1 {
+					scope = "the complete set of approved write grants listed in the policy JSON above remains the delivery scope; each REPOSITORY grant permits product changes only in its specified repository, and each PATHS grant permits changes only at its listed paths within its specified root"
+				} else {
+					for _, grant := range p.Writes {
+						if grant.Kind == "PATHS" {
+							scope = "the approved PATHS write grant still permits changes only at: " + strings.Join(grant.Paths, ", ") + " (in " + grant.Root + ")"
+						}
 					}
 				}
 				role = "This is a trusted IMPLEMENTATION turn under an explicit project-level authorization. The sandbox permits the exact engineering worktrees at worktree level (Git metadata under .git/.codex/.agents stays host-owned and read-only); temporary files and tool caches may use the system temp directory or the dedicated scratch. Other projects' repositories and Core data stay outside this sandbox. The sandbox relaxation does not widen the approved engineering scope: " + scope + ", and Core's end-of-run scope checks enforce it — deliver only within that scope. Prior read-only review or verification roles do not apply to this implementation turn. Preserve existing user changes and report this turn's actual implementation diff."
