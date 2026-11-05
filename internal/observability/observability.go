@@ -423,21 +423,79 @@ func min(a, b int) int {
 }
 
 type slogHandler struct {
-	owner *Logger
-	attrs []slog.Attr
+	owner  *Logger
+	attrs  []slog.Attr
+	groups []string
 }
 
 func (h slogHandler) Enabled(_ context.Context, level slog.Level) bool { return level >= h.owner.level }
 func (h slogHandler) Handle(ctx context.Context, r slog.Record) error {
 	data := map[string]any{}
-	for _, a := range h.attrs {
-		data[a.Key] = a.Value.Any()
+	component, event := "", ""
+	var add func(map[string]any, slog.Attr, bool, int)
+	add = func(target map[string]any, a slog.Attr, root bool, depth int) {
+		if a.Equal(slog.Attr{}) {
+			return
+		}
+		a.Value = a.Value.Resolve()
+		if a.Equal(slog.Attr{}) {
+			return
+		}
+		if a.Value.Kind() == slog.KindGroup {
+			if len(a.Value.Group()) == 0 {
+				return
+			}
+			// Bound traversal before Event sanitizes the resulting data. Count
+			// anonymous groups too, so inlining cannot bypass this budget.
+			if depth >= 8 {
+				if a.Key == "" {
+					target["[truncated]"] = true
+				} else {
+					target[a.Key] = "[truncated]"
+				}
+				return
+			}
+			if a.Key == "" {
+				for _, child := range a.Value.Group() {
+					add(target, child, root, depth+1)
+				}
+				return
+			}
+			children := map[string]any{}
+			if existing, ok := target[a.Key].(map[string]any); ok {
+				for key, value := range existing {
+					children[key] = value
+				}
+			}
+			for _, child := range a.Value.Group() {
+				add(children, child, false, depth+1)
+			}
+			if len(children) == 0 {
+				return
+			}
+			target[a.Key] = children
+			return
+		}
+		value := a.Value.Any()
+		// Only ungrouped scalar attributes select the schema routing fields.
+		// A named group called component or event remains diagnostic data.
+		if root && a.Key == "component" {
+			component, _ = value.(string)
+			return
+		}
+		if root && a.Key == "event" {
+			event, _ = value.(string)
+			return
+		}
+		target[a.Key] = value
 	}
-	r.Attrs(func(a slog.Attr) bool { data[a.Key] = a.Value.Any(); return true })
-	component, _ := data["component"].(string)
-	event, _ := data["event"].(string)
-	delete(data, "component")
-	delete(data, "event")
+	for _, a := range h.attrs {
+		add(data, a, true, 0)
+	}
+	r.Attrs(func(a slog.Attr) bool {
+		add(data, h.qualify(a), true, 0)
+		return true
+	})
 	if component == "" {
 		component = "application"
 	}
@@ -447,10 +505,32 @@ func (h slogHandler) Handle(ctx context.Context, r slog.Record) error {
 	h.owner.Event(ctx, r.Level, component, event, r.Message, data)
 	return nil
 }
-func (h slogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return slogHandler{owner: h.owner, attrs: append(append([]slog.Attr{}, h.attrs...), attrs...)}
+
+// qualify captures the current group path when an attribute is attached.
+func (h slogHandler) qualify(a slog.Attr) slog.Attr {
+	if a.Equal(slog.Attr{}) {
+		return a
+	}
+	for i := len(h.groups) - 1; i >= 0; i-- {
+		a = slog.Attr{Key: h.groups[i], Value: slog.GroupValue(a)}
+	}
+	return a
 }
-func (h slogHandler) WithGroup(_ string) slog.Handler { return h }
+
+func (h slogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	bound := append([]slog.Attr{}, h.attrs...)
+	for _, a := range attrs {
+		bound = append(bound, h.qualify(a))
+	}
+	return slogHandler{owner: h.owner, attrs: bound, groups: h.groups}
+}
+func (h slogHandler) WithGroup(name string) slog.Handler {
+	if name == "" {
+		return h
+	}
+	groups := append(append([]string{}, h.groups...), name)
+	return slogHandler{owner: h.owner, attrs: h.attrs, groups: groups}
+}
 
 type sink struct {
 	mu          sync.Mutex
