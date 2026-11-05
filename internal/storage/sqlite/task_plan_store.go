@@ -64,7 +64,9 @@ func (s *TaskPlanStore) Get(ctx context.Context, id string) (taskplan.Plan, erro
 }
 
 func (s *TaskPlanStore) ListByProject(ctx context.Context, projectID string) ([]taskplan.Plan, error) {
-	rows, err := s.db.sql.QueryContext(ctx, selectTaskPlan+` WHERE project_id=? ORDER BY created_at DESC,id`, projectID)
+	// formatTime writes canonical UTC RFC3339Nano. Remove the trailing Z
+	// so fractional prefixes sort chronologically without losing nanoseconds.
+	rows, err := s.db.sql.QueryContext(ctx, selectTaskPlan+` WHERE project_id=? ORDER BY rtrim(created_at,'Z') DESC,id`, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +83,8 @@ func (s *TaskPlanStore) ListByProject(ctx context.Context, projectID string) ([]
 }
 
 func (s *TaskPlanStore) LatestByTask(ctx context.Context, taskID string) (taskplan.Plan, error) {
-	value, err := scanTaskPlan(s.db.sql.QueryRowContext(ctx, selectTaskPlan+` WHERE task_id=? ORDER BY created_at DESC,id LIMIT 1`, taskID))
+	// Apply LIMIT only after the same nanosecond-preserving order as the list.
+	value, err := scanTaskPlan(s.db.sql.QueryRowContext(ctx, selectTaskPlan+` WHERE task_id=? ORDER BY rtrim(created_at,'Z') DESC,id LIMIT 1`, taskID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return taskplan.Plan{}, taskplan.ErrNotFound
 	}
