@@ -169,6 +169,59 @@ func TestSanitizesCredentialShapedCommandWithoutLosingDiagnosticShape(t *testing
 	}
 }
 
+func TestSanitizesBasicAuthorizationInDiagnosticStrings(t *testing.T) {
+	const credential = "ZmFrZS11c2VyOmZha2UtcGFzc3dvcmQ=" // fake-user:fake-password
+	for _, value := range []string{
+		"curl -H 'Authorization: Basic " + credential + "' https://example.test/status",
+		"curl -H \"aUtHoRiZaTiOn: bAsIc " + credential + "\" https://example.test/status",
+		"curl -H 'Proxy-Authorization: Basic " + credential + "' https://example.test/status",
+	} {
+		t.Run(value, func(t *testing.T) {
+			var output bytes.Buffer
+			New(Options{Writer: &output}).Info(context.Background(), "review", "codex.command.observed", value, map[string]any{"command": value})
+			if strings.Contains(output.String(), credential) {
+				t.Fatalf("Basic authorization credential leaked: %s", output.String())
+			}
+			if output.Len() > DefaultMaxRecord || bytes.Count(output.Bytes(), []byte{'\n'}) != 1 {
+				t.Fatalf("expected one bounded JSONL record, got %d bytes", output.Len())
+			}
+			var record struct {
+				Message string `json:"message"`
+				Data    struct {
+					Command string `json:"command"`
+				} `json:"data"`
+			}
+			if err := json.Unmarshal(output.Bytes(), &record); err != nil {
+				t.Fatal(err)
+			}
+			for _, sanitized := range []string{record.Message, record.Data.Command} {
+				if !strings.Contains(sanitized, "curl") || !strings.Contains(sanitized, "https://example.test/status") || !strings.Contains(sanitized, "[redacted]") {
+					t.Fatalf("diagnostic shape lost: %q", sanitized)
+				}
+			}
+		})
+	}
+}
+
+func TestBasicAuthorizationRedactionPreservesNonCredentialText(t *testing.T) {
+	for _, value := range []string{"basic diagnostic information", "https://example.test/basic/status", "curl -H 'Accept: application/json' https://example.test/status"} {
+		if got := sanitizeString(value); got != value {
+			t.Errorf("non-credential text changed: got %q, want %q", got, value)
+		}
+	}
+}
+
+func TestSanitizesUnquotedBasicAuthorizationHeaderWhitespace(t *testing.T) {
+	const credential = "ZmFrZS11c2VyOmZha2UtcGFzc3dvcmQ=" // fake-user:fake-password
+	for _, separator := range []string{" ", "   ", "\t"} {
+		value := "Authorization:" + separator + "Basic" + separator + credential
+		got := sanitizeString(value)
+		if strings.Contains(got, credential) || !strings.Contains(got, "Authorization") || !strings.Contains(got, "[redacted]") {
+			t.Errorf("unquoted Basic header was not redacted: %q", got)
+		}
+	}
+}
+
 func TestHostileCorrelationValueIsFingerprintRedacted(t *testing.T) {
 	var output bytes.Buffer
 	ctx := WithFields(context.Background(), Fields{RequestID: "Bearer header-secret", ProjectID: "project-safe"})

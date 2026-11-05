@@ -401,14 +401,18 @@ func sanitizeString(value string) string {
 	}
 	value = embeddedURLUserinfo.ReplaceAllString(value, "$1[redacted]@")
 	value = bearerValue.ReplaceAllString(value, "$1[redacted]")
+	// Basic credentials follow the scheme after a space; the generic
+	// assignment matcher below would otherwise redact only the word Basic.
+	value = basicAuthorizationValue.ReplaceAllString(value, "$1[redacted]")
 	value = credentialAssignment.ReplaceAllString(value, "$1=[redacted]")
 	return bounded(value, 4096)
 }
 
 var (
-	bearerValue          = regexp.MustCompile(`(?i)(\bbearer\s+)[^\s,;]+`)
-	credentialAssignment = regexp.MustCompile(`(?i)\b(authorization|api[_-]?(?:key|token)|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|password|passwd|cookie|secret)\s*[:=]\s*(?:'[^']*'|"[^"]*"|[^\s,;]+)`)
-	embeddedURLUserinfo  = regexp.MustCompile(`(?i)(https?://)[^/@\s]+@`)
+	bearerValue             = regexp.MustCompile(`(?i)(\bbearer\s+)[^\s,;]+`)
+	basicAuthorizationValue = regexp.MustCompile(`(?i)(\b(?:proxy-)?authorization\s*[:=]\s*basic\s+)[^\s,;'"]+`)
+	credentialAssignment    = regexp.MustCompile(`(?i)\b(authorization|api[_-]?(?:key|token)|access[_-]?token|refresh[_-]?token|auth[_-]?token|token|password|passwd|cookie|secret)\s*[:=]\s*(?:'[^']*'|"[^"]*"|[^\s,;]+)`)
+	embeddedURLUserinfo     = regexp.MustCompile(`(?i)(https?://)[^/@\s]+@`)
 )
 
 func min(a, b int) int {
