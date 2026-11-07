@@ -32,6 +32,9 @@ func Array(items any) Schema { return Schema{"type": "array", "items": items} }
 // strict output protocol represents optional values with Nullable, not by
 // omitting properties from required.
 func Object(properties map[string]any) Schema {
+	if properties == nil {
+		properties = make(map[string]any)
+	}
 	required := make([]string, 0, len(properties))
 	for key := range properties {
 		required = append(required, key)
