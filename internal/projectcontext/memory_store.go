@@ -89,6 +89,7 @@ func (s *MemoryStore) MarkRunning(_ context.Context, projectID, probeID string, 
 	}
 	value.Status, value.LatestProbeID, value.UpdatedAt = StatusRunning, probeID, now
 	s.data[projectID] = value
+	value.Diagnostics = slices.Clone(value.Diagnostics)
 	return value, nil
 }
 
@@ -104,6 +105,7 @@ func (s *MemoryStore) MarkFinished(_ context.Context, projectID, probeID string,
 	}
 	value.Status, value.Result, value.ResultArtifactRef, value.RootGuidanceIdentity, value.UpdatedAt = status, result, artifactRef, identity, now
 	s.data[projectID] = value
+	value.Diagnostics = slices.Clone(value.Diagnostics)
 	return value, nil
 }
 
